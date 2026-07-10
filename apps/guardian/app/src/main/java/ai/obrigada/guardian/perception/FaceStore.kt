@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -39,7 +40,7 @@ class FaceStore(context: Context) {
     fun list(): List<EnrolledFace> {
         val raw = prefs.getString(KEY_FACES, null) ?: return emptyList()
         return runCatching {
-            json.decodeFromString<List<StoredFace>>(raw).map {
+            json.decodeFromString(ListSerializer(StoredFace.serializer()), raw).map {
                 EnrolledFace(it.id, it.name, it.embedding)
             }
         }.getOrDefault(emptyList())
@@ -65,7 +66,8 @@ class FaceStore(context: Context) {
 
     private fun save(faces: List<EnrolledFace>) {
         val stored = faces.map { StoredFace(it.id, it.name, it.embedding) }
-        prefs.edit().putString(KEY_FACES, json.encodeToString(stored)).apply()
+        val payload = json.encodeToString(ListSerializer(StoredFace.serializer()), stored)
+        prefs.edit().putString(KEY_FACES, payload).apply()
     }
 
     private companion object {
