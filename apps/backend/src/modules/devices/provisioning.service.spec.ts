@@ -16,7 +16,9 @@ const DEVICE = '00000000-0000-4000-8000-0000000000d1';
 function config(ttlSeconds: number, hasDeviceCa = false): AppConfig {
   return {
     claimCodeTtlSeconds: ttlSeconds,
-    mqttUrl: 'mqtts://broker.obrigada.eu:8883',
+    mqttUrl: 'mqtts://emqx:8883',
+    // Phones get the public device-facing broker URL, not the backend's internal one.
+    deviceMqttUrl: 'mqtts://broker.obrigada.eu:8883',
     deviceOfflineThresholdSeconds: 90,
     hasDeviceCa,
   } as unknown as AppConfig;

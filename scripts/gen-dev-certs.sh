@@ -45,10 +45,14 @@ issue_cert() {
   cp "$CERTS/ca/ca.crt" "$dir/ca.crt"
 }
 
-echo "==> Broker server certificate (SAN: localhost, emqx, 127.0.0.1)"
+# Guardian phones connect to the broker over the public internet, so the server cert must
+# list the public host they use. Pass it in: DOMAIN=api.yourdomain.com bash scripts/gen-dev-certs.sh
+BROKER_SAN="DNS:localhost, DNS:emqx, IP:127.0.0.1"
+if [ -n "${DOMAIN:-}" ]; then BROKER_SAN="$BROKER_SAN, DNS:$DOMAIN"; fi
+echo "==> Broker server certificate (SAN: $BROKER_SAN)"
 SAN_EXT="$(mktemp)"
 cat > "$SAN_EXT" <<EOF
-subjectAltName = DNS:localhost, DNS:emqx, IP:127.0.0.1
+subjectAltName = $BROKER_SAN
 extendedKeyUsage = serverAuth
 EOF
 issue_cert "$CERTS/broker" "obrigada-emqx" "$SAN_EXT"

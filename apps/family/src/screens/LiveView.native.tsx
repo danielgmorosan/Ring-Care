@@ -1,27 +1,50 @@
-import { isTrackReference, LiveKitRoom, useTracks, VideoTrack } from '@livekit/react-native';
-import { Track } from 'livekit-client';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { LiveGrant } from '../api/types';
 import { color, space, text } from '../theme/tokens';
 
 /**
- * The live camera view (F2.5) — native only. Connects to the guardian's room as a view-only
- * subscriber (never publishes) and renders its camera track.
+ * The live camera view (F2.5) — native only. LiveKit's native module is loaded lazily so that
+ * merely importing this screen never crashes where the module is absent (e.g. Expo Go); there
+ * it shows a short note instead. A real dev build has the module and renders live video.
  *
- * NOTE: end-to-end encryption (decision 0010) is not wired here yet. E2EE needs the guardian
- * publish side plus a shared key, which land together; transport to the SFU is TLS-encrypted
- * meanwhile. True E2EE is a required follow-up before real families.
+ * NOTE: end-to-end encryption (decision 0010) is not wired here yet — it lands with the
+ * guardian publish side plus a shared key. Transport to the SFU is TLS-encrypted meanwhile.
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function loadLiveKit(): any | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('@livekit/react-native');
+  } catch {
+    return null;
+  }
+}
+
 export function LiveView({ grant }: { grant: LiveGrant }) {
+  const lk = useMemo(loadLiveKit, []);
+  if (!lk) {
+    return (
+      <View style={s.box}>
+        <Text style={s.waiting}>Live video needs the full app build (not Expo Go).</Text>
+      </View>
+    );
+  }
+  const { LiveKitRoom } = lk;
   return (
     <LiveKitRoom serverUrl={grant.url} token={grant.token} connect audio={false} video={false}>
-      <RemoteCamera />
+      <RemoteCamera lk={lk} />
     </LiveKitRoom>
   );
 }
 
-function RemoteCamera() {
-  const camera = useTracks([Track.Source.Camera]).find(isTrackReference);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function RemoteCamera({ lk }: { lk: any }) {
+  const { useTracks, isTrackReference, VideoTrack } = lk;
+  // Source string 'camera' avoids importing livekit-client's Track enum at module load.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const camera = useTracks(['camera']).find((t: any) => isTrackReference(t));
   if (!camera) {
     return (
       <View style={s.box}>

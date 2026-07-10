@@ -18,7 +18,13 @@ export const envSchema = z.object({
   REDIS_URL: z.string().min(1).optional(),
   // Device link (F0.3). When MQTT_URL is set the backend connects to the broker
   // and ingests device events/heartbeats. Use mqtts:// with mutual-TLS cert paths.
+  // MQTT_URL is the backend's own address for the broker (internal, e.g. mqtts://emqx:8883).
   MQTT_URL: z.string().min(1).optional(),
+  // The broker address handed to GUARDIAN PHONES at provisioning. Phones are external, so
+  // this must be a publicly reachable host (e.g. mqtts://api.yourdomain.com:8883), NOT the
+  // internal container name. Falls back to MQTT_URL when unset (fine for local dev where the
+  // device and broker share a host).
+  DEVICE_MQTT_URL: z.string().min(1).optional(),
   MQTT_CA_PATH: z.string().min(1).optional(),
   MQTT_CERT_PATH: z.string().min(1).optional(),
   MQTT_KEY_PATH: z.string().min(1).optional(),
@@ -204,6 +210,12 @@ export class AppConfig {
 
   get mqttUrl(): string | undefined {
     return this.config.get('MQTT_URL', { infer: true });
+  }
+
+  /** The broker address given to guardian phones at provisioning (public). Falls back to
+   * the backend's own MQTT_URL when unset. */
+  get deviceMqttUrl(): string | undefined {
+    return this.config.get('DEVICE_MQTT_URL', { infer: true }) ?? this.mqttUrl;
   }
 
   get mqttCaPath(): string | undefined {

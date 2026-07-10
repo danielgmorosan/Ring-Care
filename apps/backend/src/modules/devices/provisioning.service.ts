@@ -123,7 +123,8 @@ export class ProvisioningService {
       deviceId: device.id,
       familyId: device.familyId,
       deviceToken: token,
-      mqttUrl: this.config.mqttUrl ?? null,
+      // The public broker address for external phones (falls back to the backend's own URL).
+      mqttUrl: this.config.deviceMqttUrl ?? null,
       heartbeatIntervalSeconds: Math.max(
         15,
         Math.floor(this.config.deviceOfflineThresholdSeconds / 3),

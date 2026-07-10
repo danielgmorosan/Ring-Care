@@ -32,6 +32,11 @@ services:
     restart: unless-stopped
     expose:
       - '3000'
+    # Pass optional settings straight from deploy/.env when present: DEVICE_MQTT_URL (the
+    # public broker address handed to phones), LIVEKIT_* (live view/voice), etc. The explicit
+    # `environment` below still wins for the values it sets.
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
