@@ -1,0 +1,77 @@
+:root {
+  /* Brand */
+  --ds-blue-300: #7da3ff;
+  --ds-blue-400: #6485ff;
+  --ds-blue-500: #5368ff;
+  --ds-blue-600: #4755f2;
+  --ds-blue-700: #3c43d8;
+  --ds-violet-500: #8d6bff;
+  --ds-lilac-100: #f4efff;
+  --ds-pink-500: #ff8ebc;
+  --ds-mint-500: #4ddc84;
+  --ds-lime-500: #a3c561;
+  --ds-success: #88c057;
+
+  /* Neutral */
+  --ds-neutral-0: #ffffff;
+  --ds-neutral-25: #f8f8fa;
+  --ds-neutral-50: #f3f3f6;
+  --ds-neutral-75: #ececf1;
+  --ds-neutral-100: #e4e4ea;
+  --ds-neutral-200: #d0d0d9;
+  --ds-neutral-300: #b4b4c0;
+  --ds-neutral-500: #8f8f99;
+  --ds-neutral-700: #5d5d67;
+  --ds-neutral-900: #1d1d23;
+  --ds-neutral-950: #0b0b10;
+  --ds-black: #000000;
+
+  /* Alpha */
+  --ds-white-90: rgba(255, 255, 255, 0.9);
+  --ds-white-75: rgba(255, 255, 255, 0.75);
+  --ds-white-55: rgba(255, 255, 255, 0.55);
+  --ds-white-20: rgba(255, 255, 255, 0.2);
+  --ds-black-60: rgba(0, 0, 0, 0.6);
+  --ds-black-35: rgba(0, 0, 0, 0.35);
+  --ds-black-15: rgba(0, 0, 0, 0.15);
+
+  /* Gradients */
+  --ds-gradient-cta: linear-gradient(90deg, var(--ds-blue-300) 0%, var(--ds-blue-500) 52%, var(--ds-blue-700) 100%);
+  --ds-gradient-hero: radial-gradient(circle, var(--ds-lilac-100) 0%, transparent 70%);
+  --ds-gradient-verify: linear-gradient(135deg, #e6daff 0%, #d4e4ff 100%);
+  --ds-gradient-camera: linear-gradient(180deg, #3a3028 0%, #2a221c 100%);
+
+  /* Layout */
+  --ds-radius-sm: 12px;
+  --ds-radius-md: 16px;
+  --ds-radius-lg: 22px;
+  --ds-radius-xl: 28px;
+  --ds-radius-phone: 40px;
+  --ds-radius-pill: 999px;
+
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 20px;
+  --ds-space-6: 24px;
+  --ds-space-8: 32px;
+
+  /* Typography */
+  --ds-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  --ds-text-xs: 12px;
+  --ds-text-sm: 14px;
+  --ds-text-md: 16px;
+  --ds-text-lg: 20px;
+  --ds-text-xl: 28px;
+
+  /* Shadows */
+  --ds-shadow-cta: 0 8px 24px -4px rgba(83, 104, 255, 0.42);
+  --ds-shadow-card: 0 8px 24px -10px rgba(29, 29, 35, 0.08);
+  --ds-shadow-phone: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 48px -12px rgba(0, 0, 0, 0.6);
+
+  /* Motion */
+  --ds-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-duration-fast: 180ms;
+  --ds-duration-normal: 260ms;
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm, calm neutral the guardian shows on a wall. Matches the Obrigada palette. -->
+    <color name="guardian_bg">#111311</color>
+    <color name="guardian_accent">#3F8F6B</color>
+    <color name="guardian_ink">#F3F1EC</color>
+</resources>

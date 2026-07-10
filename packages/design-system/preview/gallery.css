@@ -1,0 +1,193 @@
+body {
+  margin: 0;
+  font-family: var(--ds-font);
+  background: #0f0f14;
+  color: var(--ds-neutral-0);
+}
+
+.ds-page-header {
+  padding: 48px 32px 16px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.ds-page-header h1 {
+  margin: 0 0 8px;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.ds-page-header p {
+  margin: 0 0 20px;
+  color: var(--ds-neutral-500);
+  font-size: var(--ds-text-md);
+  max-width: 680px;
+  line-height: 1.45;
+}
+.ds-page-nav {
+  display: flex;
+  gap: var(--ds-space-3);
+}
+.ds-page-nav a {
+  color: var(--ds-blue-300);
+  font-size: var(--ds-text-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+.ds-page-nav a:hover { text-decoration: underline; }
+
+/* Gallery section navigation */
+.ds-gallery-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 32px 20px;
+  max-width: 1440px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, #0f0f14 70%, transparent);
+  backdrop-filter: blur(8px);
+}
+.ds-gallery-nav a {
+  padding: 6px 14px;
+  border-radius: var(--ds-radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-neutral-500);
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.ds-gallery-nav a:hover {
+  color: var(--ds-neutral-0);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ds-gallery-wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+.ds-gallery-section {
+  margin-bottom: 56px;
+  scroll-margin-top: 72px;
+}
+.ds-gallery-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ds-gallery-section__header h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.ds-gallery-section__header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-neutral-500);
+  line-height: 1.4;
+  max-width: 520px;
+}
+.ds-gallery-section__count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-neutral-500);
+  padding: 4px 10px;
+  border-radius: var(--ds-radius-pill);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ds-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 36px;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
+
+.ds-gallery-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ds-gallery-item__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ds-neutral-500);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ds-phone {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 390 / 844;
+  border-radius: var(--ds-radius-phone);
+  overflow: hidden;
+  position: relative;
+  background: var(--ds-black);
+  box-shadow: var(--ds-shadow-phone);
+  display: flex;
+  flex-direction: column;
+}
+.ds-phone > .ds-screen {
+  flex: 1;
+  min-height: 0;
+}
+.ds-phone--light { background: var(--ds-neutral-25); }
+.ds-phone--light > .ds-screen {
+  color: var(--ds-neutral-900);
+}
+
+/* Component library page */
+.ds-showcase {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 32px 80px;
+}
+.ds-showcase-section {
+  margin-bottom: 48px;
+}
+.ds-showcase-section h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ds-showcase-section p {
+  margin: 0 0 20px;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-neutral-500);
+}
+.ds-showcase-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-3);
+  align-items: center;
+  padding: var(--ds-space-5);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--ds-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ds-showcase-row--dark {
+  background: var(--ds-black);
+}
+.ds-showcase-row--light {
+  background: var(--ds-neutral-25);
+}
+.ds-showcase-row .ds-btn { width: auto; min-width: 140px; }
+.ds-showcase-row .ds-btn--lg { min-width: 200px; }

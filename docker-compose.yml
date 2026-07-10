@@ -1,0 +1,69 @@
+# Local development dependencies for the Obrigada backend.
+# Postgres is exposed on host port 5433 to avoid colliding with a system
+# Postgres that may already be running on 5432.
+#
+#   docker compose up -d
+#   pnpm db:migrate
+#
+# These credentials are for LOCAL DEV ONLY. Production secrets come from the vault.
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg17
+    container_name: obrigada-postgres
+    environment:
+      POSTGRES_USER: obrigada
+      POSTGRES_PASSWORD: obrigada
+      POSTGRES_DB: obrigada
+    ports:
+      - '5433:5432'
+    volumes:
+      - obrigada-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U obrigada -d obrigada']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: obrigada-redis
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Mutual-TLS MQTT broker for the device link (F0.3). Requires dev certs:
+  #   scripts/gen-dev-certs.sh <deviceId...>
+  # which populate ./certs (git-ignored) before `docker compose up`.
+  emqx:
+    image: emqx/emqx:5.8
+    container_name: obrigada-emqx
+    volumes:
+      - ./infra/emqx/emqx.conf:/opt/emqx/etc/emqx.conf:ro
+      - ./infra/emqx/acl.conf:/opt/emqx/etc/acl.conf:ro
+      - ./certs/broker:/opt/emqx/etc/certs:ro
+    ports:
+      - '8883:8883' # mTLS MQTT
+      - '18083:18083' # dashboard
+    healthcheck:
+      test: ['CMD', '/opt/emqx/bin/emqx', 'ctl', 'status']
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  # Temporal dev server (in-memory) for the escalation engine (F1.4). UI on 8233.
+  # Production uses a persistent Temporal cluster; this is for local development.
+  temporal:
+    image: temporalio/temporal:latest
+    container_name: obrigada-temporal
+    command: ['server', 'start-dev', '--ip', '0.0.0.0', '--log-level', 'warn']
+    ports:
+      - '7233:7233' # gRPC
+      - '8233:8233' # web UI
+
+volumes:
+  obrigada-pgdata:

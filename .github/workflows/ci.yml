@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+# Least-privilege by default (CLAUDE.md: hard target from the first commit).
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm --filter @obrigada/backend test
+
+      - name: E2E tests
+        run: pnpm --filter @obrigada/backend test:e2e
+
+      - name: Build
+        run: pnpm build
+
+      - name: Audit dependencies (advisory)
+        run: pnpm audit --audit-level high
+        continue-on-error: true
+
+  integration:
+    name: Data layer + device link (integration)
+    runs-on: ubuntu-latest
+    env:
+      TEST_DEVICE_ID: 00000000-0000-4000-8000-000000000001
+      DATABASE_URL: postgres://obrigada:obrigada@localhost:5433/obrigada
+      MQTT_URL: mqtts://localhost:8883
+      # Absolute paths: jest's cwd is apps/backend, certs live at the repo root.
+      MQTT_CA_PATH: ${{ github.workspace }}/certs/backend/ca.crt
+      MQTT_CERT_PATH: ${{ github.workspace }}/certs/backend/tls.crt
+      MQTT_KEY_PATH: ${{ github.workspace }}/certs/backend/tls.key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build shared package (integration specs type-check against its dist)
+        run: pnpm --filter @obrigada/shared build
+      - name: Generate dev PKI (CA, broker, backend, device certs)
+        run: bash scripts/gen-dev-certs.sh "$TEST_DEVICE_ID"
+      - name: Start TimescaleDB + EMQX
+        run: docker compose up -d --wait postgres emqx
+      - name: Run migrations
+        run: pnpm --filter @obrigada/backend db:migrate
+      - name: Integration tests (append-only, persistence, MQTT device link)
+        run: pnpm --filter @obrigada/backend test:integration
+      - name: Dump compose logs on failure
+        if: failure()
+        run: docker compose logs --no-color postgres emqx || true
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  escalation:
+    name: Escalation workflows (Temporal)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Uses Temporal's self-contained time-skipping test server (no Docker).
+      # Verifies the ladder logic and crash-safe (history-replay) resumption.
+      - name: Escalation workflow tests
+        run: pnpm --filter @obrigada/backend test:temporal
+
+  family-app:
+    name: Family app bundles (web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Bundling for web exercises the full Metro graph in the pnpm monorepo.
+      - name: Export web bundle
+        run: pnpm --filter @obrigada/family export:web
+
+  docker:
+    name: Backend image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          push: false
+          tags: obrigada-backend:ci
+      # TODO(F0.4): add a deploy job to Fly.io/Railway once account + secrets exist.
+      # Deploy must be gated on this workflow passing. Secrets come from the vault,
+      # never committed. EU-only region.
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # gitleaks-action reads PR commits on pull_request events
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

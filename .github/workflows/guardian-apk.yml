@@ -1,0 +1,56 @@
+name: Guardian APK
+
+# Manually triggered build of an installable debug APK for the guardian app, pointed at a
+# given backend. The guardian is a standalone Gradle project outside the pnpm workspace, so
+# it has its own workflow (the web CI never builds it). Download the APK from the run's
+# Artifacts, then sideload it onto the Android phone (allow "install from unknown sources").
+on:
+  workflow_dispatch:
+    inputs:
+      backendBaseUrl:
+        description: 'Backend URL to bake into the APK'
+        required: true
+        default: 'https://api.obrigada.ai'
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Fetch on-device models (official MediaPipe)
+        run: |
+          set -euo pipefail
+          mkdir -p apps/guardian/app/src/main/assets
+          cd apps/guardian/app/src/main/assets
+          curl -fsSL -o pose_landmarker_lite.task \
+            "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task"
+          curl -fsSL -o blaze_face_short_range.tflite \
+            "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.tflite"
+          ls -lh
+          # mobile_face_net.tflite (face RECOGNITION) is intentionally NOT fetched here — it is
+          # the founder-vetted model, added separately. Fall detection, face DETECTION, and
+          # zones work without it; known-vs-stranger recognition stays off until it is added.
+
+      - name: Build debug APK
+        working-directory: apps/guardian
+        env:
+          BACKEND_BASE_URL: ${{ github.event.inputs.backendBaseUrl }}
+        run: ./gradlew assembleDebug -PbackendBaseUrl="$BACKEND_BASE_URL" --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: obrigada-guardian-debug-apk
+          path: apps/guardian/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

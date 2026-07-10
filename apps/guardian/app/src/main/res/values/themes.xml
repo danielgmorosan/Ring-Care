@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Minimal framework theme; the UI is Jetpack Compose. NoActionBar for full-screen kiosk. -->
+    <style name="Theme.Guardian" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/guardian_bg</item>
+        <item name="android:navigationBarColor">@color/guardian_bg</item>
+        <item name="android:windowBackground">@color/guardian_bg</item>
+    </style>
+</resources>

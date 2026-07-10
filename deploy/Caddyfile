@@ -1,0 +1,18 @@
+# HTTPS for the API. Caddy obtains and auto-renews a Let's Encrypt certificate for
+# ${DOMAIN} (requires DNS pointing at this server and ports 80/443 reachable), then
+# proxies to the backend. Health checks stay public for uptime monitoring.
+{$DOMAIN} {
+	reverse_proxy backend:3000
+
+	# Small, sane limits; the app enforces its own validation and rate limits too.
+	request_body {
+		max_size 2MB
+	}
+
+	encode gzip
+
+	log {
+		output stdout
+		format json
+	}
+}

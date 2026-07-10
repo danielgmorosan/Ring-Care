@@ -1,0 +1,200 @@
+.ds-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.ds-icon--xs { width: 14px; height: 14px; }
+.ds-icon--sm { width: 16px; height: 16px; }
+.ds-icon--md { width: 20px; height: 20px; }
+.ds-icon--lg { width: 24px; height: 24px; }
+.ds-icon--xl { width: 32px; height: 32px; }
+.ds-icon--2xl { width: 40px; height: 40px; }
+
+.ds-icon-btn .ds-icon,
+.ds-nav-back .ds-icon {
+  display: block;
+}
+
+.ds-nav-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+.ds-icon-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ds-icon-inline .ds-icon {
+  color: currentColor;
+}
+
+.ds-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ds-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+.ds-paywall__feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  margin-bottom: 6px;
+  color: var(--ds-neutral-900);
+}
+
+.ds-shield {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-blue-500);
+}
+
+.ds-yay-btn__orb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-neutral-900);
+}
+
+.ds-citation__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-neutral-500);
+}
+
+.ds-menu__item .ds-icon {
+  color: var(--ds-neutral-500);
+}
+
+.ds-chat__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.ds-chat__actions .ds-icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-neutral-700);
+}
+
+.ds-chat__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-bubble--typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ds-product-grid__item {
+  color: var(--ds-neutral-400);
+}
+
+.ds-product-grid__item .ds-icon {
+  color: var(--ds-neutral-400);
+}
+
+.ds-routine-header__title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--ds-text-md);
+  font-weight: 600;
+}
+
+.ds-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ds-badge--success {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ds-progress-step__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-progress-step__check .ds-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.ds-plan__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ds-plan__check .ds-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ds-lighting__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-neutral-900);
+}
+
+.ds-lighting__icon .ds-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ds-chip__icon-svg {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ds-chip__icon-svg .ds-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.ds-amazon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ds-assistant__avatar .ds-icon {
+  color: var(--ds-neutral-700);
+}

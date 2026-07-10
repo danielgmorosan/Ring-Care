@@ -1,0 +1,131 @@
+# Production stack for a single EU VPS (see docs/decisions/0006).
+# Run from this directory with a deploy/.env alongside it (see env.prod.example):
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Caddy is the only thing exposed to the internet (80/443) plus the mTLS device
+# link (8883). The backend, database, Redis, and Temporal are reachable only on the
+# internal Docker network.
+name: obrigada
+
+services:
+  # HTTPS reverse proxy. Fetches and auto-renews a free Let's Encrypt certificate for
+  # ${DOMAIN}, then proxies to the backend. The backend is never exposed directly.
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ..
+      dockerfile: apps/backend/Dockerfile
+    restart: unless-stopped
+    expose:
+      - '3000'
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3000'
+      # Behind Caddy: trust the proxy so per-IP rate limiting and logging see the
+      # real caller, not Caddy.
+      BEHIND_PROXY: 'true'
+      # Drain window on deploy; set to the platform's readiness poll interval.
+      SHUTDOWN_GRACE_SECONDS: '10'
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgresql://obrigada:${POSTGRES_PASSWORD}@postgres:5432/obrigada
+      REDIS_URL: redis://redis:6379
+      TEMPORAL_ADDRESS: temporal:7233
+      # mTLS device link. Certs are generated on the server (see runbook) and mounted.
+      MQTT_URL: mqtts://emqx:8883
+      MQTT_CA_PATH: /certs/ca/ca.crt
+      MQTT_CERT_PATH: /certs/backend/tls.crt
+      MQTT_KEY_PATH: /certs/backend/tls.key
+      # Device certificate authority (F2.6): provisioning signs each guardian a per-device
+      # client cert with this CA, so phones can open the mutual-TLS link. Without it,
+      # provisioning falls back to token-only and no guardian can connect over MQTT.
+      DEVICE_CA_CERT_PATH: /certs/ca/ca.crt
+      DEVICE_CA_KEY_PATH: /certs/ca/ca.key
+      CANARY_ENABLED: 'true'
+    volumes:
+      - ./certs:/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
+  postgres:
+    image: timescale/timescaledb:latest-pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: obrigada
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: obrigada
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U obrigada -d obrigada']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # Ephemeral state only (rule: nothing in Redis is ever the sole copy).
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Mutual-TLS MQTT device link (F0.3). The only non-HTTP port exposed publicly.
+  emqx:
+    image: emqx/emqx:5.8
+    restart: unless-stopped
+    volumes:
+      - ../infra/emqx/emqx.conf:/opt/emqx/etc/emqx.conf:ro
+      - ../infra/emqx/acl.conf:/opt/emqx/etc/acl.conf:ro
+      - ./certs/broker:/opt/emqx/etc/certs:ro
+    ports:
+      - '8883:8883'
+    healthcheck:
+      test: ['CMD', '/opt/emqx/bin/emqx', 'ctl', 'status']
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  # Durable Temporal with Postgres persistence (not the in-memory dev server). Uses
+  # the same Postgres instance in its own databases. Internal only.
+  temporal:
+    image: temporalio/auto-setup:1.25.2
+    restart: unless-stopped
+    environment:
+      DB: postgres12
+      DB_PORT: '5432'
+      POSTGRES_USER: obrigada
+      POSTGRES_PWD: ${POSTGRES_PASSWORD}
+      POSTGRES_SEEDS: postgres
+    expose:
+      - '7233'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  caddy-data:
+  caddy-config:

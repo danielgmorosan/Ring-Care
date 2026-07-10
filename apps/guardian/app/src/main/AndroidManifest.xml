@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The guardian watches over the home; the device link and heartbeats need the network. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- The safety voice check-in (F1.3) listens for the elder's answer after a fall. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- The link/heartbeat service keeps the MQTT connection alive in the background. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <uses-feature android:name="android.hardware.camera.any" android:required="true" />
+
+    <application
+        android:name=".GuardianApp"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Guardian"
+        android:usesCleartextTraffic="true">
+        <!--
+          usesCleartextTraffic is enabled so the app can reach a local dev backend over
+          http://10.0.2.2:3000. Production points BACKEND_BASE_URL at an https:// host;
+          the mutual-TLS MQTT link is always encrypted regardless of this flag.
+        -->
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          The guardian's persistent link. A foreground service so Android keeps the MQTT
+          connection and heartbeat alive; the app is meant to run unattended on a wall.
+        -->
+        <service
+            android:name=".service.GuardianService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- Restart the guardian after a reboot so a power blip does not leave the home unwatched. -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

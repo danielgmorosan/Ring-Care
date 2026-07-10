@@ -1,0 +1,16 @@
+{
+  "name": "@obrigada/design-system",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Design tokens and component primitives inspired by Lovi reference screens",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"no tests in @obrigada/design-system yet\" && exit 0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

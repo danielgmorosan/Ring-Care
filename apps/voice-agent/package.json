@@ -1,0 +1,27 @@
+{
+  "name": "@obrigada/voice-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Hey Obrigada voice assistant: a LiveKit Agents worker orchestrating STT -> Claude -> TTS (F3.6). Off unless configured; never the safety check-in (that is on-device and offline).",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js start",
+    "dev": "node dist/index.js dev",
+    "test": "tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@livekit/agents": "^1.5.1",
+    "@livekit/agents-plugin-anthropic": "^1.5.1",
+    "@livekit/agents-plugin-cartesia": "^1.5.1",
+    "@livekit/agents-plugin-deepgram": "^1.5.1",
+    "@livekit/agents-plugin-silero": "^1.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

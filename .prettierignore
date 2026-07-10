@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+coverage
+pnpm-lock.yaml
+
+# Authored prose docs — keep hand-formatting, don't let Prettier rewrap.
+*.md
+docs/
+
+# Hand-authored design system reference + the screen-gallery package (their own
+# formatting; not part of the app lint/format pipeline).
+design/
+packages/design-system/
+apps/family/google-services.json
+apps/family/GoogleService-Info.plist

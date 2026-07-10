@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "family",
+    "slug": "family",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ai.obrigada.family"
+    },
+    "android": {
+      "package": "ai.obrigada.family",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc"
+    ]
+  }
+}

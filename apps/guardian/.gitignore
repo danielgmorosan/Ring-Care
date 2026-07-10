@@ -1,0 +1,25 @@
+# Android / Gradle build artifacts
+.gradle/
+build/
+/local.properties
+/captures
+.externalNativeBuild
+.cxx
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+*.hprof
+
+# Signing material and secrets — NEVER commit (CLAUDE.md: nothing secret ships in the APK)
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+
+# The generated wrapper jar is produced by `gradle wrapper` / Android Studio.
+!gradle/wrapper/gradle-wrapper.properties
+
+# On-device ML models are large binaries, downloaded per the README — never committed.
+app/src/main/assets/*.task
+app/src/main/assets/*.tflite

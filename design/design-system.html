@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Obrigada Design System</title>
+<style>
+/* ================================================================
+   OBRIGADA DESIGN SYSTEM · v0.5 · LIGHT
+   One vocabulary with packages/design-system (screen gallery).
+   Every component family from components.html and the gallery is
+   represented here with Obrigada content. Values match tokens.css /
+   components.css / screens-ext.css verbatim.
+   Safety tokens (attention / incident) remain PROPOSED extensions.
+   ================================================================ */
+
+:root {
+  --ds-blue-300: #7da3ff; --ds-blue-400: #6485ff; --ds-blue-500: #5368ff;
+  --ds-blue-600: #4755f2; --ds-blue-700: #3c43d8;
+  --ds-violet-500: #8d6bff; --ds-lilac-100: #f4efff;
+  --ds-pink-500: #ff8ebc; --ds-mint-500: #4ddc84; --ds-lime-500: #a3c561;
+  --ds-success: #88c057;
+
+  --ds-neutral-0: #ffffff; --ds-neutral-25: #f8f8fa; --ds-neutral-50: #f3f3f6;
+  --ds-neutral-75: #ececf1; --ds-neutral-100: #e4e4ea; --ds-neutral-200: #d0d0d9;
+  --ds-neutral-300: #b4b4c0; --ds-neutral-500: #8f8f99; --ds-neutral-700: #5d5d67;
+  --ds-neutral-900: #1d1d23; --ds-neutral-950: #0b0b10;
+
+  --ds-white-90: rgba(255,255,255,0.9); --ds-white-75: rgba(255,255,255,0.75);
+  --ds-white-55: rgba(255,255,255,0.55); --ds-white-20: rgba(255,255,255,0.2);
+  --ds-black-60: rgba(0,0,0,0.6); --ds-black-35: rgba(0,0,0,0.35); --ds-black-15: rgba(0,0,0,0.15);
+
+  --ds-gradient-cta: linear-gradient(90deg, var(--ds-blue-300) 0%, var(--ds-blue-500) 52%, var(--ds-blue-700) 100%);
+  --ds-gradient-morning: linear-gradient(180deg, #fff6d6 0%, #e8f0ff 55%, var(--ds-neutral-25) 100%);
+  --ds-gradient-evening: linear-gradient(180deg, #ede8ff 0%, #f5e8ff 45%, var(--ds-neutral-25) 100%);
+  --ds-gradient-verify: linear-gradient(135deg, #e6daff 0%, #d4e4ff 100%);
+  --ds-gradient-camera: linear-gradient(180deg, #3a3028 0%, #2a221c 100%);
+
+  --ds-radius-sm: 12px; --ds-radius-md: 16px; --ds-radius-lg: 22px;
+  --ds-radius-xl: 28px; --ds-radius-phone: 40px; --ds-radius-pill: 999px;
+
+  --ds-space-1: 4px; --ds-space-2: 8px; --ds-space-3: 12px; --ds-space-4: 16px;
+  --ds-space-5: 20px; --ds-space-6: 24px; --ds-space-8: 32px;
+  --ds-space-10: 48px; --ds-space-12: 72px;
+
+  --ds-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  --ds-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  --ds-text-xs: 12px; --ds-text-sm: 14px; --ds-text-md: 16px;
+  --ds-text-lg: 20px; --ds-text-xl: 28px;
+
+  --ds-shadow-cta: 0 8px 24px -4px rgba(83, 104, 255, 0.42);
+  --ds-shadow-card: 0 8px 24px -10px rgba(29, 29, 35, 0.08);
+  --ds-shadow-orb: 0 16px 40px -8px rgba(83, 104, 255, 0.25);
+  --ds-shadow-phone: 0 0 0 1px rgba(255,255,255,0.08), 0 24px 48px -12px rgba(0,0,0,0.6);
+
+  --ds-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-duration-fast: 180ms; --ds-duration-normal: 260ms;
+
+  /* PROPOSED safety extensions (not yet in tokens.css) */
+  --ds-attention-500: #e8a33c; --ds-attention-700: #a8721a; --ds-attention-100: #fdf1dc;
+  --ds-incident-500: #f0564d; --ds-incident-700: #c03a32; --ds-incident-100: #fde5e3;
+  --ds-success-100: #ebf4e0; --ds-success-700: #5f8f38;
+
+  /* Guardian glow states */
+  --glow-listening: #7da3ff; --glow-thinking: #8d6bff; --glow-speaking: #ffb37f;
+}
+
+/* ================================================================ */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--ds-neutral-25); color: var(--ds-neutral-900);
+  font-family: var(--ds-font); font-size: var(--ds-text-md); line-height: 1.5;
+  -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+.wrap { max-width: 1020px; margin: 0 auto; padding: 0 var(--ds-space-6) var(--ds-space-12); }
+.ds-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.ds-icon--xs { width: 14px; height: 14px; }
+.ds-icon--sm { width: 18px; height: 18px; }
+.ds-icon--md { width: 22px; height: 22px; }
+
+/* ---- Hero ---- */
+.hero {
+  background: var(--ds-gradient-morning);
+  border-radius: 0 0 var(--ds-radius-xl) var(--ds-radius-xl);
+  text-align: center; padding: var(--ds-space-12) var(--ds-space-6) var(--ds-space-10);
+  display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-4);
+}
+.ds-orb {
+  width: 120px; height: 120px; border-radius: 50%; background: var(--ds-neutral-0);
+  box-shadow: var(--ds-shadow-orb); position: relative; margin-bottom: var(--ds-space-2);
+}
+.ds-orb__eyes { position: absolute; top: 37%; left: 0; right: 0; display: flex; justify-content: center; gap: 18%; }
+.ds-orb__eye { width: 8.5%; height: 14px; border-radius: 6px; background: var(--ds-neutral-900); animation: blink 4.6s infinite; }
+.ds-orb__mouth { position: absolute; top: 60%; left: 50%; transform: translateX(-50%); width: 15%; height: 8px; border-radius: 0 0 12px 12px; background: var(--ds-neutral-900); }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+.hero h1 { margin: 0; font-size: 40px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.12; max-width: 17ch; text-wrap: balance; }
+.hero h1 em { font-style: normal; color: var(--ds-blue-500); font-weight: 600; }
+.hero p { margin: 0; color: var(--ds-neutral-700); font-size: var(--ds-text-lg); max-width: 44ch; text-wrap: balance; }
+.hero .version { font-family: var(--ds-mono); font-size: var(--ds-text-xs); color: var(--ds-neutral-500); letter-spacing: 0.08em; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(83,104,255,0.5); outline-offset: 2px; }
+
+nav.toc {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(248,248,250,0.85); backdrop-filter: blur(14px);
+  display: flex; gap: 2px; flex-wrap: wrap; justify-content: center;
+  padding: var(--ds-space-3) 0; margin-bottom: var(--ds-space-10); border-bottom: 1px solid var(--ds-neutral-100);
+}
+nav.toc a { color: var(--ds-neutral-700); text-decoration: none; font-size: 13px; font-weight: 500; padding: 6px 11px; border-radius: var(--ds-radius-pill); }
+nav.toc a:hover { color: var(--ds-neutral-900); background: var(--ds-neutral-50); }
+
+section { margin-bottom: var(--ds-space-12); }
+.sec-head { text-align: center; margin-bottom: var(--ds-space-8); display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-3); }
+.ds-step {
+  width: 28px; height: 28px; border-radius: var(--ds-radius-pill);
+  background: var(--ds-pink-500); color: var(--ds-neutral-0);
+  font-size: var(--ds-text-sm); font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+.ds-step-badge { display: inline-block; background: var(--ds-neutral-900); color: var(--ds-neutral-0); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: var(--ds-radius-pill); }
+.sec-head h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin: 0; max-width: 26ch; text-wrap: balance; }
+.sec-head .lede { color: var(--ds-neutral-700); max-width: 54ch; margin: 0; text-wrap: balance; }
+
+.grid { display: grid; gap: var(--ds-space-4); }
+.cols-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.cols-3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.cols-4 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.ds-card { background: var(--ds-neutral-0); border: 1px solid var(--ds-neutral-75); border-radius: var(--ds-radius-lg); padding: var(--ds-space-6); box-shadow: var(--ds-shadow-card); }
+.ds-card--inset { background: var(--ds-neutral-50); border: none; box-shadow: none; }
+.center-col { max-width: 320px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.row-demo { display: flex; gap: var(--ds-space-3); flex-wrap: wrap; align-items: center; justify-content: center; }
+.row-demo--dark { background: var(--ds-gradient-camera); border-radius: var(--ds-radius-lg); padding: var(--ds-space-6); }
+
+/* ---- Voice ---- */
+.voice-pair { display: grid; gap: var(--ds-space-4); grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); max-width: 860px; margin: 0 auto; }
+.voice-card { border-radius: var(--ds-radius-lg); padding: var(--ds-space-6); background: var(--ds-neutral-0); box-shadow: var(--ds-shadow-card); border: 1px solid var(--ds-neutral-75); }
+.voice-card .tag { display: inline-block; font-size: var(--ds-text-xs); font-weight: 600; padding: 4px 12px; border-radius: var(--ds-radius-pill); margin-bottom: var(--ds-space-4); }
+.voice-card.yes .tag { background: var(--ds-success-100); color: var(--ds-success-700); }
+.voice-card.no .tag { background: var(--ds-incident-100); color: var(--ds-incident-700); }
+.voice-card p { margin: 0; font-size: var(--ds-text-lg); font-weight: 500; line-height: 1.35; letter-spacing: -0.01em; }
+.voice-card.no p { text-decoration: line-through; text-decoration-thickness: 1.5px; text-decoration-color: var(--ds-incident-500); color: var(--ds-neutral-500); }
+
+/* ---- Swatches ---- */
+.swatch { border-radius: var(--ds-radius-md); overflow: hidden; background: var(--ds-neutral-0); box-shadow: var(--ds-shadow-card); border: 1px solid var(--ds-neutral-75); }
+.swatch .chipc { height: 76px; }
+.swatch .meta { padding: var(--ds-space-3) var(--ds-space-4); }
+.swatch .meta b { display: block; font-size: var(--ds-text-sm); font-weight: 600; }
+.swatch .meta code { font-family: var(--ds-mono); font-size: 11px; color: var(--ds-neutral-500); }
+.flag { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: var(--ds-violet-500); }
+.wash { height: 110px; }
+
+/* ---- Type ---- */
+.spec-stack { display: flex; flex-direction: column; gap: var(--ds-space-6); max-width: 720px; margin: 0 auto; text-align: center; }
+.spec-stack .s { display: flex; flex-direction: column; gap: 4px; }
+.spec-stack .s code { font-family: var(--ds-mono); font-size: 11px; color: var(--ds-neutral-500); letter-spacing: 0.06em; }
+.spec-stack .s p { margin: 0; }
+
+/* ---- Buttons (components.css verbatim) ---- */
+.ds-btn {
+  display: inline-flex; align-items: center; justify-content: center; border: 0;
+  border-radius: var(--ds-radius-pill); font-family: var(--ds-font); cursor: pointer;
+  transition: transform var(--ds-duration-fast) var(--ds-ease-out), box-shadow var(--ds-duration-fast) var(--ds-ease-out);
+  width: 100%;
+}
+.ds-btn:active { transform: scale(0.985); }
+.ds-btn--lg { min-height: 56px; font-size: var(--ds-text-lg); padding: 0 var(--ds-space-6); }
+.ds-btn--md { min-height: 48px; font-size: var(--ds-text-md); padding: 0 var(--ds-space-5); }
+.ds-btn--sm { min-height: 36px; font-size: var(--ds-text-sm); padding: 0 var(--ds-space-4); width: auto; }
+.ds-btn--primary { color: var(--ds-neutral-0); font-weight: 500; background: var(--ds-gradient-cta); box-shadow: var(--ds-shadow-cta); }
+.ds-btn--secondary { color: var(--ds-neutral-700); font-weight: 500; background: var(--ds-neutral-50); }
+.ds-btn--secondary-on-light { color: var(--ds-neutral-700); font-weight: 500; background: var(--ds-neutral-75); }
+.ds-btn--compact { color: var(--ds-neutral-0); font-weight: 600; background: var(--ds-blue-500); width: auto; }
+.ds-btn--ghost { color: var(--ds-neutral-700); font-weight: 400; background: transparent; }
+.ds-btn--white { background: var(--ds-neutral-0); color: var(--ds-neutral-900); font-weight: 600; box-shadow: none; }
+.ds-btn--disabled { color: var(--ds-neutral-300); font-weight: 500; background: var(--ds-neutral-50); pointer-events: none; }
+.ds-btn--incident {
+  color: var(--ds-neutral-0); font-weight: 500;
+  background: linear-gradient(90deg, #ff7a68 0%, var(--ds-incident-500) 55%, var(--ds-incident-700) 100%);
+  box-shadow: 0 8px 24px -4px rgba(240, 86, 77, 0.42);
+}
+
+/* ---- Icon buttons, lighting pill, chips, pills ---- */
+.ds-icon-btn { width: 40px; height: 40px; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--ds-neutral-50); color: var(--ds-neutral-900); }
+.ds-icon-btn--dark { background: var(--ds-black-35); color: var(--ds-neutral-0); }
+.ds-icon-btn--glass { background: var(--ds-white-20); color: var(--ds-neutral-0); backdrop-filter: blur(8px); }
+.ds-lighting { display: inline-flex; align-items: stretch; border-radius: var(--ds-radius-pill); overflow: hidden; background: var(--ds-black-35); font-size: var(--ds-text-sm); font-weight: 500; }
+.ds-lighting__icon { background: var(--ds-lime-500); padding: 7px 11px; display: flex; align-items: center; color: #2a221c; }
+.ds-lighting__label { padding: 7px 14px; color: var(--ds-neutral-0); display: flex; align-items: center; }
+.ds-chip-row { display: flex; gap: var(--ds-space-2); overflow: hidden; padding: 0 var(--ds-space-1); }
+.ds-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 var(--ds-space-4); border-radius: var(--ds-radius-pill); font-size: var(--ds-text-sm); font-weight: 500; white-space: nowrap; }
+.ds-chip--active { background: var(--ds-neutral-0); color: var(--ds-neutral-900); box-shadow: var(--ds-shadow-card); border: 1px solid var(--ds-neutral-75); }
+.ds-chip--inactive { background: var(--ds-black-35); color: var(--ds-white-90); }
+.ds-chip--tint { background: var(--ds-neutral-50); color: var(--ds-neutral-700); }
+.ds-chip__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ds-date-pill { padding: 6px var(--ds-space-4); border-radius: var(--ds-radius-pill); background: var(--ds-black-35); color: var(--ds-neutral-0); font-size: var(--ds-text-sm); font-weight: 500; white-space: nowrap; }
+.schip { font-size: var(--ds-text-xs); font-weight: 600; padding: 5px 12px; border-radius: var(--ds-radius-pill); background: var(--ds-neutral-50); color: var(--ds-neutral-700); }
+.schip.well { background: var(--ds-success-100); color: var(--ds-success-700); }
+.schip.attention { background: var(--ds-attention-100); color: var(--ds-attention-700); }
+.schip.accent { background: rgba(255,142,188,0.18); color: #c94a83; }
+
+/* ---- Today header, day tracker, nav, fab, search, quick cards ---- */
+.phone-demo { width: 300px; border-radius: var(--ds-radius-xl); overflow: hidden; position: relative; background: var(--ds-neutral-0); border: 1px solid var(--ds-neutral-75); box-shadow: var(--ds-shadow-card); margin: 0 auto; }
+.ds-today-hero { padding: var(--ds-space-5) var(--ds-space-4) var(--ds-space-4); background: var(--ds-gradient-morning); }
+.ds-today-greeting { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ds-space-3); margin-bottom: var(--ds-space-4); }
+.ds-today-greeting h2 { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.15; }
+.ds-today-greeting h2 em { font-style: normal; color: var(--ds-blue-400); font-weight: 600; }
+.ds-gift-btn { width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(83,104,255,0.12); color: var(--ds-blue-500); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ds-day-tracker { display: flex; gap: 6px; justify-content: space-between; }
+.ds-day-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--ds-neutral-300); border: 1.5px solid var(--ds-neutral-100); flex-shrink: 0; background: var(--ds-neutral-0); }
+.ds-day-dot--active { background: var(--ds-blue-500); border-color: var(--ds-blue-500); color: var(--ds-neutral-0); }
+.ds-day-dot--done { background: var(--ds-success-100); border-color: transparent; color: var(--ds-success-700); }
+.ds-search-bar { display: flex; align-items: center; gap: var(--ds-space-3); margin: var(--ds-space-4); padding: var(--ds-space-3) var(--ds-space-4); background: var(--ds-neutral-50); border-radius: var(--ds-radius-pill); color: var(--ds-neutral-500); font-size: 14px; }
+.ds-search-bar--active { background: var(--ds-neutral-0); border: 1px solid var(--ds-neutral-100); }
+.ds-search-bar__query { flex: 1; color: var(--ds-neutral-900); font-weight: 500; }
+.ds-search-bar__cancel { color: var(--ds-blue-500); font-size: 13px; }
+.ds-quick-cards { display: flex; gap: var(--ds-space-2); padding: 0 var(--ds-space-4) var(--ds-space-4); }
+.ds-quick-card { flex: 1; min-width: 0; padding: var(--ds-space-3); background: var(--ds-neutral-0); border: 1px solid var(--ds-neutral-75); border-radius: var(--ds-radius-lg); font-size: 12px; font-weight: 600; display: flex; flex-direction: column; gap: 8px; }
+.ds-quick-card__row { display: flex; align-items: center; gap: 8px; }
+.ds-quick-card__thumbs { display: flex; flex-shrink: 0; }
+.ds-quick-card__thumb { width: 28px; height: 28px; border-radius: 6px; border: 2px solid var(--ds-neutral-0); margin-left: -8px; background: linear-gradient(180deg, #e8f0ff, #dce6ff); }
+.ds-quick-card__thumb:first-child { margin-left: 0; }
+.ds-quick-card__thumb--alt { background: linear-gradient(180deg, #ffe8e0, #ffd0c0); }
+.ds-quick-card__count { margin-left: auto; font-size: 10px; font-weight: 700; color: var(--ds-neutral-500); }
+.ds-quick-card__icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.ds-quick-card__icon--a { background: var(--ds-lilac-100); color: var(--ds-violet-500); }
+.ds-quick-card__icon--b { background: var(--ds-success-100); color: var(--ds-success-700); }
+.ds-bottom-nav { display: flex; justify-content: space-around; align-items: flex-end; padding: 10px 4px 14px; background: var(--ds-neutral-0); border-top: 1px solid var(--ds-neutral-75); }
+.ds-bottom-nav__item { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 500; color: var(--ds-neutral-500); min-width: 52px; }
+.ds-bottom-nav__item--active { color: var(--ds-neutral-900); font-weight: 600; }
+.ds-bottom-nav__item--active .ds-bottom-nav__icon { color: var(--ds-pink-500); }
+.ds-bottom-nav__icon { width: 22px; height: 22px; color: var(--ds-neutral-500); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ds-fab { position: absolute; right: var(--ds-space-4); bottom: 76px; width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--ds-neutral-0); box-shadow: 0 8px 28px -6px rgba(83,104,255,0.35); color: var(--ds-violet-500); display: flex; align-items: center; justify-content: center; z-index: 2; cursor: pointer; }
+.ds-today-body { padding: var(--ds-space-4) var(--ds-space-4) var(--ds-space-6); display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.ds-today-status { display: flex; align-items: center; gap: 10px; padding: var(--ds-space-3) var(--ds-space-4); background: var(--ds-success-100); border-radius: var(--ds-radius-lg); }
+.ds-today-status__dot { flex: 0 0 9px; width: 9px; height: 9px; border-radius: 50%; background: var(--ds-success); box-shadow: 0 0 0 4px rgba(136,192,87,0.2); }
+.ds-today-status b { display: block; font-size: 14px; font-weight: 700; color: var(--ds-success-700); }
+.ds-today-status span { font-size: 12px; color: var(--ds-neutral-700); line-height: 1.35; }
+.ds-today-label { margin: var(--ds-space-2) 0 0; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ds-neutral-500); }
+.ds-today-row { display: flex; align-items: center; gap: var(--ds-space-3); padding: 10px var(--ds-space-3); background: var(--ds-neutral-50); border-radius: var(--ds-radius-md); }
+.ds-today-row__icon { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; }
+.ds-today-row__body { flex: 1; min-width: 0; }
+.ds-today-row__body b { display: block; font-size: 13px; font-weight: 600; }
+.ds-today-row__body span { font-size: 11px; color: var(--ds-neutral-500); }
+.ds-today-row time { font-size: 11px; color: var(--ds-neutral-300); font-weight: 500; }
+
+/* ---- Search rows, tabs, shelf rows ---- */
+.ds-search-row { display: flex; align-items: center; gap: var(--ds-space-3); padding: var(--ds-space-3); margin-bottom: var(--ds-space-2); background: var(--ds-neutral-0); border-radius: var(--ds-radius-lg); border: 1px solid var(--ds-neutral-75); }
+.ds-search-row__thumb { width: 44px; height: 44px; border-radius: var(--ds-radius-sm); background: linear-gradient(180deg, #e8f0ff, #dce6ff); flex-shrink: 0; }
+.ds-search-row__info { flex: 1; min-width: 0; }
+.ds-search-row__title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.ds-search-row__brand { font-size: 12px; color: var(--ds-neutral-500); }
+.ds-shelf-tabs { display: flex; gap: var(--ds-space-2); margin-bottom: var(--ds-space-4); background: var(--ds-neutral-50); border-radius: var(--ds-radius-pill); padding: 4px; }
+.ds-shelf-tab { flex: 1; text-align: center; padding: 8px; border-radius: var(--ds-radius-pill); font-size: 13px; font-weight: 500; color: var(--ds-neutral-500); }
+.ds-shelf-tab--active { background: var(--ds-neutral-0); color: var(--ds-neutral-900); box-shadow: var(--ds-shadow-card); }
+.ds-shelf-row { display: flex; align-items: center; gap: var(--ds-space-3); padding: var(--ds-space-3); background: var(--ds-neutral-50); border-radius: var(--ds-radius-lg); margin-bottom: var(--ds-space-2); }
+.ds-shelf-row__thumb { width: 44px; height: 44px; border-radius: var(--ds-radius-sm); background: linear-gradient(180deg, #fff8e8, #ffe8c8); flex-shrink: 0; }
+.ds-shelf-row__badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: var(--ds-radius-pill); color: var(--ds-neutral-0); background: #22c55e; margin-bottom: 3px; }
+
+/* ---- Section header + product cards ---- */
+.ds-section-header { padding: 0 0 var(--ds-space-3); }
+.ds-section-header__eyebrow { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ds-violet-500); }
+.ds-section-header__title { margin: 0 0 4px; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; }
+.ds-section-header__subtitle { margin: 0; font-size: 13px; line-height: 1.4; color: var(--ds-neutral-500); }
+.ds-carousel-row { display: flex; gap: var(--ds-space-3); overflow-x: auto; padding-bottom: 4px; }
+.ds-product-card { flex: 0 0 200px; background: var(--ds-neutral-0); border-radius: var(--ds-radius-lg); border: 1px solid var(--ds-neutral-75); padding: var(--ds-space-3); box-shadow: var(--ds-shadow-card); }
+.ds-product-card__badges { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: var(--ds-space-2); }
+.ds-product-card__badge { font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: var(--ds-radius-pill); color: var(--ds-neutral-0); }
+.ds-product-card__badge--fit { background: #22c55e; }
+.ds-product-card__category { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; font-size: 9px; font-weight: 500; color: var(--ds-neutral-500); }
+.ds-product-card__img { height: 100px; border-radius: var(--ds-radius-sm); background: linear-gradient(180deg, #f0f4ff, #dce6ff); margin-bottom: var(--ds-space-2); }
+.ds-product-card__meta { font-size: 10px; color: var(--ds-neutral-500); margin-bottom: 4px; }
+.ds-product-card__title { font-size: 13px; font-weight: 600; line-height: 1.3; margin-bottom: var(--ds-space-2); }
+.ds-product-card__price { display: inline-flex; align-items: center; gap: 4px; background: #fcd34d; border: 0; border-radius: var(--ds-radius-pill); padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+/* ---- Analysis item, strengths, profile, badges ---- */
+.ds-analysis { display: flex; gap: var(--ds-space-4); margin-bottom: var(--ds-space-5); }
+.ds-analysis:last-child { margin-bottom: 0; }
+.ds-analysis__thumb { width: 56px; height: 56px; border-radius: var(--ds-radius-sm); flex-shrink: 0; }
+.ds-analysis__thumb--kitchen { background: linear-gradient(145deg, #ffe3c9, #f4b988); }
+.ds-analysis__thumb--stairs { background: linear-gradient(145deg, #e2e6f7, #b9c3ea); }
+.ds-analysis__thumb--bathroom { background: linear-gradient(145deg, #d8f0f4, #a8d8e2); }
+.ds-analysis__area { font-size: var(--ds-text-xs); color: var(--ds-violet-500); font-weight: 500; margin-bottom: 3px; }
+.ds-analysis__heading { margin: 0 0 var(--ds-space-2); font-size: var(--ds-text-md); font-weight: 600; letter-spacing: -0.01em; }
+.ds-analysis__desc { background: var(--ds-neutral-50); border-radius: var(--ds-radius-md); padding: 10px var(--ds-space-3); font-size: var(--ds-text-sm); line-height: 1.4; color: var(--ds-neutral-700); }
+.ds-strengths { display: flex; gap: var(--ds-space-3); flex-wrap: wrap; }
+.ds-strength { flex: 1 0 188px; background: var(--ds-neutral-50); border-radius: var(--ds-radius-lg); padding: var(--ds-space-4); }
+.ds-strength__title { margin: 0 0 var(--ds-space-2); font-size: var(--ds-text-md); font-weight: 600; }
+.ds-strength__body { margin: 0; font-size: var(--ds-text-xs); line-height: 1.45; color: var(--ds-neutral-700); }
+.ds-profile__row { display: flex; gap: var(--ds-space-3); }
+.ds-profile__item { flex: 1; text-align: center; }
+.ds-profile__icon { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px; background: var(--ds-lilac-100); display: flex; align-items: center; justify-content: center; color: var(--ds-violet-500); }
+.ds-profile__label { display: block; font-size: 13px; font-weight: 600; }
+.ds-profile__caption { display: block; font-size: 11px; color: var(--ds-neutral-500); }
+.ds-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--ds-radius-pill); font-size: 13px; font-weight: 600; }
+.ds-badge--success { background: var(--ds-success-100); color: var(--ds-success-700); }
+.ds-validation-imgs { display: flex; gap: var(--ds-space-2); margin-bottom: var(--ds-space-3); }
+.ds-alignment { height: 6px; border-radius: 3px; background: var(--ds-neutral-100); margin-top: var(--ds-space-3); overflow: hidden; }
+.ds-alignment__fill { height: 100%; width: 86%; border-radius: 3px; background: var(--ds-success); }
+
+/* ---- Recommendations, assistant ---- */
+.ds-rec-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-4); }
+.ds-rec { display: flex; gap: var(--ds-space-3); align-items: flex-start; }
+.ds-rec__num { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; background: var(--ds-lilac-100); color: var(--ds-violet-500); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.ds-rec__step { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+.ds-rec__body { margin: 0; font-size: 13px; color: var(--ds-neutral-700); line-height: 1.4; }
+.ds-assistant { display: flex; gap: var(--ds-space-3); background: var(--ds-neutral-50); border-radius: var(--ds-radius-lg); padding: var(--ds-space-4); }
+.ds-assistant__avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--ds-neutral-0); box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.ds-assistant__label { font-size: 11px; color: var(--ds-neutral-500); margin-bottom: 4px; }
+.ds-assistant__text { margin: 0; font-size: var(--ds-text-sm); line-height: 1.45; color: var(--ds-neutral-700); }
+.ds-assistant-modal { max-width: 380px; margin: 0 auto; display: flex; flex-direction: column; background: var(--ds-neutral-0); border-radius: var(--ds-radius-xl); border: 1px solid var(--ds-neutral-75); box-shadow: var(--ds-shadow-card); overflow: hidden; }
+.ds-assistant-modal__header { display: flex; align-items: center; justify-content: center; padding: var(--ds-space-4); position: relative; border-bottom: 1px solid var(--ds-neutral-75); }
+.ds-assistant-modal__header h2 { margin: 0; font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.ds-assistant-modal__header .ds-icon-btn { position: absolute; right: var(--ds-space-4); }
+.ds-assistant-modal__body { padding: var(--ds-space-4); }
+.ds-assistant-bubble { background: var(--ds-neutral-0); border: 1px solid var(--ds-neutral-75); border-radius: var(--ds-radius-lg); padding: var(--ds-space-4); font-size: 14px; line-height: 1.5; color: var(--ds-neutral-700); margin-bottom: var(--ds-space-4); box-shadow: var(--ds-shadow-card); }
+.ds-suggestion-chip { display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-3); padding: var(--ds-space-3) var(--ds-space-4); background: #f0edff; border-radius: var(--ds-radius-pill); font-size: 13px; color: var(--ds-violet-500); margin-bottom: var(--ds-space-2); margin-left: auto; max-width: 92%; }
+.ds-assistant-input { display: flex; align-items: center; gap: var(--ds-space-3); margin: var(--ds-space-4); padding: var(--ds-space-3) var(--ds-space-4); border: 1px solid var(--ds-neutral-100); border-radius: var(--ds-radius-pill); background: var(--ds-neutral-0); }
+.ds-assistant-input span { flex: 1; font-size: 14px; color: var(--ds-neutral-300); }
+
+/* ---- Lock screen ---- */
+.lockscreen {
+  width: 290px; height: 380px; margin: 0 auto; border-radius: var(--ds-radius-phone);
+  background:
+    radial-gradient(120% 90% at 20% 15%, #ffd9e8 0%, transparent 55%),
+    radial-gradient(130% 100% at 85% 30%, #a9c2ff 0%, transparent 60%),
+    radial-gradient(120% 120% at 50% 95%, #c4b0f5 0%, transparent 65%),
+    linear-gradient(180deg, #aac4f4, #d9c2ec);
+  position: relative; overflow: hidden; box-shadow: var(--ds-shadow-phone);
+}
+.lockscreen .time { text-align: center; margin-top: 56px; color: var(--ds-white-90); }
+.lockscreen .time .d { font-size: 15px; font-weight: 600; }
+.lockscreen .time .t { font-size: 62px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+.ds-notif-card { position: absolute; left: 14px; right: 14px; bottom: 20px; background: var(--ds-white-75); backdrop-filter: blur(14px); border-radius: var(--ds-radius-lg); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; color: var(--ds-neutral-900); }
+.ds-notif-card__icon { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--ds-gradient-cta); color: #fff; }
+.ds-notif-card b { font-size: 14px; display: block; }
+.ds-notif-card p { font-size: 13px; margin: 0; line-height: 1.35; color: var(--ds-neutral-700); }
+.ds-notif-card time { font-size: 11px; color: var(--ds-neutral-500); position: absolute; top: 12px; right: 14px; }
+
+/* ---- Status, alerts, timeline, contacts ---- */
+.status-card { display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.status-card .row { display: flex; align-items: center; gap: 10px; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ds-success); box-shadow: 0 0 0 4px var(--ds-success-100); }
+.status-dot.offline { background: var(--ds-attention-500); box-shadow: 0 0 0 4px var(--ds-attention-100); }
+.status-card h4 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.status-card p { margin: 0; color: var(--ds-neutral-700); font-size: 13px; line-height: 1.45; }
+.chipline { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; }
+.alert { border-radius: var(--ds-radius-lg); padding: var(--ds-space-4); display: flex; gap: var(--ds-space-3); align-items: flex-start; background: var(--ds-neutral-0); box-shadow: var(--ds-shadow-card); border: 1px solid var(--ds-neutral-75); }
+.alert__icon { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.alert h5 { margin: 2px 0 2px; font-size: var(--ds-text-md); font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+.alert p { margin: 0; font-size: 13px; line-height: 1.45; color: var(--ds-neutral-700); }
+.alert.incident .alert__icon { background: var(--ds-incident-100); color: var(--ds-incident-700); }
+.alert.attention .alert__icon { background: var(--ds-attention-100); color: var(--ds-attention-700); }
+.alert.well .alert__icon { background: var(--ds-success-100); color: var(--ds-success-700); }
+.timeline { list-style: none; margin: 0 auto; padding: 0; max-width: 560px; display: flex; flex-direction: column; gap: var(--ds-space-2); }
+.timeline li { display: flex; align-items: center; gap: var(--ds-space-3); padding: var(--ds-space-3); background: var(--ds-neutral-50); border-radius: var(--ds-radius-lg); }
+.timeline .node { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--ds-neutral-0); color: var(--ds-violet-500); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.timeline .node .ds-icon { width: 16px; height: 16px; }
+.timeline .node.incident { color: var(--ds-incident-500); }
+.timeline .node.well { color: var(--ds-success-700); }
+.timeline .body { flex: 1; min-width: 0; }
+.timeline .body b { display: block; font-weight: 600; font-size: var(--ds-text-sm); margin-bottom: 2px; }
+.timeline .body span { color: var(--ds-neutral-500); font-size: 12px; line-height: 1.4; display: block; }
+.timeline time { font-size: 11px; color: var(--ds-neutral-300); font-weight: 500; align-self: flex-start; margin-top: 2px; white-space: nowrap; }
+.contact-list { display: flex; flex-direction: column; gap: var(--ds-space-3); max-width: 520px; margin: 0 auto; }
+.contact { display: flex; align-items: center; gap: var(--ds-space-4); padding: var(--ds-space-4) var(--ds-space-5); background: var(--ds-neutral-0); border-radius: var(--ds-radius-md); box-shadow: var(--ds-shadow-card); border: 1px solid var(--ds-neutral-75); }
+.avatar { flex: 0 0 46px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: var(--ds-text-sm); background: rgba(83,104,255,0.12); color: var(--ds-blue-500); }
+.contact .who { flex: 1; min-width: 0; }
+.contact .who b { display: block; font-size: var(--ds-text-md); font-weight: 600; }
+.contact .who span { color: var(--ds-neutral-700); font-size: 13px; }
+.drag { color: var(--ds-neutral-300); cursor: grab; font-size: 17px; user-select: none; }
+
+/* ---- Forms ---- */
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field label { font-size: var(--ds-text-md); font-weight: 600; }
+.field .hint { font-size: var(--ds-text-xs); color: var(--ds-neutral-500); }
+.input { font-family: var(--ds-font); font-size: var(--ds-text-md); padding: 15px 16px; border-radius: var(--ds-radius-sm); border: 1.5px solid var(--ds-neutral-200); background: var(--ds-neutral-0); color: var(--ds-neutral-900); width: 100%; transition: border-color var(--ds-duration-fast) var(--ds-ease-out), box-shadow var(--ds-duration-fast) var(--ds-ease-out); }
+.input:focus { border-color: var(--ds-blue-500); outline: none; box-shadow: 0 0 0 4px rgba(83,104,255,0.12); }
+.quiet-hours { display: flex; align-items: center; gap: var(--ds-space-3); }
+.quiet-hours .input { width: 112px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ---- Steps, sheet, story, empty ---- */
+.steps { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+.step-row { display: flex; gap: var(--ds-space-4); align-items: center; }
+.step-row .n { flex: 0 0 28px; width: 28px; height: 28px; border-radius: var(--ds-radius-pill); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: var(--ds-text-sm); background: var(--ds-pink-500); color: var(--ds-neutral-0); }
+.step-row.done .n { background: var(--ds-success); }
+.step-row.now .n { background: var(--ds-blue-500); box-shadow: 0 0 0 5px rgba(83,104,255,0.12); }
+.step-row.todo .n { background: var(--ds-neutral-50); color: var(--ds-neutral-500); }
+.step-row p { margin: 0; font-size: var(--ds-text-lg); font-weight: 500; }
+.step-row.todo p { color: var(--ds-neutral-500); }
+.ds-sheet { max-width: 350px; margin: 0 auto; background: var(--ds-neutral-0); border-radius: 32px 32px 0 0; padding: 28px var(--ds-space-6) 32px; box-shadow: var(--ds-shadow-card); text-align: center; border: 1px solid var(--ds-neutral-75); border-bottom: none; }
+.ds-sheet__handle { width: 44px; height: 5px; border-radius: var(--ds-radius-pill); background: var(--ds-neutral-200); margin: 0 auto var(--ds-space-5); }
+.ds-sheet__title { margin: 0 0 28px; font-size: 22px; font-weight: 600; text-align: center; line-height: 1.25; letter-spacing: -0.01em; text-wrap: balance; }
+.ds-sheet .ds-step { margin: 0 auto var(--ds-space-5); }
+.ds-story { max-width: 300px; margin: 0 auto; border-radius: var(--ds-radius-xl); overflow: hidden; background: var(--ds-gradient-evening); padding: var(--ds-space-4); position: relative; border: 1px solid var(--ds-neutral-75); box-shadow: var(--ds-shadow-card); }
+.ds-story-segments { display: flex; gap: 4px; margin-bottom: var(--ds-space-3); }
+.ds-story-segments__bar { flex: 1; height: 3px; border-radius: 2px; background: rgba(29,29,35,0.15); }
+.ds-story-segments__bar--done, .ds-story-segments__bar--active { background: var(--ds-blue-500); }
+.ds-story-pill { display: inline-block; padding: 5px 12px; border-radius: var(--ds-radius-pill); background: rgba(29,29,35,0.08); color: var(--ds-neutral-700); font-size: 11px; font-weight: 500; margin-bottom: var(--ds-space-4); }
+.ds-story-headline { margin: 0 0 var(--ds-space-3); font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+.ds-story-caption { margin: 0; font-size: 14px; color: var(--ds-neutral-700); }
+.ds-story .ds-orb { width: 88px; height: 88px; margin: var(--ds-space-5) auto; }
+.empty { text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-3); padding: var(--ds-space-8) var(--ds-space-4) 0; }
+.empty .ds-orb { width: 84px; height: 84px; margin-bottom: 0; }
+.empty h4 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.empty p { color: var(--ds-neutral-700); margin: 0; max-width: 36ch; }
+
+/* ---- Dark guided stage, video, scan ring, capture, progress ---- */
+.dark-stage { background: var(--ds-gradient-camera); border-radius: var(--ds-radius-xl); padding: var(--ds-space-10) var(--ds-space-6); color: var(--ds-white-90); display: flex; flex-direction: column; gap: var(--ds-space-8); align-items: center; box-shadow: var(--ds-shadow-phone); }
+.dark-stage h3 { font-size: 22px; font-weight: 600; margin: 0; text-align: center; letter-spacing: -0.01em; }
+.dark-stage .note { color: var(--ds-white-55); font-size: var(--ds-text-sm); margin: 0; text-align: center; max-width: 46ch; }
+.stage-row { display: flex; gap: var(--ds-space-8); flex-wrap: wrap; justify-content: center; align-items: center; }
+.cam { width: 236px; height: 380px; border-radius: var(--ds-radius-phone); background: #17130f; position: relative; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; flex: 0 0 auto; }
+.cam .controls { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: center; z-index: 3; }
+.tickring { position: absolute; inset: 34px 22px 92px; z-index: 1; }
+.tickring .ring, .tickring .ring-fill {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(currentColor 0deg 1.6deg, transparent 1.6deg 4.5deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 86%, #000 87%);
+          mask: radial-gradient(closest-side, transparent 86%, #000 87%);
+}
+.tickring .ring { color: var(--ds-white-75); }
+@property --sweep { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.tickring .ring-fill {
+  color: var(--ds-mint-500); animation: sweep 5s linear infinite;
+  -webkit-mask:
+    radial-gradient(closest-side, transparent 86%, #000 87%),
+    conic-gradient(#000 var(--sweep), transparent var(--sweep));
+  -webkit-mask-composite: source-in;
+          mask:
+    radial-gradient(closest-side, transparent 86%, #000 87%),
+    conic-gradient(#000 var(--sweep), transparent var(--sweep));
+          mask-composite: intersect;
+}
+@keyframes sweep { from { --sweep: 0deg; } to { --sweep: 360deg; } }
+.cam .caption { position: absolute; left: 14px; right: 14px; bottom: 16px; z-index: 2; background: rgba(0,0,0,0.35); backdrop-filter: blur(8px); border-radius: var(--ds-radius-md); padding: 12px 14px; text-align: center; font-weight: 600; font-size: 14px; line-height: 1.3; }
+.ds-capture { width: 84px; height: 84px; border-radius: 50%; background: var(--ds-neutral-0); color: var(--ds-neutral-900); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+.ds-capture__wrap { position: relative; display: inline-flex; }
+.ds-capture__ripple, .ds-capture__ripple::before, .ds-capture__ripple::after { content: ""; position: absolute; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.14); }
+.ds-capture__ripple { inset: -18px; }
+.ds-capture__ripple::before { inset: -18px; border-color: rgba(255,255,255,0.08); }
+.ds-capture__ripple::after { inset: -36px; border-color: rgba(255,255,255,0.05); }
+.ds-progress-steps { display: flex; flex-direction: column; gap: var(--ds-space-5); width: 100%; max-width: 340px; }
+.ds-progress-step { display: flex; flex-direction: column; gap: 10px; }
+.ds-progress-step__label { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--ds-white-90); }
+.ds-progress-step__check { width: 22px; height: 22px; border-radius: 50%; background: var(--ds-neutral-0); color: var(--ds-neutral-900); display: flex; align-items: center; justify-content: center; }
+.ds-progress-bar { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.14); overflow: hidden; }
+.ds-progress-bar__fill { height: 100%; border-radius: 6px; background: var(--ds-neutral-0); }
+.ds-progress-bar__fill--full { width: 100%; }
+.ds-progress-bar__fill--partial { width: 18%; }
+.ds-video { width: 236px; border-radius: var(--ds-radius-lg); overflow: hidden; background: #17130f; border: 1px solid rgba(255,255,255,0.08); }
+.ds-video-header { display: flex; justify-content: space-between; align-items: flex-start; padding: var(--ds-space-4); }
+.ds-video-header__title { font-size: 15px; font-weight: 700; margin: 0 0 2px; }
+.ds-video-header__step { font-size: 12px; opacity: 0.75; margin: 0; }
+.ds-video-stage { height: 150px; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, #2c261f, #17130f); }
+.ds-video-play-btn { position: relative; width: 64px; height: 64px; border-radius: 50%; border: 0; background: var(--ds-neutral-0); color: var(--ds-neutral-900); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 24px rgba(0,0,0,0.25); cursor: pointer; }
+.ds-video-play-btn::before { content: ''; position: absolute; inset: -16px; border-radius: 50%; background: rgba(255,255,255,0.12); z-index: -1; }
+.ds-scrubber { padding: var(--ds-space-3) var(--ds-space-4) var(--ds-space-4); }
+.ds-scrubber__bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); position: relative; }
+.ds-scrubber__bar::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 38%; border-radius: 2px; background: var(--ds-neutral-0); }
+.ds-scrubber__times { display: flex; justify-content: space-between; font-size: 10px; color: var(--ds-white-55); margin-top: 6px; }
+
+/* ---- Home dashboard (dark, live-monitoring) ---- */
+.home { width: 320px; margin: 0 auto; border-radius: 36px; overflow: hidden; background: #0d0d12; border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 30px 60px -18px rgba(0,0,0,0.7); padding: 22px 16px 16px; color: #f2f1f4; display: flex; flex-direction: column; gap: 14px; }
+.home__head h3 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.home__head p { margin: 3px 0 0; font-size: 13px; color: rgba(242,241,244,0.45); }
+.home-card { background: #17171e; border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; }
+.home-room { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.home-room .av { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #e8cbb0, #a97f60); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.14); }
+.home-room .who { flex: 1; min-width: 0; }
+.home-room .who b { display: block; font-size: 15px; font-weight: 600; }
+.home-room .who span { font-size: 12px; color: rgba(242,241,244,0.5); }
+.home-calm { display: inline-flex; align-items: center; gap: 6px; background: rgba(79,190,108,0.16); color: #86dd9f; font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: var(--ds-radius-pill); white-space: nowrap; }
+.home-calm .d { width: 7px; height: 7px; border-radius: 50%; background: #4fbe6c; }
+.home-live { position: relative; border-radius: 20px; overflow: hidden; height: 172px; }
+.home-live__feed { position: absolute; inset: 0; background: radial-gradient(55% 45% at 82% 12%, rgba(255,232,196,0.34), transparent 60%), linear-gradient(165deg, #4b4436 0%, #322c24 55%, #221e19 100%); }
+.home-live__couch { position: absolute; left: -6%; right: -6%; bottom: -4%; height: 46%; border-radius: 40px 40px 0 0; background: linear-gradient(180deg, #6f6a7d, #4a4656); box-shadow: inset 0 6px 18px rgba(0,0,0,0.25); }
+.home-live__p { position: absolute; bottom: 16%; width: 66px; height: 96px; }
+.home-live__p::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 34px; height: 34px; border-radius: 50%; }
+.home-live__p::after { content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 66px; height: 64px; border-radius: 34px 34px 14px 14px; }
+.home-live__p--a { left: 20%; }
+.home-live__p--a::before { background: linear-gradient(160deg, #d8d3dd, #b9b3c4); }
+.home-live__p--a::after { background: linear-gradient(160deg, #8f8aa0, #6d6880); }
+.home-live__p--b { right: 20%; }
+.home-live__p--b::before { background: linear-gradient(160deg, #e6cbb2, #c69f80); }
+.home-live__p--b::after { background: linear-gradient(160deg, #9c8f83, #746a60); }
+.home-live__pill { position: absolute; top: 12px; left: 12px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); padding: 5px 10px; border-radius: var(--ds-radius-pill); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; }
+.home-live__pill .d { width: 6px; height: 6px; border-radius: 50%; background: var(--ds-incident-500); animation: livepulse 1.4s ease-in-out infinite; }
+.home-facetag { position: absolute; z-index: 2; bottom: 40%; right: 16%; }
+.home-facetag__box { width: 52px; height: 52px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.85); box-shadow: 0 0 0 3px rgba(0,0,0,0.15); }
+.home-facetag__label { position: absolute; left: 50%; bottom: -12px; transform: translateX(-50%); background: #000; color: #fff; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: var(--ds-radius-pill); white-space: nowrap; }
+.home-stats { display: flex; gap: 10px; }
+.home-stat { flex: 1; background: #17171e; border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 13px 12px; }
+.home-stat__icon { color: rgba(242,241,244,0.45); margin-bottom: 12px; }
+.home-stat__icon .ds-icon { width: 17px; height: 17px; }
+.home-stat__val { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; line-height: 1; }
+.home-stat__val small { font-size: 11px; font-weight: 600; color: rgba(242,241,244,0.5); }
+.home-stat__label { font-size: 11px; color: rgba(242,241,244,0.4); margin-top: 4px; }
+.home-today__head { display: flex; justify-content: space-between; align-items: center; padding: 14px 14px 6px; }
+.home-today__head b { font-size: 16px; font-weight: 700; }
+.home-today__live { font-size: 12px; color: #86dd9f; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+.home-today__live .d { width: 6px; height: 6px; border-radius: 50%; background: #4fbe6c; animation: livepulse 1.6s ease-in-out infinite; }
+.home-trow { display: flex; align-items: center; gap: 12px; padding: 9px 14px; }
+.home-trow .ic { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.06); display: grid; place-items: center; color: rgba(242,241,244,0.7); }
+.home-trow .ic .ds-icon { width: 15px; height: 15px; }
+.home-trow .tx { flex: 1; min-width: 0; }
+.home-trow .tx b { display: block; font-size: 13px; font-weight: 600; }
+.home-trow .tx span { font-size: 11px; color: rgba(242,241,244,0.4); }
+.home-trow time { font-size: 12px; color: rgba(242,241,244,0.55); font-weight: 600; }
+.home-ask { display: flex; align-items: center; gap: 10px; background: #17171e; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--ds-radius-pill); padding: 11px 12px 11px 16px; }
+.home-ask span { flex: 1; font-size: 13px; color: rgba(242,241,244,0.42); }
+.home-ask__orb { width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #a9b6f8, #6b6bf2 60%, #4644c9); box-shadow: 0 0 14px rgba(107,107,242,0.5); }
+.live-watch { position: absolute; bottom: 12px; right: 12px; z-index: 3; display: inline-flex; align-items: center; gap: 4px; border: 0; cursor: pointer; background: rgba(255,255,255,0.92); color: var(--ds-neutral-900); font-family: var(--ds-font); font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: var(--ds-radius-pill); backdrop-filter: blur(6px); }
+
+/* ---- Live check-in (E2EE video) ---- */
+.live { width: 240px; height: 420px; border-radius: var(--ds-radius-phone); position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); flex: 0 0 auto; box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6); }
+.live__feed {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(60% 45% at 72% 22%, rgba(255,236,200,0.28), transparent 60%),
+    radial-gradient(90% 70% at 50% 120%, rgba(120,110,150,0.25), transparent 70%),
+    linear-gradient(165deg, #3d4150 0%, #262932 60%, #1b1d24 100%);
+}
+.live__person { position: absolute; left: 50%; bottom: 128px; transform: translateX(-50%); width: 116px; height: 150px; }
+.live__person::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(160deg, #6a6152, #4a4438); box-shadow: -10px -6px 18px rgba(255,236,200,0.12); }
+.live__person::after { content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 116px; height: 100px; border-radius: 60px 60px 24px 24px; background: linear-gradient(160deg, #5b5566, #3b3947); box-shadow: -12px -8px 22px rgba(255,236,200,0.10); }
+.live__scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 22%, transparent 62%, rgba(0,0,0,0.5) 100%); }
+.live__top { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; z-index: 3; }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.42); backdrop-filter: blur(8px); padding: 6px 11px; border-radius: var(--ds-radius-pill); font-size: 11px; font-weight: 600; color: #fff; }
+.live-pill__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ds-incident-500); animation: livepulse 1.4s ease-in-out infinite; }
+@keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+.live-e2ee { display: inline-flex; align-items: center; gap: 6px; background: rgba(79,190,108,0.22); backdrop-filter: blur(8px); padding: 6px 11px; border-radius: var(--ds-radius-pill); font-size: 11px; font-weight: 600; color: #bff0cd; }
+.live-e2ee .ds-icon { width: 13px; height: 13px; }
+.live__name { position: absolute; left: 14px; bottom: 128px; z-index: 3; display: inline-flex; align-items: center; gap: 7px; background: rgba(0,0,0,0.42); backdrop-filter: blur(8px); padding: 6px 12px 6px 8px; border-radius: var(--ds-radius-pill); color: #fff; font-size: 12px; font-weight: 600; }
+.live__name .av { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, var(--ds-blue-400), var(--ds-violet-500)); display: grid; place-items: center; font-size: 9px; }
+.live__caption { position: absolute; left: 14px; right: 14px; bottom: 92px; z-index: 3; text-align: center; font-size: 11px; color: rgba(255,255,255,0.72); }
+.live__controls { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; align-items: center; justify-content: center; gap: 18px; z-index: 3; }
+.live-ctrl { width: 50px; height: 50px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; background: rgba(255,255,255,0.16); backdrop-filter: blur(8px); color: #fff; }
+.live-ctrl__label { position: absolute; }
+.live-ctrl--end { width: 62px; height: 62px; background: var(--ds-incident-500); box-shadow: 0 8px 24px -4px rgba(240,86,77,0.5); }
+.live-ctrl--end .ds-icon { transform: rotate(135deg); }
+.live-stack { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.live-stack span { font-size: 11px; color: rgba(255,255,255,0.6); }
+
+/* ---- Glow states ---- */
+.glow-row { display: flex; gap: var(--ds-space-8); flex-wrap: wrap; justify-content: center; }
+.glow-demo { display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-3); width: 150px; }
+.phone { width: 130px; height: 262px; border-radius: 32px; background: #17130f; position: relative; border: 1px solid rgba(255,255,255,0.08); }
+.phone::after { content: ""; position: absolute; inset: 0; border-radius: 32px; pointer-events: none; border: 3px solid transparent; }
+.phone .clock { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ds-white-55); font-size: 27px; font-weight: 600; }
+.phone.idle::after { border-color: rgba(255,255,255,0.06); }
+.phone.listening::after { border-color: var(--glow-listening); box-shadow: 0 0 26px var(--glow-listening), inset 0 0 18px rgba(125,163,255,0.55); animation: breathe 2.4s ease-in-out infinite; }
+.phone.thinking { overflow: hidden; }
+.phone.thinking::before { content: ""; position: absolute; inset: -40%; background: conic-gradient(from 0deg, transparent 0 70%, var(--glow-thinking) 85%, transparent 100%); animation: spinz 2.8s linear infinite; }
+.phone.thinking .mask { position: absolute; inset: 3px; border-radius: 29px; background: #17130f; }
+.phone.speaking::after { border-color: var(--glow-speaking); box-shadow: 0 0 26px var(--glow-speaking), inset 0 0 18px rgba(255,179,127,0.55); animation: pulse 0.9s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes spinz { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 30% { opacity: 0.55; } 60% { opacity: 0.9; } 80% { opacity: 0.6; } }
+@media (prefers-reduced-motion: reduce) {
+  .phone::after, .phone.thinking::before, .tickring .ring-fill, .ds-orb__eye { animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+.glow-demo b { font-size: var(--ds-text-md); font-weight: 600; color: var(--ds-white-90); }
+.glow-demo span { font-size: var(--ds-text-xs); color: var(--ds-white-55); text-align: center; }
+
+/* ---- Tokens ---- */
+table.tokens { width: 100%; border-collapse: collapse; font-size: var(--ds-text-sm); }
+table.tokens th, table.tokens td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--ds-neutral-100); }
+table.tokens th { font-family: var(--ds-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ds-neutral-500); }
+table.tokens code { font-family: var(--ds-mono); font-size: 12.5px; }
+.tokens-scroll { overflow-x: auto; }
+.proposed { color: var(--ds-violet-500); font-weight: 700; font-size: 10px; letter-spacing: 0.05em; }
+footer { color: var(--ds-neutral-500); font-size: var(--ds-text-sm); padding-top: var(--ds-space-8); border-top: 1px solid var(--ds-neutral-100); text-align: center; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-3A8 8 0 1 1 21 12z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.8-9.5-9A5.4 5.4 0 0 1 12 6.5 5.4 5.4 0 0 1 21.5 12c-2 4.2-9.5 9-9.5 9z"/></symbol>
+    <symbol id="i-heart-filled" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 21s-7.5-4.8-9.5-9A5.4 5.4 0 0 1 12 6.5 5.4 5.4 0 0 1 21.5 12c-2 4.2-9.5 9-9.5 9z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M12 9V3m0 0L9 6m3-3 3 3M4 17a8 8 0 0 1 16 0M2 21h20"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17.5" cy="9.5" r="2.6"/><path d="M15.6 14.6a5.3 5.3 0 0 1 6 4.9"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3A2.6 2.6 0 0 1 12 7.5c1.4 0 2.5 1 2.5 2.3 0 1.7-2.5 2-2.5 3.7"/><circle cx="12" cy="17" r="0.4"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M5 10v10h14V10"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a12 12 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.5 11h10L20 8H7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M9 6.5v11l9-5.5z"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6"/></symbol>
+    <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5a3.5 3.5 0 0 1 0 5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="ds-orb" role="img" aria-label="The Obrigada orb">
+      <div class="ds-orb__eyes"><span class="ds-orb__eye"></span><span class="ds-orb__eye"></span></div>
+      <span class="ds-orb__mouth"></span>
+    </div>
+    <h1>Someone is watching over <em>her</em></h1>
+    <p>The design language for every Obrigada surface. Light, kind, and calm, because the person reading it may be scared, tired, or seventy.</p>
+    <span class="version">DESIGN SYSTEM · V0.5 · LIGHT · ONE VOCABULARY WITH packages/design-system</span>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <a href="#voice">Voice</a><a href="#color">Color</a><a href="#type">Type</a>
+    <a href="#buttons">Buttons</a><a href="#chips">Chips</a><a href="#nav">Navigation</a>
+    <a href="#search">Search &amp; lists</a><a href="#discover">Discovery cards</a>
+    <a href="#cards">Cards</a><a href="#analysis">Room analysis</a><a href="#recs">Recommendations</a>
+    <a href="#summary">Daily summary</a><a href="#status">Status</a><a href="#alerts">Alerts</a>
+    <a href="#timeline">Timeline</a><a href="#contacts">Contacts</a><a href="#assistant">Assistant</a>
+    <a href="#forms">Forms</a><a href="#steps">Onboarding</a><a href="#story">Story</a>
+    <a href="#guided">Guided</a><a href="#live">Live check-in</a><a href="#glow">Glow states</a><a href="#tokens">Tokens</a>
+  </nav>
+
+  <section id="voice">
+    <div class="sec-head"><span class="ds-step">1</span><h2>The words are part of the design</h2>
+      <p class="lede">Short declarative sentences. No em dashes in UI strings. Every alert says what happened, what we already did, and what happens next.</p></div>
+    <div class="voice-pair">
+      <div class="voice-card yes"><span class="tag">Like this</span><p>"Your father fell in the kitchen at 3:12. He responded to the voice check but hasn't gotten up, so we're calling you."</p></div>
+      <div class="voice-card no"><span class="tag">Never this</span><p>"EMERGENCY!!! FALL DETECTED. IMMEDIATE ACTION REQUIRED."</p></div>
+      <div class="voice-card yes"><span class="tag">Like this</span><p>"All is well. Maria was in the living room a few minutes ago."</p></div>
+      <div class="voice-card no"><span class="tag">Never this</span><p>"No anomalies detected in monitored subject activity."</p></div>
+    </div>
+  </section>
+
+  <section id="color">
+    <div class="sec-head"><span class="ds-step">2</span><h2>Brand blue that glows, washes that greet, safety colors that never shout</h2>
+      <p class="lede">The gradient CTA is the only element that glows. Gradient washes set the time of day. Attention and incident are proposed extensions to tokens.css.</p></div>
+    <div class="grid cols-4">
+      <div class="swatch"><div class="chipc" style="background: var(--ds-blue-500);"></div><div class="meta"><b>Blue 500 · brand</b><code>--ds-blue-500</code></div></div>
+      <div class="swatch"><div class="chipc" style="background: var(--ds-gradient-cta);"></div><div class="meta"><b>CTA gradient</b><code>--ds-gradient-cta</code></div></div>
+      <div class="swatch"><div class="chipc" style="background: var(--ds-pink-500);"></div><div class="meta"><b>Pink 500 · steps</b><code>--ds-pink-500</code></div></div>
+      <div class="swatch"><div class="chipc" style="background: var(--ds-violet-500);"></div><div class="meta"><b>Violet 500 · assistant</b><code>--ds-violet-500</code></div></div>
+      <div class="swatch"><div class="chipc" style="background: var(--ds-mint-500);"></div><div class="meta"><b>Mint · live progress</b><code>--ds-mint-500</code></div></div>
+      <div class="swatch"><div class="chipc" style="background: var(--ds-success);"></div><div class="meta"><b>Success · all is well</b><code>--ds-success</code></div></div>
+      <div class="swatch"><div class="chipc" style="background: var(--ds-attention-500);"></div><div class="meta"><b>Attention <span class="flag">PROPOSED</span></b><code>--ds-attention-500</code></div></div>
+      <div class="swatch"><div class="chipc" style="background: var(--ds-incident-500);"></div><div class="meta"><b>Incident <span class="flag">PROPOSED</span></b><code>--ds-incident-500</code></div></div>
+    </div>
+    <h3 style="text-align:center; font-size: var(--ds-text-lg); font-weight: 600; margin: var(--ds-space-8) 0 var(--ds-space-4);">Gradient washes</h3>
+    <div class="grid cols-4">
+      <div class="swatch"><div class="chipc wash" style="background: var(--ds-gradient-morning);"></div><div class="meta"><b>Morning</b><code>--ds-gradient-morning</code></div></div>
+      <div class="swatch"><div class="chipc wash" style="background: var(--ds-gradient-evening);"></div><div class="meta"><b>Evening</b><code>--ds-gradient-evening</code></div></div>
+      <div class="swatch"><div class="chipc wash" style="background: var(--ds-gradient-verify);"></div><div class="meta"><b>Verify</b><code>--ds-gradient-verify</code></div></div>
+      <div class="swatch"><div class="chipc wash" style="background: var(--ds-gradient-camera);"></div><div class="meta"><b>Camera / guided</b><code>--ds-gradient-camera</code></div></div>
+    </div>
+  </section>
+
+  <section id="type">
+    <div class="sec-head"><span class="ds-step">3</span><h2>Quietly confident, readable from across the kitchen</h2>
+      <p class="lede">SF Pro Display with Inter fallback, exactly what React Native renders. Weights stay between 500 and 700. Elder-adjacent screens prefer 16px and up.</p></div>
+    <div class="spec-stack ds-card">
+      <div class="s"><code>HERO · 40 · 700 · -0.02em</code><p style="font-size:40px;font-weight:700;letter-spacing:-0.02em;line-height:1.12;">All is well</p></div>
+      <div class="s"><code>GREETING · 26 · 700 + EM HIGHLIGHT</code><p style="font-size:26px;font-weight:700;line-height:1.15;">Good morning, <em style="font-style:normal;color:var(--ds-blue-400);font-weight:600;">Ana</em></p></div>
+      <div class="s"><code>SHEET TITLE · 22 · 600</code><p style="font-size:22px;font-weight:600;letter-spacing:-0.01em;">Maria answered the check-in</p></div>
+      <div class="s"><code>SECTION TITLE · 18 · 700</code><p style="font-size:18px;font-weight:700;letter-spacing:-0.02em;">Recommended for a safer home</p></div>
+      <div class="s"><code>BODY · 16 · 400</code><p style="max-width:52ch;margin:0 auto;">Maria had breakfast in the kitchen and spent the morning in the living room. The guardian has been online all day.</p></div>
+      <div class="s"><code>SMALL · 14 · 400</code><p style="font-size:var(--ds-text-sm);color:var(--ds-neutral-700);">Last check 4 minutes ago</p></div>
+    </div>
+  </section>
+
+  <section id="buttons">
+    <div class="sec-head"><span class="ds-step">4</span><h2>One glowing action per screen</h2>
+      <p class="lede">Primary gradient CTA, secondary, secondary-on-light, compact header action, ghost, white, disabled, and the incident variant for when someone must move.</p></div>
+    <div class="center-col">
+      <button class="ds-btn ds-btn--lg ds-btn--primary" type="button">Open live check-in</button>
+      <button class="ds-btn ds-btn--lg ds-btn--incident" type="button">I am on my way</button>
+      <button class="ds-btn ds-btn--lg ds-btn--secondary" type="button">Add a contact</button>
+      <button class="ds-btn ds-btn--lg ds-btn--secondary-on-light" type="button">Next</button>
+      <div class="row-demo">
+        <button class="ds-btn ds-btn--sm ds-btn--compact" type="button">Next</button>
+        <button class="ds-btn ds-btn--lg ds-btn--ghost" type="button" style="width:auto;">Not now</button>
+        <span class="ds-step-badge">Step 2 of 4</span>
+      </div>
+      <button class="ds-btn ds-btn--lg ds-btn--disabled" type="button">Pairing…</button>
+      <div class="row-demo row-demo--dark"><button class="ds-btn ds-btn--lg ds-btn--white" type="button" style="width:auto;">Call Maria</button></div>
+    </div>
+  </section>
+
+  <section id="chips">
+    <div class="sec-head"><span class="ds-step">5</span><h2>Chips, pills, and floating controls</h2>
+      <p class="lede">Timeline filters on light. Camera controls float as glass or scrim on the guided gradient.</p></div>
+    <div class="ds-card" style="max-width:640px;margin:0 auto var(--ds-space-4);">
+      <div class="ds-chip-row">
+        <span class="ds-chip ds-chip--active">All</span>
+        <span class="ds-chip ds-chip--tint"><span class="ds-chip__dot" style="background:var(--ds-incident-500)"></span> Falls</span>
+        <span class="ds-chip ds-chip--tint"><span class="ds-chip__dot" style="background:var(--ds-attention-500)"></span> Visitors</span>
+        <span class="ds-chip ds-chip--tint"><span class="ds-chip__dot" style="background:var(--ds-success)"></span> Check-ins</span>
+      </div>
+    </div>
+    <div class="row-demo row-demo--dark" style="max-width:640px;margin:0 auto;">
+      <button class="ds-icon-btn ds-icon-btn--dark" aria-label="Help"><svg class="ds-icon ds-icon--sm"><use href="#i-help"/></svg></button>
+      <div class="ds-lighting"><span class="ds-lighting__icon"><svg class="ds-icon ds-icon--xs"><use href="#i-sun"/></svg></span><span class="ds-lighting__label">OK</span></div>
+      <span class="ds-date-pill">Dec 9 at 2:49 PM</span>
+      <span class="ds-chip ds-chip--inactive"><span class="ds-chip__dot" style="background:var(--ds-violet-500)"></span> Night</span>
+      <button class="ds-icon-btn ds-icon-btn--glass" aria-label="Close"><svg class="ds-icon ds-icon--sm"><use href="#i-close"/></svg></button>
+    </div>
+  </section>
+
+  <section id="nav">
+    <div class="sec-head"><span class="ds-step">6</span><h2>The Today header and how you move around</h2>
+      <p class="lede">Greeting on the morning wash, a week of calm days, the live view of the room, and five tabs. The assistant floats above everything.</p></div>
+    <div class="phone-demo">
+      <div class="ds-today-hero">
+        <div class="ds-today-greeting">
+          <h2>Good morning,<br/><em>Ana</em></h2>
+          <button class="ds-gift-btn" aria-label="This week"><svg class="ds-icon ds-icon--sm"><use href="#i-heart"/></svg></button>
+        </div>
+        <div class="ds-day-tracker">
+          <span class="ds-day-dot ds-day-dot--done"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg></span>
+          <span class="ds-day-dot ds-day-dot--done"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg></span>
+          <span class="ds-day-dot ds-day-dot--done"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg></span>
+          <span class="ds-day-dot ds-day-dot--active">Thu</span>
+          <span class="ds-day-dot">Fri</span><span class="ds-day-dot">Sat</span><span class="ds-day-dot">Sun</span>
+        </div>
+      </div>
+      <div class="ds-today-body">
+        <div class="ds-today-status">
+          <span class="ds-today-status__dot"></span>
+          <div><b>All is well</b><span>Maria is in the living room. Guardian online all day.</span></div>
+        </div>
+        <div class="home-live" style="height:158px;">
+          <div class="home-live__feed"></div>
+          <div class="home-live__couch"></div>
+          <div class="home-live__p home-live__p--a"></div>
+          <div class="home-live__p home-live__p--b"></div>
+          <span class="home-live__pill"><span class="d"></span> LIVE</span>
+          <button class="live-watch" type="button">Watch live<svg class="ds-icon ds-icon--xs"><use href="#i-chevron"/></svg></button>
+        </div>
+        <div class="ds-quick-cards" style="padding:0;">
+          <div class="ds-quick-card"><span class="ds-quick-card__icon ds-quick-card__icon--a"><svg class="ds-icon ds-icon--sm"><use href="#i-clock"/></svg></span>Timeline</div>
+          <div class="ds-quick-card"><span class="ds-quick-card__icon ds-quick-card__icon--c"><svg class="ds-icon ds-icon--sm"><use href="#i-people"/></svg></span>People</div>
+          <div class="ds-quick-card"><span class="ds-quick-card__icon ds-quick-card__icon--b"><svg class="ds-icon ds-icon--sm"><use href="#i-phone"/></svg></span>Check-in</div>
+        </div>
+        <p class="ds-today-label">Earlier today</p>
+        <div class="ds-today-row">
+          <span class="ds-today-row__icon" style="background:var(--ds-success-100);color:var(--ds-success-700);"><svg class="ds-icon ds-icon--sm"><use href="#i-check"/></svg></span>
+          <div class="ds-today-row__body"><b>Answered the morning check-in</b><span>She said she is fine</span></div>
+          <time>08:40</time>
+        </div>
+        <div class="ds-today-row">
+          <span class="ds-today-row__icon" style="background:var(--ds-lilac-100);color:var(--ds-violet-500);"><svg class="ds-icon ds-icon--sm"><use href="#i-people"/></svg></span>
+          <div class="ds-today-row__body"><b>Sofia arrived</b><span>Recognized, on schedule</span></div>
+          <time>09:15</time>
+        </div>
+      </div>
+      <button class="ds-fab" aria-label="Assistant"><svg class="ds-icon ds-icon--md"><use href="#i-chat"/></svg></button>
+      <nav class="ds-bottom-nav" aria-label="Main">
+        <div class="ds-bottom-nav__item ds-bottom-nav__item--active"><svg class="ds-bottom-nav__icon"><use href="#i-sunrise"/></svg>Today</div>
+        <div class="ds-bottom-nav__item"><svg class="ds-bottom-nav__icon"><use href="#i-clock"/></svg>Timeline</div>
+        <div class="ds-bottom-nav__item"><svg class="ds-bottom-nav__icon"><use href="#i-phone"/></svg>Check-in</div>
+        <div class="ds-bottom-nav__item"><svg class="ds-bottom-nav__icon"><use href="#i-people"/></svg>People</div>
+        <div class="ds-bottom-nav__item"><svg class="ds-bottom-nav__icon"><use href="#i-chat"/></svg>Assistant</div>
+      </nav>
+    </div>
+  </section>
+
+  <section id="search">
+    <div class="sec-head"><span class="ds-step">7</span><h2>Search and lists</h2>
+      <p class="lede">Idle and active search, result rows with wishlist hearts, and segmented tabs with saved rows.</p></div>
+    <div class="grid cols-2" style="max-width:860px;margin:0 auto;">
+      <div class="ds-card">
+        <div class="ds-search-bar" style="margin:0 0 var(--ds-space-3);"><svg class="ds-icon ds-icon--sm"><use href="#i-search"/></svg> Search home essentials</div>
+        <div class="ds-search-bar ds-search-bar--active" style="margin:0 0 var(--ds-space-4);">
+          <svg class="ds-icon ds-icon--sm"><use href="#i-search"/></svg>
+          <span class="ds-search-bar__query">night light</span>
+          <span class="ds-search-bar__cancel">Cancel</span>
+        </div>
+        <div class="ds-search-row">
+          <div class="ds-search-row__thumb"></div>
+          <div class="ds-search-row__info"><div class="ds-search-row__title">Motion Night Light</div><div class="ds-search-row__brand">Philips</div></div>
+          <svg class="ds-icon ds-icon--sm" style="color:var(--ds-neutral-300)"><use href="#i-heart"/></svg>
+        </div>
+        <div class="ds-search-row">
+          <div class="ds-search-row__thumb" style="background:linear-gradient(180deg,#fff8e8,#ffe8c8)"></div>
+          <div class="ds-search-row__info"><div class="ds-search-row__title">Warm Hallway Light</div><div class="ds-search-row__brand">IKEA</div></div>
+          <svg class="ds-icon ds-icon--sm" style="color:var(--ds-pink-500)"><use href="#i-heart-filled"/></svg>
+        </div>
+      </div>
+      <div class="ds-card">
+        <div class="ds-shelf-tabs">
+          <div class="ds-shelf-tab ds-shelf-tab--active">Home</div>
+          <div class="ds-shelf-tab">Wishlist</div>
+          <div class="ds-shelf-tab">Installed</div>
+        </div>
+        <div class="ds-shelf-row">
+          <div class="ds-shelf-row__thumb"></div>
+          <div style="flex:1"><span class="ds-shelf-row__badge">92% fit</span><div class="ds-search-row__title">Motion Night Light</div><div class="ds-search-row__brand">Added 2 days ago</div></div>
+          <svg class="ds-icon ds-icon--sm"><use href="#i-cart"/></svg>
+        </div>
+        <div class="ds-shelf-row">
+          <div class="ds-shelf-row__thumb" style="background:linear-gradient(180deg,#e0f5f5,#b8e8e8)"></div>
+          <div style="flex:1"><span class="ds-shelf-row__badge">87% fit</span><div class="ds-search-row__title">Non-slip Bath Mat</div><div class="ds-search-row__brand">Added last week</div></div>
+          <svg class="ds-icon ds-icon--sm"><use href="#i-cart"/></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="discover">
+    <div class="sec-head"><span class="ds-step">8</span><h2>Discovery cards</h2>
+      <p class="lede">Section headers introduce a carousel of cards with fit badges. For Obrigada they recommend a safer home.</p></div>
+    <div class="ds-card" style="max-width:640px;margin:0 auto;">
+      <div class="ds-section-header">
+        <span class="ds-section-header__eyebrow">For Maria's home</span>
+        <h3 class="ds-section-header__title">Recommended for a safer home</h3>
+        <p class="ds-section-header__subtitle">Small changes that prevent the falls we see most often.</p>
+      </div>
+      <div class="ds-carousel-row">
+        <div class="ds-product-card">
+          <div class="ds-product-card__badges">
+            <span class="ds-product-card__badge ds-product-card__badge--fit">92% fit</span>
+            <span class="ds-product-card__category"><svg class="ds-icon ds-icon--xs"><use href="#i-sun"/></svg> Lighting</span>
+          </div>
+          <div class="ds-product-card__img"></div>
+          <div class="ds-product-card__meta">Philips</div>
+          <div class="ds-product-card__title">Motion Night Light</div>
+          <button class="ds-product-card__price" type="button"><svg class="ds-icon ds-icon--xs"><use href="#i-cart"/></svg> $18.99</button>
+        </div>
+        <div class="ds-product-card">
+          <div class="ds-product-card__badges">
+            <span class="ds-product-card__badge ds-product-card__badge--fit">87% fit</span>
+            <span class="ds-product-card__category"><svg class="ds-icon ds-icon--xs"><use href="#i-home"/></svg> Bathroom</span>
+          </div>
+          <div class="ds-product-card__img" style="background:linear-gradient(180deg,#e0f5f5,#b8e8e8)"></div>
+          <div class="ds-product-card__meta">SafeStep</div>
+          <div class="ds-product-card__title">Non-slip Bath Mat</div>
+          <button class="ds-product-card__price" type="button"><svg class="ds-icon ds-icon--xs"><use href="#i-cart"/></svg> $16.80</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="cards">
+    <div class="sec-head"><span class="ds-step">9</span><h2>Cards that hold a week of calm</h2>
+      <p class="lede">Highlight cards, the elder's profile row, and coverage validation for camera setup.</p></div>
+    <div class="grid" style="max-width:720px;margin:0 auto;gap:var(--ds-space-4);">
+      <div class="ds-strengths">
+        <div class="ds-strength"><h4 class="ds-strength__title">Six calm days</h4><p class="ds-strength__body">One attention moment all week, resolved in four minutes.</p></div>
+        <div class="ds-strength"><h4 class="ds-strength__title">Every check-in answered</h4><p class="ds-strength__body">Maria replied to all seven voice check-ins.</p></div>
+      </div>
+      <div class="ds-card">
+        <div class="ds-profile__row">
+          <div class="ds-profile__item"><div class="ds-profile__icon"><svg class="ds-icon ds-icon--sm"><use href="#i-home"/></svg></div><span class="ds-profile__label">Falls</span><span class="ds-profile__caption">Main focus</span></div>
+          <div class="ds-profile__item"><div class="ds-profile__icon"><svg class="ds-icon ds-icon--sm"><use href="#i-people"/></svg></div><span class="ds-profile__label">Uses a walker</span><span class="ds-profile__caption">Mobility</span></div>
+          <div class="ds-profile__item"><div class="ds-profile__icon"><svg class="ds-icon ds-icon--sm"><use href="#i-chat"/></svg></div><span class="ds-profile__label">Hard of hearing</span><span class="ds-profile__caption">Speak clearly</span></div>
+        </div>
+      </div>
+      <div class="ds-card ds-card--inset">
+        <div class="ds-validation-imgs">
+          <div class="ds-analysis__thumb ds-analysis__thumb--kitchen"></div>
+          <div class="ds-analysis__thumb ds-analysis__thumb--stairs"></div>
+          <div class="ds-analysis__thumb ds-analysis__thumb--bathroom"></div>
+        </div>
+        <span class="ds-badge ds-badge--success"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg> Good coverage of the kitchen</span>
+        <div class="ds-alignment"><div class="ds-alignment__fill"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="analysis">
+    <div class="sec-head"><span class="ds-step">10</span><h2>Room analysis</h2>
+      <p class="lede">The analysis row from the gallery, reading the home instead of skin: where falls are likely, and why.</p></div>
+    <div class="ds-card" style="max-width:560px;margin:0 auto;">
+      <div class="ds-analysis">
+        <div class="ds-analysis__thumb ds-analysis__thumb--kitchen"></div>
+        <div>
+          <div class="ds-analysis__area">Kitchen</div>
+          <h4 class="ds-analysis__heading">Highest fall risk</h4>
+          <div class="ds-analysis__desc">Hard floor and tight corners. The guardian watches this room from the shelf by the door.</div>
+        </div>
+      </div>
+      <div class="ds-analysis">
+        <div class="ds-analysis__thumb ds-analysis__thumb--stairs"></div>
+        <div>
+          <div class="ds-analysis__area">Hallway stairs</div>
+          <h4 class="ds-analysis__heading">Red zone at night</h4>
+          <div class="ds-analysis__desc">Maria avoids the stairs after dark. We alert if she enters this zone past 22:00.</div>
+        </div>
+      </div>
+      <div class="ds-analysis">
+        <div class="ds-analysis__thumb ds-analysis__thumb--bathroom"></div>
+        <div>
+          <div class="ds-analysis__area">Bathroom</div>
+          <h4 class="ds-analysis__heading">No camera, by design</h4>
+          <div class="ds-analysis__desc">Privacy first. We infer trouble from time-of-day patterns, never from watching.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="recs">
+    <div class="sec-head"><span class="ds-step">11</span><h2>Setup recommendations</h2></div>
+    <div class="ds-card" style="max-width:560px;margin:0 auto;">
+      <ul class="ds-rec-list">
+        <li class="ds-rec"><span class="ds-rec__num">1</span><div><p class="ds-rec__step">Place the guardian at hip height</p><p class="ds-rec__body">Falls read best from 80 to 120 cm, with the whole room in frame.</p></div></li>
+        <li class="ds-rec"><span class="ds-rec__num">2</span><div><p class="ds-rec__step">Keep a small night light on</p><p class="ds-rec__body">The camera watches in low light, and a soft glow helps at 3am.</p></div></li>
+        <li class="ds-rec"><span class="ds-rec__num">3</span><div><p class="ds-rec__step">Test the alarm once a month</p><p class="ds-rec__body">One tap in settings rings your phone through silent mode.</p></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="summary">
+    <div class="sec-head"><span class="ds-step">12</span><h2>Quiet reassurance, delivered</h2>
+      <p class="lede">The daily summary arrives like a postcard, not a report.</p></div>
+    <div class="lockscreen" role="img" aria-label="Lock screen with an Obrigada notification">
+      <div class="time"><div class="d">Thu, June 6</div><div class="t">7:12</div></div>
+      <div class="ds-notif-card">
+        <span class="ds-notif-card__icon"><svg class="ds-icon ds-icon--sm"><use href="#i-sunrise"/></svg></span>
+        <div><b>Obrigada</b><p>All is well. Maria had a calm morning and is in the living room now.</p></div>
+        <time>7:12</time>
+      </div>
+    </div>
+  </section>
+
+  <section id="status">
+    <div class="sec-head"><span class="ds-step">13</span><h2>The heartbeat of the home screen</h2></div>
+    <div class="grid cols-2" style="max-width:860px;margin:0 auto;">
+      <div class="ds-card status-card">
+        <div class="row"><span class="status-dot"></span><h4>All is well</h4></div>
+        <p>Maria was in the living room a few minutes ago. The kitchen guardian has been online all day.</p>
+        <div class="chipline"><span class="schip well">Guardian online</span><span class="schip">Last check 4 min ago</span></div>
+      </div>
+      <div class="ds-card status-card">
+        <div class="row"><span class="status-dot offline"></span><h4>Guardian offline</h4></div>
+        <p>The kitchen guardian lost its connection at 14:02. We will tell you the moment it returns.</p>
+        <div class="chipline"><span class="schip attention">Reconnecting</span><span class="schip">Offline 12 min</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="alerts">
+    <div class="sec-head"><span class="ds-step">14</span><h2>Serious, named, and already in motion</h2></div>
+    <div class="grid" style="gap:var(--ds-space-4);max-width:620px;margin:0 auto;">
+      <div class="alert incident" role="alert"><span class="alert__icon"><svg class="ds-icon ds-icon--sm"><use href="#i-phone"/></svg></span><div><h5>Your father fell in the kitchen at 3:12</h5><p>He responded to the voice check but hasn't gotten up, so we're calling you.</p></div></div>
+      <div class="alert attention"><span class="alert__icon"><svg class="ds-icon ds-icon--sm"><use href="#i-people"/></svg></span><div><h5>An unfamiliar visitor is at the door</h5><p>They appear to be in a medical uniform. No visit was scheduled, so take a look when you can.</p></div></div>
+      <div class="alert well"><span class="alert__icon"><svg class="ds-icon ds-icon--sm"><use href="#i-check"/></svg></span><div><h5>Maria answered the check-in</h5><p>She said she is fine. We logged it and stood down.</p></div></div>
+    </div>
+  </section>
+
+  <section id="timeline">
+    <div class="sec-head"><span class="ds-step">15</span><h2>Every step, in human words</h2>
+      <p class="lede">The append-only incident record made visible. Families, hospitals, and regulators read this same ladder.</p></div>
+    <div class="ds-card" style="max-width:640px;margin:0 auto;">
+      <ol class="timeline">
+        <li><span class="node incident" style="font-weight:700;">!</span><div class="body"><b>Fall suspected in the kitchen</b><span>Pose confidence 94%, no recovery motion for 40 seconds</span></div><time>03:12</time></li>
+        <li><span class="node"><svg class="ds-icon"><use href="#i-chat"/></svg></span><div class="body"><b>Voice check-in: no clear answer</b><span>"Maria, está bem?" · response unclear, treating as silence</span></div><time>03:12</time></li>
+        <li><span class="node"><svg class="ds-icon"><use href="#i-phone"/></svg></span><div class="body"><b>Called Ana (daughter)</b><span>No answer after 45 seconds</span></div><time>03:12</time></li>
+        <li><span class="node"><svg class="ds-icon"><use href="#i-phone"/></svg></span><div class="body"><b>Called Miguel (son)</b><span>Answered</span></div><time>03:14</time></li>
+        <li><span class="node well"><svg class="ds-icon"><use href="#i-check"/></svg></span><div class="body"><b>Miguel confirmed he is on his way</b><span>Incident acknowledged, live check-in opened</span></div><time>03:14</time></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="contacts">
+    <div class="sec-head"><span class="ds-step">16</span><h2>Who we call, in order</h2>
+      <p class="lede">The quiet hours chip is a contract: Miguel is only woken for a confirmed fall.</p></div>
+    <div class="contact-list">
+      <div class="contact"><span class="drag">⋮⋮</span><span class="avatar">AN</span><div class="who"><b>Ana</b><span>Daughter · +351 912 345 678</span></div><span class="schip accent">Called first</span></div>
+      <div class="contact"><span class="drag">⋮⋮</span><span class="avatar" style="background:var(--ds-success-100);color:var(--ds-success-700);">MI</span><div class="who"><b>Miguel</b><span>Son · +351 913 555 221</span></div><span class="schip attention">Quiet 22:00–07:00</span></div>
+      <div class="contact"><span class="drag">⋮⋮</span><span class="avatar" style="background:rgba(255,142,188,0.18);color:#c94a83;">RO</span><div class="who"><b>Rosa</b><span>Neighbor · +351 916 777 903</span></div><span class="schip">Backup</span></div>
+    </div>
+  </section>
+
+  <section id="assistant">
+    <div class="sec-head"><span class="ds-step">17</span><h2>Ask about the day, in your own words</h2>
+      <p class="lede">The assistant bubble for inline tips, and the full chat modal. Answers come only from the family's own event log.</p></div>
+    <div class="grid" style="max-width:620px;margin:0 auto;gap:var(--ds-space-5);">
+      <div class="ds-assistant">
+        <div class="ds-assistant__avatar">
+          <div class="ds-orb" style="width:26px;height:26px;margin:0;box-shadow:none;background:var(--ds-lilac-100);">
+            <div class="ds-orb__eyes" style="top:32%;"><span class="ds-orb__eye" style="height:6px;width:3px;"></span><span class="ds-orb__eye" style="height:6px;width:3px;"></span></div>
+            <span class="ds-orb__mouth" style="height:3px;top:58%;"></span>
+          </div>
+        </div>
+        <div>
+          <div class="ds-assistant__label">Assistant</div>
+          <p class="ds-assistant__text">Maria has been in the living room for two hours. A gentle reminder to stretch usually lands well around now.</p>
+        </div>
+      </div>
+      <div class="ds-assistant-modal">
+        <div class="ds-assistant-modal__header">
+          <h2><svg class="ds-icon ds-icon--sm"><use href="#i-chat"/></svg> Assistant</h2>
+          <button class="ds-icon-btn" aria-label="Close"><svg class="ds-icon ds-icon--sm"><use href="#i-close"/></svg></button>
+        </div>
+        <div class="ds-assistant-modal__body">
+          <div class="ds-assistant-bubble">Good morning, Ana. Maria slept through the night and had breakfast at 8:40. The caregiver arrived on time. Anything you would like to know?</div>
+          <div class="ds-suggestion-chip">Did the caregiver come today? <svg class="ds-icon ds-icon--xs"><use href="#i-chevron"/></svg></div>
+          <div class="ds-suggestion-chip">How did Mom sleep this week? <svg class="ds-icon ds-icon--xs"><use href="#i-chevron"/></svg></div>
+          <div class="ds-suggestion-chip">Pre-log the nurse visit on Thursday <svg class="ds-icon ds-icon--xs"><use href="#i-chevron"/></svg></div>
+        </div>
+        <div class="ds-assistant-input"><span>Write your question...</span><svg class="ds-icon ds-icon--sm" style="color:var(--ds-neutral-300)"><use href="#i-send"/></svg></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="forms">
+    <div class="sec-head"><span class="ds-step">18</span><h2>Nothing clever, everything clear</h2></div>
+    <div class="grid cols-2" style="max-width:860px;margin:0 auto;">
+      <div class="ds-card"><div class="field">
+        <label for="demo-name">Contact name</label>
+        <input class="input" id="demo-name" type="text" placeholder="Ana" />
+        <span class="hint">The name we use when we call and in the timeline.</span>
+      </div></div>
+      <div class="ds-card"><div class="field">
+        <label>Quiet hours</label>
+        <div class="quiet-hours">
+          <input class="input" type="time" value="22:00" aria-label="Quiet hours start" />
+          <span style="color:var(--ds-neutral-500);">to</span>
+          <input class="input" type="time" value="07:00" aria-label="Quiet hours end" />
+        </div>
+        <span class="hint">A confirmed fall still wakes this contact.</span>
+      </div></div>
+    </div>
+  </section>
+
+  <section id="steps">
+    <div class="sec-head"><span class="ds-step">19</span><h2>Fifteen minutes, no help needed</h2></div>
+    <div class="grid cols-2" style="max-width:860px;margin:0 auto;align-items:end;">
+      <div class="ds-card">
+        <div class="steps">
+          <div class="step-row done"><span class="n"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg></span><p>Create your family</p></div>
+          <div class="step-row done"><span class="n"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg></span><p>Pair the guardian phone</p></div>
+          <div class="step-row now"><span class="n">3</span><p>Choose who we call</p></div>
+          <div class="step-row todo"><span class="n">4</span><p>Allow alerts to reach you</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="ds-sheet">
+          <div class="ds-sheet__handle"></div>
+          <div class="ds-step">4</div>
+          <h3 class="ds-sheet__title">Allow notifications so nothing waits for morning</h3>
+          <button class="ds-btn ds-btn--lg ds-btn--primary" type="button">Allow notifications</button>
+          <button class="ds-btn ds-btn--lg ds-btn--ghost" type="button" style="margin-top:8px;">Not now</button>
+        </div>
+      </div>
+    </div>
+    <div class="empty">
+      <div class="ds-orb" role="img" aria-label="The Obrigada orb, content">
+        <div class="ds-orb__eyes"><span class="ds-orb__eye"></span><span class="ds-orb__eye"></span></div>
+        <span class="ds-orb__mouth"></span>
+      </div>
+      <h4>Nothing needs you right now</h4>
+      <p>We are watching over Maria. If anything changes, you will know first.</p>
+    </div>
+  </section>
+
+  <section id="story">
+    <div class="sec-head"><span class="ds-step">20</span><h2>Story onboarding</h2>
+      <p class="lede">The pitch, told one screen at a time, with the segments bar from the gallery.</p></div>
+    <div class="ds-story">
+      <div class="ds-story-segments">
+        <div class="ds-story-segments__bar ds-story-segments__bar--done"></div>
+        <div class="ds-story-segments__bar ds-story-segments__bar--active"></div>
+        <div class="ds-story-segments__bar"></div><div class="ds-story-segments__bar"></div>
+      </div>
+      <span class="ds-story-pill">Obrigada · a guardian for the people we love</span>
+      <h2 class="ds-story-headline">She lives alone. You live an hour away.</h2>
+      <div class="ds-orb"><div class="ds-orb__eyes"><span class="ds-orb__eye"></span><span class="ds-orb__eye"></span></div><span class="ds-orb__mouth"></span></div>
+      <p class="ds-story-caption">Obrigada watches, checks in, and calls you only when it matters.</p>
+    </div>
+  </section>
+
+  <section id="guided">
+    <div class="sec-head"><span class="ds-step">21</span><h2>Guided moments go warm and dark</h2>
+      <p class="lede">Camera setup, pairing, and tutorials drop into the camera gradient: glass controls, one instruction at a time, progress you can feel.</p></div>
+    <div class="dark-stage">
+      <h3>Camera placement wizard</h3>
+      <div class="stage-row">
+        <div class="cam">
+          <div class="controls">
+            <button class="ds-icon-btn ds-icon-btn--glass" aria-label="Help"><svg class="ds-icon ds-icon--sm"><use href="#i-help"/></svg></button>
+            <div class="ds-lighting"><span class="ds-lighting__icon"><svg class="ds-icon ds-icon--xs"><use href="#i-sun"/></svg></span><span class="ds-lighting__label">OK</span></div>
+            <button class="ds-icon-btn ds-icon-btn--glass" aria-label="Close"><svg class="ds-icon ds-icon--sm"><use href="#i-close"/></svg></button>
+          </div>
+          <div class="tickring"><div class="ring"></div><div class="ring-fill"></div></div>
+          <div class="caption">Slowly pan the phone across the room</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--ds-space-10);align-items:center;">
+          <div class="ds-capture__wrap"><div class="ds-capture__ripple"></div><div class="ds-capture">Start</div></div>
+          <div class="ds-progress-steps">
+            <div class="ds-progress-step">
+              <div class="ds-progress-step__label"><span class="ds-progress-step__check"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg></span> Securing the connection...</div>
+              <div class="ds-progress-bar"><div class="ds-progress-bar__fill ds-progress-bar__fill--full"></div></div>
+            </div>
+            <div class="ds-progress-step">
+              <div class="ds-progress-step__label"><span class="ds-progress-step__check"><svg class="ds-icon ds-icon--xs"><use href="#i-check"/></svg></span> Testing the alarm path...</div>
+              <div class="ds-progress-bar"><div class="ds-progress-bar__fill ds-progress-bar__fill--partial"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="ds-video">
+          <div class="ds-video-header">
+            <div><p class="ds-video-header__title">Placing your guardian</p><p class="ds-video-header__step">Step 2 of 4</p></div>
+            <button class="ds-icon-btn ds-icon-btn--glass" aria-label="Close" style="width:32px;height:32px;"><svg class="ds-icon ds-icon--xs"><use href="#i-close"/></svg></button>
+          </div>
+          <div class="ds-video-stage"><button class="ds-video-play-btn" aria-label="Play"><svg class="ds-icon ds-icon--md"><use href="#i-play"/></svg></button></div>
+          <div class="ds-scrubber"><div class="ds-scrubber__bar"></div><div class="ds-scrubber__times"><span>0:26</span><span>1:08</span></div></div>
+        </div>
+      </div>
+      <p class="note">The scan ring fills mint as coverage completes. Same grammar as the gallery's scan, so the gesture is already familiar.</p>
+    </div>
+  </section>
+
+  <section id="live">
+    <div class="sec-head"><span class="ds-step">22</span><h2>See her, and be seen</h2>
+      <p class="lede">During an incident, or on demand if the family allows it, you open a live window to the guardian phone. It is end-to-end encrypted and never recorded. Our servers relay the video but cannot decrypt it.</p></div>
+    <div class="dark-stage">
+      <h3>Live check-in</h3>
+      <div class="stage-row">
+        <div class="live">
+          <div class="live__feed"></div>
+          <div class="live__person"></div>
+          <div class="live__scrim"></div>
+          <div class="live__top">
+            <span class="live-pill"><span class="live-pill__dot"></span> LIVE</span>
+            <span class="live-e2ee"><svg class="ds-icon"><use href="#i-lock"/></svg> Encrypted</span>
+          </div>
+          <span class="live__name"><span class="av">MA</span> Maria · Kitchen</span>
+          <p class="live__caption">She can hear you. Speak gently.</p>
+          <div class="live__controls">
+            <button class="live-ctrl" type="button" aria-label="Mute microphone"><svg class="ds-icon ds-icon--sm"><use href="#i-mic"/></svg></button>
+            <button class="live-ctrl live-ctrl--end" type="button" aria-label="End check-in"><svg class="ds-icon ds-icon--md"><use href="#i-phone"/></svg></button>
+            <button class="live-ctrl" type="button" aria-label="Speaker"><svg class="ds-icon ds-icon--sm"><use href="#i-speaker"/></svg></button>
+          </div>
+        </div>
+        <div style="max-width:300px;display:flex;flex-direction:column;gap:var(--ds-space-4);color:var(--ds-white-90);">
+          <div class="live-stack" style="align-items:flex-start;">
+            <span class="live-e2ee" style="position:static;"><svg class="ds-icon"><use href="#i-lock"/></svg> End-to-end encrypted</span>
+            <p style="margin:8px 0 0;font-size:14px;line-height:1.5;color:var(--ds-white-90);">Only your phone and the guardian hold the keys. The video is relayed by our servers but never decrypted, never stored, never trained on.</p>
+          </div>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:var(--ds-white-55);">Every time a live window opens, who opened it and when lands in the append-only audit trail. Opening it is a logged event, the same as any escalation step.</p>
+        </div>
+      </div>
+      <p class="note">The live feed drops into the same dark stage as guided setup. The red control ends the call; the two glass controls mute your mic and toggle the speaker.</p>
+    </div>
+  </section>
+
+  <section id="glow">
+    <div class="sec-head"><span class="ds-step">23</span><h2>How Obrigada shows it is listening</h2>
+      <p class="lede">The guardian phone's screen edge is the assistant's face. Four states, driven by audio amplitude, legible from across the room. Reference for the AGSL shader and the React Native Skia build.</p></div>
+    <div class="dark-stage">
+      <div class="glow-row">
+        <div class="glow-demo"><div class="phone idle"><div class="clock">7:12</div></div><b>Idle</b><span>Calm. Nothing moves.</span></div>
+        <div class="glow-demo"><div class="phone listening"><div class="clock">7:12</div></div><b>Listening</b><span>Breathes at 2.4s, brightness tracks the elder's voice</span></div>
+        <div class="glow-demo"><div class="phone thinking"><div class="mask"></div><div class="clock" style="z-index:1;">7:12</div></div><b>Thinking</b><span>A slow shimmer travels the border, 2.8s per lap</span></div>
+        <div class="glow-demo"><div class="phone speaking"><div class="clock">7:12</div></div><b>Speaking</b><span>Pulses in sync with the TTS waveform</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tokens">
+    <div class="sec-head"><span class="ds-step">24</span><h2>For engineers</h2>
+      <p class="lede">Adopted tokens come verbatim from tokens.css in packages/design-system. Rows marked proposed are Obrigada safety extensions awaiting sign-off.</p></div>
+    <div class="ds-card tokens-scroll">
+      <table class="tokens">
+        <thead><tr><th>Token</th><th>Value</th><th>Use</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>--ds-blue-500</code></td><td><code>#5368ff</code></td><td>Brand, links, active states</td><td>adopted</td></tr>
+          <tr><td><code>--ds-gradient-cta</code></td><td><code>blue-300 → 500 → 700</code></td><td>The one glowing action</td><td>adopted</td></tr>
+          <tr><td><code>--ds-shadow-cta</code></td><td><code>0 8 24 -4 blue/42%</code></td><td>CTA glow</td><td>adopted</td></tr>
+          <tr><td><code>--ds-pink-500</code></td><td><code>#ff8ebc</code></td><td>Step badges, active tab</td><td>adopted</td></tr>
+          <tr><td><code>--ds-violet-500</code></td><td><code>#8d6bff</code></td><td>Assistant, suggestions, eyebrows</td><td>adopted</td></tr>
+          <tr><td><code>--ds-mint-500</code></td><td><code>#4ddc84</code></td><td>Scan ring, live progress</td><td>adopted</td></tr>
+          <tr><td><code>--ds-success</code></td><td><code>#88c057</code></td><td>All-is-well state</td><td>adopted</td></tr>
+          <tr><td><code>--ds-gradient-morning / -evening / -verify</code></td><td><code>sunny / lilac / pastel</code></td><td>Today hero, story, highlights</td><td>adopted</td></tr>
+          <tr><td><code>--ds-gradient-camera</code></td><td><code>#3a3028 → #2a221c</code></td><td>Guided dark screens</td><td>adopted</td></tr>
+          <tr><td><code>--ds-attention-500</code></td><td><code>#e8a33c</code></td><td>Needs a look, not a run</td><td><span class="proposed">PROPOSED</span></td></tr>
+          <tr><td><code>--ds-incident-500</code></td><td><code>#f0564d</code></td><td>Active incident only</td><td><span class="proposed">PROPOSED</span></td></tr>
+          <tr><td><code>--ds-font</code></td><td><code>SF Pro Display / Inter</code></td><td>Everything</td><td>adopted</td></tr>
+          <tr><td><code>--ds-radius-lg / xl / phone</code></td><td><code>22 / 28 / 40</code></td><td>Cards / sheets / devices</td><td>adopted</td></tr>
+          <tr><td><code>.ds-btn--lg</code></td><td><code>56px min-height</code></td><td>Primary actions</td><td>adopted</td></tr>
+          <tr><td><code>--ds-ease-out</code></td><td><code>cubic-bezier(0.16,1,0.3,1)</code></td><td>All motion, 180/260ms</td><td>adopted</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Obrigada Design System v0.5 · light · one vocabulary with packages/design-system · The elder is the protected party, never a surveillance subject.
+  </footer>
+</div>
+</body>
+</html>
