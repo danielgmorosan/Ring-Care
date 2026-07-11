@@ -29,6 +29,19 @@ class IdentityStore(context: Context) {
     val isPaired: Boolean
         get() = prefs.contains(KEY_DEVICE_ID)
 
+    /**
+     * True once the caregiver has finished setup (faces + zones) and tapped "Start watching".
+     * The app only locks into kiosk when this is true, so setup is never trapped behind the
+     * lock. Cleared by [clear] on re-pair, and by [markSetupIncomplete] when a caregiver
+     * exits kiosk to make changes.
+     */
+    val isSetupComplete: Boolean
+        get() = prefs.getBoolean(KEY_SETUP_COMPLETE, false)
+
+    fun markSetupComplete() = prefs.edit().putBoolean(KEY_SETUP_COMPLETE, true).apply()
+
+    fun markSetupIncomplete() = prefs.edit().putBoolean(KEY_SETUP_COMPLETE, false).apply()
+
     fun save(response: ProvisionResponse) {
         prefs.edit()
             .putString(KEY_DEVICE_ID, response.deviceId)
@@ -71,5 +84,6 @@ class IdentityStore(context: Context) {
         const val KEY_CERT = "device_cert_pem"
         const val KEY_KEY = "device_key_pem"
         const val KEY_CA = "ca_cert_pem"
+        const val KEY_SETUP_COMPLETE = "setup_complete"
     }
 }

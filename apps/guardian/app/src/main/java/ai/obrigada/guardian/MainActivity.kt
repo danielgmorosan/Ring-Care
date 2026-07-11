@@ -84,7 +84,14 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         if (hasCamera) {
-                            RunningScreen()
+                            RunningScreen(
+                                onReset = {
+                                    // Re-pair: unbind locally and drop out of kiosk, back to pairing.
+                                    Kiosk.exit(this@MainActivity)
+                                    store.clear()
+                                    paired = false
+                                },
+                            )
                         } else {
                             CameraNeeded { cameraLauncher.launch(Manifest.permission.CAMERA) }
                         }
@@ -96,8 +103,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Lock into kiosk once the phone is set up. No-op (with a log) if not device owner.
-        if (store.isPaired) Kiosk.enter(this)
+        // Lock into kiosk only once setup is finished (faces + zones done, "Start watching"
+        // tapped). During setup the screen stays free so the caregiver is never trapped.
+        // No-op (with a log) if not device owner.
+        if (store.isPaired && store.isSetupComplete) Kiosk.enter(this)
     }
 
     private fun hasCameraPermission(): Boolean = hasPermission(Manifest.permission.CAMERA)
