@@ -23,6 +23,9 @@ import { CanaryModule } from './modules/canary/canary.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { MqttModule } from './modules/mqtt/mqtt.module';
 import { ThrottlingModule } from './modules/throttling/throttling.module';
+import { AiModule } from './modules/ai/ai.module';
+import { RingModule } from './modules/ring/ring.module';
+import { BeeModule } from './modules/bee/bee.module';
 
 @Module({
   imports: [
@@ -53,6 +56,9 @@ import { ThrottlingModule } from './modules/throttling/throttling.module';
     MqttModule, // device link (F0.3)
     CanaryModule, // synthetic canary (F1.6)
     MetricsModule, // Prometheus /metrics endpoint + HTTP/domain metrics
+    AiModule, // LLM provider: Bedrock (EU) or mock (decision 0013)
+    RingModule, // Ring cameras as a sensor source (decision 0011)
+    BeeModule, // caregiver's Bee voice notes into care proposals (decision 0012)
   ],
 })
 export class AppModule {}

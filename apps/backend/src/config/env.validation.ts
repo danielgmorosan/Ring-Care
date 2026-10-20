@@ -109,6 +109,37 @@ export const envSchema = z.object({
   // Log output: 'pretty' (human-readable, dev) or 'json' (one JSON object per line
   // carrying the request id, for log aggregation in production).
   LOG_FORMAT: z.enum(['pretty', 'json']).default('pretty'),
+  // --- Amazon hackathon integrations (Ring, Bee, Bedrock). All optional; each feature is
+  // off unless configured. Each is a new subprocessor: see docs/decisions/0011-0013 (rule #6).
+  // Ring Partner API (Amazon Vision). Playground mode uses a short-lived RING_ACCESS_TOKEN;
+  // production mode uses the OAuth refresh-token set. RING_HMAC_SECRET verifies webhooks.
+  RING_API_BASE_URL: z.string().url().default('https://api.amazonvision.com'),
+  RING_OAUTH_BASE_URL: z.string().url().default('https://oauth.ring.com'),
+  RING_CLIENT_ID: z.string().min(1).optional(),
+  RING_CLIENT_SECRET: z.string().min(1).optional(),
+  RING_REFRESH_TOKEN: z.string().min(1).optional(),
+  RING_ACCESS_TOKEN: z.string().min(1).optional(),
+  RING_HMAC_SECRET: z.string().min(1).optional(),
+  // Single-household binding for the hackathon build: which family the linked Ring account
+  // belongs to. Multi-family account linking (one-way linking flow) replaces this later.
+  RING_FAMILY_ID: z.string().uuid().optional(),
+  // Night window for door activity, in the household's local time (HH:MM).
+  RING_NIGHT_START: z.string().regex(/^\d{2}:\d{2}$/).default('22:00'),
+  RING_NIGHT_END: z.string().regex(/^\d{2}:\d{2}$/).default('07:00'),
+  // Minutes after an expected visit starts before a no-show is reported to the family.
+  VISIT_ARRIVAL_GRACE_MINUTES: z.coerce.number().int().positive().default(20),
+  // AI provider for narration, Q&A and care extraction. 'bedrock' keeps inference in an
+  // EU AWS region (decision 0013); 'anthropic' uses ANTHROPIC_API_KEY; unset = mock.
+  AI_PROVIDER: z.enum(['mock', 'anthropic', 'bedrock']).optional(),
+  BEDROCK_REGION: z.string().min(1).default('eu-central-1'),
+  // An EU cross-region inference profile id (e.g. an "eu." prefixed model id).
+  BEDROCK_MODEL_ID: z.string().min(1).optional(),
+  // Bee (caregiver's wearable). Developer API token of the caregiver's Bee account, and a
+  // bearer secret the `bee stream --webhook-endpoint` sidecar sends to /bee/webhook.
+  BEE_API_BASE_URL: z.string().url().default('https://api.developer.bee.amazon.dev'),
+  BEE_API_TOKEN: z.string().min(1).optional(),
+  BEE_WEBHOOK_SECRET: z.string().min(16).optional(),
+  BEE_FAMILY_ID: z.string().uuid().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -376,4 +407,45 @@ export class AppConfig {
       .filter(Boolean);
     return origins.length > 0 ? origins : undefined;
   }
+
+  // --- Ring (docs/decisions/0011) ---
+  get ringApiBaseUrl(): string { return this.config.get('RING_API_BASE_URL', { infer: true }); }
+  get ringOauthBaseUrl(): string { return this.config.get('RING_OAUTH_BASE_URL', { infer: true }); }
+  get ringClientId(): string | undefined { return this.config.get('RING_CLIENT_ID', { infer: true }); }
+  get ringClientSecret(): string | undefined { return this.config.get('RING_CLIENT_SECRET', { infer: true }); }
+  get ringRefreshToken(): string | undefined { return this.config.get('RING_REFRESH_TOKEN', { infer: true }); }
+  get ringAccessToken(): string | undefined { return this.config.get('RING_ACCESS_TOKEN', { infer: true }); }
+  get ringHmacSecret(): string | undefined { return this.config.get('RING_HMAC_SECRET', { infer: true }); }
+  get ringFamilyId(): string | undefined { return this.config.get('RING_FAMILY_ID', { infer: true }); }
+  get ringNightStart(): string { return this.config.get('RING_NIGHT_START', { infer: true }); }
+  get ringNightEnd(): string { return this.config.get('RING_NIGHT_END', { infer: true }); }
+  get visitArrivalGraceMinutes(): number { return this.config.get('VISIT_ARRIVAL_GRACE_MINUTES', { infer: true }); }
+  /** How the backend talks to Ring: OAuth refresh tokens, a Playground token, or not at all. */
+  get ringAuthMode(): 'oauth' | 'playground' | 'off' {
+    if (this.ringClientId && this.ringClientSecret && this.ringRefreshToken) return 'oauth';
+    if (this.ringAccessToken) return 'playground';
+    return 'off';
+  }
+  /** True when signed Ring webhooks can be accepted (real Ring or the local simulator). */
+  get hasRingWebhooks(): boolean { return Boolean(this.ringHmacSecret && this.ringFamilyId); }
+
+  // --- AI provider (docs/decisions/0013) ---
+  get bedrockRegion(): string { return this.config.get('BEDROCK_REGION', { infer: true }); }
+  get bedrockModelId(): string | undefined { return this.config.get('BEDROCK_MODEL_ID', { infer: true }); }
+  /** Which LLM backs narration, Q&A and care extraction. Falls back to the local mock. */
+  get aiProvider(): 'mock' | 'anthropic' | 'bedrock' {
+    const chosen = this.config.get('AI_PROVIDER', { infer: true });
+    if (chosen === 'bedrock') return this.bedrockModelId ? 'bedrock' : 'mock';
+    if (chosen === 'anthropic') return this.anthropicApiKey ? 'anthropic' : 'mock';
+    if (chosen === 'mock') return 'mock';
+    return this.anthropicApiKey ? 'anthropic' : 'mock';
+  }
+
+  // --- Bee (docs/decisions/0012) ---
+  get beeApiBaseUrl(): string { return this.config.get('BEE_API_BASE_URL', { infer: true }); }
+  get beeApiToken(): string | undefined { return this.config.get('BEE_API_TOKEN', { infer: true }); }
+  get beeWebhookSecret(): string | undefined { return this.config.get('BEE_WEBHOOK_SECRET', { infer: true }); }
+  get beeFamilyId(): string | undefined { return this.config.get('BEE_FAMILY_ID', { infer: true }); }
+  get hasBee(): boolean { return Boolean(this.beeWebhookSecret && this.beeFamilyId); }
+
 }

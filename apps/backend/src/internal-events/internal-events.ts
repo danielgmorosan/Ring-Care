@@ -18,6 +18,8 @@ export const InternalEvent = {
   ZoneEntered: 'zone.entered',
   ZoneExited: 'zone.exited',
   DeviceCommandIssued: 'device.command_issued',
+  RingMotionDetected: 'ring.motion_detected',
+  RingButtonPressed: 'ring.button_pressed',
 } as const;
 
 export type InternalEvent = (typeof InternalEvent)[keyof typeof InternalEvent];
@@ -138,6 +140,29 @@ export interface DeviceCommandIssuedPayload {
   issuedAt: string;
 }
 
+/** Where a linked Ring camera sits in the elder's home; set by the caregiver. */
+export type RingPlacement = 'front_door' | 'indoor' | 'other';
+
+/**
+ * A linked Ring camera reported activity (motion or a doorbell press). The ring module
+ * emits this after recording the webhook to its append-only `ring_events` trail; the
+ * escalation and visits logic listen. Labels and ids only (rule #1): Ring video never
+ * reaches our backend. `subType` is Ring's Smart Alert label when available
+ * ('human' | 'vehicle' | 'package_delivery' | 'other_motion' | 'motion'), else null.
+ */
+export interface RingActivityPayload {
+  familyId: string;
+  /** Our ring_cameras row id. */
+  ringCameraId: string;
+  /** Our append-only ring_events row id; consumers reference it as the triggering event. */
+  ringEventId: string;
+  placement: RingPlacement;
+  subType: string | null;
+  occurredAt: string;
+  /** 'simulator' when the signed event came from scripts/ring-sim (labelled in the UI). */
+  source: 'ring' | 'simulator';
+}
+
 /** Maps each event name to its payload type for type-safe emit/handle helpers. */
 export interface InternalEventPayloads {
   [InternalEvent.DeviceRegistered]: DeviceRegisteredPayload;
@@ -148,6 +173,8 @@ export interface InternalEventPayloads {
   [InternalEvent.VoiceCheckinReported]: VoiceCheckinReportedPayload;
   [InternalEvent.PersonUnknown]: PersonUnknownPayload;
   [InternalEvent.ZoneEntered]: ZoneEnteredPayload;
+  [InternalEvent.RingMotionDetected]: RingActivityPayload;
+  [InternalEvent.RingButtonPressed]: RingActivityPayload;
   [InternalEvent.ZoneExited]: ZoneExitedPayload;
   [InternalEvent.DeviceCommandIssued]: DeviceCommandIssuedPayload;
 }
