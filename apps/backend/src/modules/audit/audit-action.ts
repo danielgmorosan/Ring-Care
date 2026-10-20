@@ -15,6 +15,10 @@ function resourceOf(route: string): string {
 export function deriveAction(method: string, route: string): string {
   if (route.endsWith('/claim-code')) return 'device.pair';
   if (route.endsWith('/wipe')) return 'device.wipe';
+  if (/^\/me\/ring\/cameras\/[^/]+\/live$/.test(route)) return 'ring.live_open';
+  if (/^\/me\/ring\/cameras\/[^/]+\/live\/[^/]+$/.test(route)) return 'ring.live_close';
+  if (route === '/me/ring/cameras/sync') return 'ring.sync';
+  if (/^\/me\/ring\/cameras\/[^/]+$/.test(route)) return 'ring.camera_update';
   const verb = VERB[method] ?? method.toLowerCase();
   return `${resourceOf(route)}.${verb}`;
 }
@@ -27,6 +31,10 @@ const LABELS: Record<string, string> = {
   'contacts.update': 'Updated a contact',
   'contacts.delete': 'Removed a contact',
   'live.create': 'Opened the live camera',
+  'ring.live_open': 'Opened a Ring live view',
+  'ring.live_close': 'Closed a Ring live view',
+  'ring.sync': 'Refreshed the Ring cameras',
+  'ring.camera_update': 'Updated a Ring camera',
   'people.create': 'Enrolled a household member',
   'people.update': 'Updated a household member',
   'people.delete': 'Removed a household member',

@@ -12,6 +12,14 @@ describe('audit action mapping', () => {
     expect(deriveAction('POST', '/me/fleet/:deviceId/wipe')).toBe('device.wipe');
   });
 
+  it('names Ring live-view opens and closes explicitly (rule #7)', () => {
+    expect(deriveAction('POST', '/me/ring/cameras/:id/live')).toBe('ring.live_open');
+    expect(deriveAction('DELETE', '/me/ring/cameras/:id/live/:sessionId')).toBe('ring.live_close');
+    expect(deriveAction('POST', '/me/ring/cameras/sync')).toBe('ring.sync');
+    expect(deriveAction('PATCH', '/me/ring/cameras/:id')).toBe('ring.camera_update');
+    expect(actionLabel('ring.live_open')).toBe('Opened a Ring live view');
+  });
+
   it('maps actions to warm, human labels', () => {
     expect(actionLabel('medications.create')).toBe('Added a medication');
     expect(actionLabel('contacts.delete')).toBe('Removed a contact');
