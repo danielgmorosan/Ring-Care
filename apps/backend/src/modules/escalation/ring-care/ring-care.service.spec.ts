@@ -58,6 +58,7 @@ describe('RingCareService', () => {
       placement: 'front_door',
       subType: 'human',
       occurredAt: NIGHT,
+      receivedAt: new Date().toISOString(),
       source: 'simulator',
       ...over,
     };
@@ -238,6 +239,44 @@ describe('RingCareService', () => {
       const muchLater = new Date(Date.parse(later) + 60 * 60_000).toISOString();
       await service.onMotion(event({ occurredAt: muchLater }));
       expect(started).toHaveLength(2);
+    });
+
+    it('a rehearsed demo (same 03:04, a minute later in wall-clock time) opens a new incident', async () => {
+      // ring-sim used to send the same 03:04 every run; de-dup must not key on occurredAt.
+      const now = Date.now();
+      const first = event({ receivedAt: new Date(now).toISOString() });
+      await service.onMotion(first);
+      expect(started).toHaveLength(1);
+
+      // The first rehearsal is over: Sofia answered.
+      await incidents.appendStep({
+        incidentId: ID(5001),
+        seq: 0,
+        kind: 'call_answered',
+        contactId: ID(101),
+        detail: {},
+      });
+
+      const second = event({ receivedAt: new Date(now + 60_000).toISOString() });
+      await service.onMotion(second);
+
+      expect(started).toHaveLength(2);
+      expect(await decisions.findByRingEvent(second.ringEventId)).toMatchObject({
+        outcome: 'incident_opened',
+        incidentId: ID(5002),
+      });
+    });
+
+    it('without the engine, de-duplicates alerts on the time received, not occurredAt', async () => {
+      config.hasTemporal = false;
+      decisions = new InMemoryRingCareDecisionRepository(() => new Date('2026-10-20T10:00:00Z'));
+      service = build();
+      await service.onMotion(event({ receivedAt: '2026-10-20T10:00:00.000Z' }));
+      await service.onMotion(event({ receivedAt: '2026-10-20T10:05:00.000Z' }));
+      expect(raised).toHaveLength(1);
+      // Same 03:04 occurredAt, received well past the window: a fresh alert.
+      await service.onMotion(event({ receivedAt: '2026-10-20T10:30:00.000Z' }));
+      expect(raised).toHaveLength(2);
     });
 
     it('judges a redelivered Ring event once', async () => {

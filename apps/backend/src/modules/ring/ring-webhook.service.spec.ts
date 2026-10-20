@@ -96,6 +96,7 @@ describe('RingWebhookService', () => {
           placement: 'other',
           subType: 'human',
           occurredAt: '2026-10-21T02:04:00.000Z',
+          receivedAt: event!.receivedAt,
           source: 'ring',
         },
       },

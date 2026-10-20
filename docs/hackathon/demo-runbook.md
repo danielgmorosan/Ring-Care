@@ -220,8 +220,10 @@ Important for filming:
   (`POST /incidents/:id/acknowledge`), then **All clear** (`POST /incidents/:id/resolve`).
   The timeline then shows who responded. Tap quickly: the ladder may finish before you do.
   **(verify)** the timing on a dry run, or show the acknowledgement on a second run.
-- A second Ring event within 10 minutes joins the same incident. Wait 10 minutes, or let the
-  incident finish, before re-running the scene.
+- A second Ring event joins the first incident only while that incident is still running.
+  Resolve it (**All clear**) or let the ladder finish, then re-run the scene: it opens a new
+  incident. Each run's default time is today's 03:04 plus the current seconds (`--at
+  now-night`), so rehearsals never repeat an identical event time.
 - "Through Do Not Disturb": a Twilio call is an ordinary call. On Sofia's iPhone, save the
   Twilio number as a contact with Emergency Bypass on, or film the critical push from a
   native build with FCM and APNs critical alerts. The web app gets no push.

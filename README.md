@@ -163,8 +163,8 @@ TZ=Europe/Lisbon RING_HMAC_SECRET=... \
 ```
 
 Scenarios: `night-exit`, `carer-arrival`, `carer-no-show`, `daytime-motion`. Options:
-`--url`, `--secret`, `--camera`, `--at <ISO time>`. Running it without `--scenario` prints
-the usage line.
+`--url`, `--secret`, `--camera`, `--at <ISO time|now|now-night>`. `--help` explains each.
+Running it without `--scenario` prints the usage.
 
 Tests: `pnpm test` (unit), `pnpm --filter @obrigada/backend test:temporal` (crash and
 resume of the escalation workflow).

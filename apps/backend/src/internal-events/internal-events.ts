@@ -158,7 +158,13 @@ export interface RingActivityPayload {
   ringEventId: string;
   placement: RingPlacement;
   subType: string | null;
+  /** When the event happened, as Ring reported it (shown to the family). */
   occurredAt: string;
+  /**
+   * When we received and recorded it (ring_events.received_at, our wall clock). Used for
+   * de-duplication, so a replayed or simulated event with an old occurredAt is still new.
+   */
+  receivedAt: string;
   /** 'simulator' when the signed event came from scripts/ring-sim (labelled in the UI). */
   source: 'ring' | 'simulator';
 }

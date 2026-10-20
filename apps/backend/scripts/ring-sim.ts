@@ -7,11 +7,8 @@
  *   pnpm --filter @obrigada/backend ring:sim --scenario night-exit
  *   pnpm --filter @obrigada/backend ring:sim --scenario carer-arrival --camera ring-dev-front-1
  *
- * Options: --scenario <night-exit|carer-arrival|carer-no-show|daytime-motion>
- *          --url (default http://localhost:3000)  --secret (default $RING_HMAC_SECRET)
- *          --camera <Ring device id> (default ring-sim-front-door)  --at <ISO time>
- * Local times (03:04, 14:00) use this machine's time zone; set TZ to match the household,
- * e.g. TZ=Europe/Lisbon.
+ * Run with --help for every option. Local times (03:04, 14:00) use this machine's time
+ * zone; set TZ to match the household, e.g. TZ=Europe/Lisbon.
  */
 import { randomUUID } from 'node:crypto';
 import { signRingBody } from '../src/modules/ring/ring-signature';
@@ -27,11 +24,35 @@ interface Options {
   at: string | null;
 }
 
+const HELP = `Usage: ring:sim --scenario <${SCENARIOS.join('|')}> [options]
+
+Scenarios:
+  night-exit      a person at the front door in the night window (opens a night door ladder)
+  carer-arrival   a doorbell press now (an arrival if an expected visit covers it)
+  carer-no-show   prints the steps; a no-show is the absence of a doorbell
+  daytime-motion  a person at the front door at 14:00 (timeline only)
+
+Options:
+  --url URL       backend base URL (default http://localhost:3000)
+  --secret S      Ring HMAC secret (default $RING_HMAC_SECRET)
+  --camera ID     Ring device id (default ring-sim-front-door). The camera must have the
+                  Front door placement for night-exit and arrivals to count.
+  --at TIME       when the event happened. An ISO time, or:
+                    now         the current time
+                    now-night   the most recent 03:04 local, plus the current seconds and
+                                milliseconds (03:04:SS.mmm), so every run is a distinct
+                                moment inside the night window
+                  Default: now-night for night-exit, now for carer-arrival, the most
+                  recent 14:00 local for daytime-motion.
+
+Rehearsing night-exit twice is safe: the backend de-duplicates on when it received an
+event, and only joins a night door incident that is still running. Resolve (answer or
+acknowledge) the first incident and the next run opens a new one.
+Local times use this machine's time zone; set TZ to match the household (TZ=Europe/Lisbon).`;
+
 function usage(message?: string): never {
   if (message) console.error(`ring-sim: ${message}\n`);
-  console.error(
-    `Usage: ring:sim --scenario <${SCENARIOS.join('|')}> [--url URL] [--secret S] [--camera ID] [--at ISO]`,
-  );
+  console.error(HELP);
   process.exit(2);
 }
 
@@ -40,6 +61,10 @@ function parseArgs(argv: string[]): Options {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === '--') continue;
+    if (a === '--help' || a === '-h') {
+      console.log(HELP);
+      process.exit(0);
+    }
     if (!a.startsWith('--')) usage(`unexpected argument ${a}`);
     const [key, inline] = a.slice(2).split('=', 2) as [string, string | undefined];
     const value = inline ?? argv[++i];
@@ -50,22 +75,38 @@ function parseArgs(argv: string[]): Options {
   if (!scenario || !SCENARIOS.includes(scenario)) usage('pick a --scenario');
   const secret = args.secret ?? process.env.RING_HMAC_SECRET;
   if (!secret && scenario !== 'carer-no-show') usage('set --secret or RING_HMAC_SECRET');
-  if (args.at && Number.isNaN(Date.parse(args.at))) usage('--at must be an ISO time');
+  const at = args.at === undefined ? null : resolveAt(args.at);
   return {
     scenario,
     url: (args.url ?? 'http://localhost:3000').replace(/\/$/, ''),
     secret: secret ?? '',
     camera: args.camera ?? 'ring-sim-front-door',
-    at: args.at ? new Date(args.at).toISOString() : null,
+    at,
   };
 }
 
 /** The most recent past moment at hh:mm local time (today, or yesterday if still ahead). */
-function lastLocal(hh: number, mm: number): string {
-  const d = new Date();
+function lastLocal(hh: number, mm: number, now: Date = new Date()): string {
+  const d = new Date(now);
   d.setHours(hh, mm, 0, 0);
-  if (d.getTime() > Date.now()) d.setDate(d.getDate() - 1);
+  if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 1);
   return d.toISOString();
+}
+
+/**
+ * The most recent 03:04 local plus the current seconds and milliseconds: inside the night
+ * window, and a different moment on every run (rehearsals never repeat an identical time).
+ */
+function nowNight(now: Date = new Date()): string {
+  const base = new Date(lastLocal(3, 4, now));
+  return new Date(base.getTime() + now.getSeconds() * 1000 + now.getMilliseconds()).toISOString();
+}
+
+function resolveAt(value: string): string {
+  if (value === 'now') return new Date().toISOString();
+  if (value === 'now-night') return nowNight();
+  if (Number.isNaN(Date.parse(value))) usage('--at must be an ISO time, now or now-night');
+  return new Date(value).toISOString();
 }
 
 /** A Ring-style JSON:API notification, the same shape as fixtures/motion-human.jsonapi.json. */
@@ -100,7 +141,7 @@ async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
   switch (opts.scenario) {
     case 'night-exit': {
-      const at = opts.at ?? lastLocal(3, 4);
+      const at = opts.at ?? nowNight();
       console.log(`Front-door person detected at ${at} on camera ${opts.camera}.`);
       console.log('For a night-door alert the camera placement must be front_door.');
       await post(opts, ringEvent('motion_detected', opts.camera, at, 'human'));

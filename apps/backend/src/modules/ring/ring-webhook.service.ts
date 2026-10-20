@@ -110,6 +110,7 @@ export class RingWebhookService {
           placement: camera.placement,
           subType: parsed.subType,
           occurredAt,
+          receivedAt: event.receivedAt,
           source,
         },
       };
