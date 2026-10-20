@@ -6,6 +6,7 @@ import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { applyHttpSecurity } from './common/http-security';
 import { JsonLogger } from './common/json-logger';
 import { requestIdMiddleware } from './common/request-id.middleware';
+import { installRawWebhookBodies } from './common/webhook-raw-body';
 import { AppConfig } from './config/env.validation';
 import { ReadinessService } from './health/readiness.service';
 import type { INestApplication } from '@nestjs/common';
@@ -49,6 +50,11 @@ async function bootstrap(): Promise<void> {
   // Give every request a correlation id (echoed in an X-Request-Id header and
   // held in async-local storage) so the rest of the pipeline can reference it.
   app.use(requestIdMiddleware);
+
+  // Signed webhooks (/ring/webhook, /bee/webhook) keep their exact bytes for any content
+  // type (Ring may send application/vnd.api+json, Bee text/plain). Mounted before Nest's
+  // JSON parser, which registers at init; every other route parses as before.
+  installRawWebhookBodies(app);
 
   // Every error returns one consistent envelope carrying that correlation id.
   app.useGlobalFilters(new AllExceptionsFilter());

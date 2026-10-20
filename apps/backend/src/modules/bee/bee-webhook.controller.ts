@@ -55,6 +55,9 @@ export class BeeWebhookController {
     const provided =
       bearer(authorization) ?? (typeof querySecret === 'string' ? querySecret : undefined);
     if (!secretsMatch(provided, expected)) throw new UnauthorizedException();
-    return this.ingest.accept(req.body as unknown);
+    // A Buffer when the raw webhook reader ran (any content type, see main.ts); otherwise
+    // the parsed JSON or the text from rawTextBody. The parser takes strings and objects.
+    const body: unknown = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : req.body;
+    return this.ingest.accept(body);
   }
 }

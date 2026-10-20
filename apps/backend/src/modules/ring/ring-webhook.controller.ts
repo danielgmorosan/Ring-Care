@@ -6,7 +6,9 @@ import { RingWebhookService } from './ring-webhook.service';
 /**
  * Ring's signed webhook (decision 0011). Public to the JWT guard; authenticated by the
  * HMAC over the raw body instead. Records first, answers 200 well inside Ring's 5 s
- * budget, then emits on the internal bus. Needs `rawBody: true` on the Nest app.
+ * budget, then emits on the internal bus. The raw bytes come from the webhook reader in
+ * main.ts (any content type, e.g. application/vnd.api+json), or from `rawBody: true`
+ * for application/json.
  */
 @Controller('ring')
 export class RingWebhookController {
