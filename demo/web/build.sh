@@ -60,6 +60,20 @@ for (const b of bundles) {
 // Relative paths: the demo may be served from any sub-path.
 html = html.replace(/(src|href)="\/(?!\/)/g, '$1="./');
 
+// Bundled assets are referenced as uri:"/assets/..." (images) or a bare "/assets/..." export
+// (fonts).
+// Make them document-relative too, or they 404 when the demo lives under a sub-path.
+for (const b of bundles) {
+  const p = require('path').join(require('path').dirname(file), b);
+  const js = fs.readFileSync(p, 'utf8');
+  fs.writeFileSync(
+    p,
+    js
+      .replace(/uri:"\/assets\//g, 'uri:"./assets/')
+      .replace(/exports="\/assets\//g, 'exports="./assets/'),
+  );
+}
+
 html = html.replace('<title>family</title>', '<title>Obrigada family app demo</title>');
 
 const style = `
