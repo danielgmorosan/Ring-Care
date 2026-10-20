@@ -68,3 +68,31 @@ mock places every "call."
 - Flipping to real calls/SMS is a conscious, logged, reversible switch (unset the
   credentials → back to the mock), gated on human sign-off rather than a deploy
   default — consistent with how cloud narration is gated in 0002.
+
+## Follow-up implemented: press 1 to confirm (2026-10-20)
+
+The ladder no longer rings every contact within seconds. A human answering is now
+detected the only way that cannot be faked by voicemail: the contact presses 1.
+
+- When Twilio is configured **and** `PUBLIC_BASE_URL` is set, `placeCall` sends TwiML that
+  reads the incident's deterministic message (falls keep the generic text) inside a
+  `<Gather numDigits="1">` with "Press 1 if you are handling this." It still returns
+  `answered: false`, plus `awaitsConfirmation: true`.
+- The workflow then waits up to `ackWindowSeconds` for a `contactConfirmed` signal (or a
+  caregiver app acknowledgement, 0008) before recording `call_no_answer` and moving on. A
+  confirmation ends the ladder like an answered call: `call_answered` with
+  `{ via: 'press_1' }` on the append-only trail, outcome `acknowledged`. Only contacts the
+  ladder has already dialed can confirm. Without `awaitsConfirmation` (mock, or Twilio
+  without `PUBLIC_BASE_URL`) the ladder behaves exactly as before.
+- Twilio posts the digit to the public `POST /twilio/calls/confirm`. Two checks guard it:
+  an HMAC-SHA256 token on the link binding incident, contact and expiry (key from
+  `CALLBACK_SIGNING_SECRET`, or derived from `JWT_SECRET`), and `X-Twilio-Signature`
+  verified with the auth token. Any other digit or no input changes nothing.
+- Data floor unchanged: Twilio receives the same short text, now spoken, and returns one
+  digit. No audio is recorded or stored (rule #1).
+- Quiet hours are now evaluated on the household's clock: the workflow input carries the
+  family's IANA timezone and the workflow reads workflow time in that zone (UTC when unknown).
+
+Not done: answering-machine detection and call status callbacks; a press 1 that arrives
+after the ladder has left the calling phase is answered politely and logged, but not added
+to the incident trail.

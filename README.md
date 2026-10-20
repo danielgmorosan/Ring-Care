@@ -219,6 +219,8 @@ Model access, the least-privilege IAM policy and a one-request check:
 | --- | --- |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | All three switch the mock off and place real calls and texts. |
 | `TWILIO_API_BASE_URL` | Default `https://api.twilio.com`. Point it at Twilio's EU edge for residency. |
+| `PUBLIC_BASE_URL` | The backend's public https origin (a tunnel in the demo). Needed for Twilio callbacks: with it, calls ask the contact to press 1 and the ladder waits for them. |
+| `CALLBACK_SIGNING_SECRET` | Optional. Signs the press-1 callback links. Derived from `JWT_SECRET` when unset. |
 
 Without Twilio, a mock logs every call and text it would have made and the ladder still
 runs end to end.
