@@ -7,6 +7,8 @@ import type { DevicesService } from '../devices/devices.service';
 import type { ContactsService } from '../escalation/contacts.service';
 import type { FamiliesService } from '../families/families.service';
 import type { PushTokensService } from '../push/push-tokens.service';
+import type { RingRepository } from '../ring/ring.repository';
+import type { VisitsService } from '../visits/visits.service';
 import { ErasureService } from './erasure.service';
 
 const user = { id: 'u1', email: 'ana@example.com', familyId: 'fam-1' } as AuthUser;
@@ -31,6 +33,11 @@ function build() {
   };
   const devices = { redactNamesForFamily: jest.fn().mockResolvedValue(undefined) };
   const users = { redactByFamily: jest.fn().mockResolvedValue(undefined) };
+  const visits = {
+    list: jest.fn().mockResolvedValue([{ id: 'v1' }]),
+    delete: jest.fn().mockResolvedValue(undefined),
+  };
+  const ring = { redactCameraNamesForFamily: jest.fn().mockResolvedValue(undefined) };
 
   const service = new ErasureService(
     families as unknown as FamiliesService,
@@ -40,8 +47,21 @@ function build() {
     pushTokens as unknown as PushTokensService,
     devices as unknown as DevicesService,
     users as unknown as UserRepository,
+    visits as unknown as VisitsService,
+    ring as unknown as RingRepository,
   );
-  return { service, families, contacts, medications, appointments, pushTokens, devices, users };
+  return {
+    service,
+    families,
+    contacts,
+    medications,
+    appointments,
+    pushTokens,
+    devices,
+    users,
+    visits,
+    ring,
+  };
 }
 
 describe('ErasureService', () => {
@@ -58,6 +78,9 @@ describe('ErasureService', () => {
     expect(t.pushTokens.unregister).toHaveBeenCalledWith('fam-1', 'tok');
     expect(t.users.redactByFamily).toHaveBeenCalledWith('fam-1');
     expect(t.families.update).toHaveBeenCalledWith('fam-1', { name: 'Erased household' });
+    // Hackathon tables: editable rows erased; append-only rows are never touched.
+    expect(t.visits.delete).toHaveBeenCalledWith('fam-1', 'v1');
+    expect(t.ring.redactCameraNamesForFamily).toHaveBeenCalledWith('fam-1');
   });
 
   it('refuses and touches nothing when the confirmation name does not match', async () => {
@@ -68,5 +91,7 @@ describe('ErasureService', () => {
     expect(t.contacts.redactForFamily).not.toHaveBeenCalled();
     expect(t.users.redactByFamily).not.toHaveBeenCalled();
     expect(t.families.update).not.toHaveBeenCalled();
+    expect(t.visits.delete).not.toHaveBeenCalled();
+    expect(t.ring.redactCameraNamesForFamily).not.toHaveBeenCalled();
   });
 });

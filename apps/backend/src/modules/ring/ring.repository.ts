@@ -34,18 +34,32 @@ export interface SyncedDevice {
 export interface RingRepository {
   listCameras(familyId: string): Promise<RingCamera[]>;
   findCamera(familyId: string, id: string): Promise<RingCamera | null>;
-  /** Returns the camera for this Ring device, creating an unnamed 'other' one if unknown. */
-  ensureCamera(familyId: string, ringDeviceId: string): Promise<RingCamera>;
+  /**
+   * Returns the camera for this Ring device, creating an unnamed one if unknown, with
+   * `placementIfNew` (default 'other'). An existing camera's placement is never changed.
+   */
+  ensureCamera(
+    familyId: string,
+    ringDeviceId: string,
+    placementIfNew?: RingPlacement,
+  ): Promise<RingCamera>;
   /** Insert or refresh name/online from a device sync; never overwrites a set placement. */
   upsertFromSync(familyId: string, device: SyncedDevice): Promise<RingCamera>;
   setPlacement(familyId: string, id: string, placement: RingPlacement): Promise<RingCamera | null>;
   /** Record activity on a camera: bumps last_event_at and optionally sets online. */
   touchCamera(familyId: string, id: string, at: string, online?: boolean): Promise<void>;
   setOnline(familyId: string, id: string, online: boolean): Promise<void>;
+  /** GDPR erasure (decision 0005): blank every camera name; rows stay (events reference them). */
+  redactCameraNamesForFamily(familyId: string): Promise<void>;
 
   recordEvent(event: NewRingEvent): Promise<RecordResult>;
   /** Newest first. */
   listEvents(familyId: string, limit: number): Promise<RingEventRecord[]>;
+  /**
+   * Motion and doorbell events on a camera, received in [from, to] (our wall clock),
+   * oldest first, across families. The ring-care catch-up sweep re-judges these.
+   */
+  listActivityReceivedBetween(from: string, to: string): Promise<RingEventRecord[]>;
 }
 
 export const RING_REPOSITORY = Symbol('RING_REPOSITORY');

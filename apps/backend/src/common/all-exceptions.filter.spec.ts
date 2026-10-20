@@ -3,7 +3,9 @@ import {
   Controller,
   Get,
   type INestApplication,
+  Logger,
   NotFoundException,
+  Post,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -28,11 +30,21 @@ class BoomController {
   }
 }
 
+@Controller('bee')
+class CrashingWebhookController {
+  @Post('webhook')
+  webhook(): never {
+    throw new Error('ingest crashed');
+  }
+}
+
 describe('AllExceptionsFilter', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ controllers: [BoomController] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      controllers: [BoomController, CrashingWebhookController],
+    }).compile();
     app = moduleRef.createNestApplication();
     app.use(requestIdMiddleware);
     app.useGlobalFilters(new AllExceptionsFilter());
@@ -67,5 +79,23 @@ describe('AllExceptionsFilter', () => {
     expect(res.body.message).toBe('Internal server error');
     expect(JSON.stringify(res.body)).not.toContain('secret internal detail');
     expect(res.body.requestId).toBe(res.headers['x-request-id']);
+  });
+
+  it('never logs or echoes a secret passed in the query string', async () => {
+    const logged: string[] = [];
+    const spy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation((message: unknown) => void logged.push(String(message)));
+    try {
+      const res = await request(app.getHttpServer())
+        .post('/bee/webhook?secret=hunter2-shared-secret&event=new&token=abc123')
+        .expect(500);
+      expect(res.body.path).toBe('/bee/webhook?secret=[redacted]&event=new&token=[redacted]');
+      expect(logged.join('\n')).toContain('/bee/webhook?secret=[redacted]&event=new');
+      expect(logged.join('\n')).not.toContain('hunter2');
+      expect(logged.join('\n')).not.toContain('abc123');
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

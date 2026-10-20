@@ -229,3 +229,26 @@ describe('helpers', () => {
     expect(suggestPlacement({ kind: null, name: '' })).toBe('other');
   });
 });
+
+describe('InMemoryRingRepository GDPR erasure', () => {
+  it('blanks camera names for one family only, keeping the rows', async () => {
+    const repo = new InMemoryRingRepository();
+    await repo.upsertFromSync('fam-a', {
+      ringDeviceId: 'd1',
+      name: "Maria's front door",
+      online: true,
+      placementIfNew: 'front_door',
+    });
+    await repo.upsertFromSync('fam-b', {
+      ringDeviceId: 'd2',
+      name: 'Hall',
+      online: true,
+      placementIfNew: 'indoor',
+    });
+    await repo.redactCameraNamesForFamily('fam-a');
+    expect(await repo.listCameras('fam-a')).toEqual([
+      expect.objectContaining({ ringDeviceId: 'd1', name: '', placement: 'front_door' }),
+    ]);
+    expect((await repo.listCameras('fam-b'))[0]!.name).toBe('Hall');
+  });
+});

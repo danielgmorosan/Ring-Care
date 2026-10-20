@@ -139,8 +139,17 @@ arrival. Activity during a visit never opens an incident.
 
 ## 3. Ring camera: create it and set it to the front door
 
-Night door logic only looks at cameras placed at `front_door`. A camera first seen in a
-webhook starts as `other` with an empty name.
+**Do this step before Scene A.** Night door logic and visit arrivals only look at cameras
+placed at `front_door`. A camera first seen in a webhook starts unnamed, and its placement
+depends on that first event:
+
+- first event a doorbell press (`button_press`, as in `--scenario carer-arrival`): starts
+  as `front_door`, because only doorbells have buttons;
+- first event motion (`night-exit`, `daytime-motion`): starts as `other`.
+
+An event from a camera that is not on the front door is still recorded and judged, with
+the outcome `not_front_door` in `ring_care_decisions`, but it opens nothing. So if a
+night exit opened no incident, check the placement first.
 
 With a Playground token (`RING_ACCESS_TOKEN` in `.env`), sync the real devices instead:
 `curl -s -X POST $B/me/ring/cameras/sync -H "$AUTH"`. Doorbells come in as `front_door`.
@@ -155,7 +164,7 @@ pnpm --filter @obrigada/backend ring:sim --scenario daytime-motion
 # POST /ring/webhook -> 200 {"ok":true,"duplicate":false}
 ```
 
-Then set the placement:
+Then set the placement explicitly (required: this camera started as `other`):
 
 ```sh
 CAM=$(curl -s $B/me/ring/cameras -H "$AUTH" | json "[0]['id']")
@@ -163,7 +172,11 @@ curl -s -X PATCH $B/me/ring/cameras/$CAM -H "$AUTH" -H "$CT" -d '{"placement":"f
 ```
 
 Or in the app: Home, Open Ring, pick **Front door** on the camera. The placement picker
-offers Front door, Inside and Other.
+offers Front door, Inside and Other. Confirm it before filming:
+
+```sh
+curl -s $B/me/ring/cameras -H "$AUTH"   # "placement":"front_door"
+```
 
 Set `TZ` to the household's zone for every simulator run. The simulator turns "03:04"
 into an instant using the machine's clock zone.
@@ -223,8 +236,10 @@ Important for filming:
   Miguel and Rosa within seconds of each other and then texts everyone. To show an
   acknowledgement then, tap **I'm handling this** in the app
   (`POST /incidents/:id/acknowledge`), then **All clear** (`POST /incidents/:id/resolve`).
-- A second Ring event within 10 minutes joins the same incident. Wait 10 minutes, or let the
-  incident finish, before re-running the scene.
+- A second Ring event joins the first incident only while that incident is still running.
+  Resolve it (**All clear**) or let the ladder finish, then re-run the scene: it opens a new
+  incident. Each run's default time is today's 03:04 plus the current seconds (`--at
+  now-night`), so rehearsals never repeat an identical event time.
 - "Through Do Not Disturb": a Twilio call is an ordinary call. On Sofia's iPhone, save the
   Twilio number as a contact with Emergency Bypass on, or film the critical push from a
   native build with FCM and APNs critical alerts. The web app gets no push.
@@ -357,7 +372,11 @@ curl -s "$B/me/care/proposals?status=pending" -H "$AUTH"
 In the app: Care tab, the proposals inbox. Three items: a medication change (Donepezil to
 5 mg at 20:00 from the next Monday), an appointment (blood test in two weeks) and a to-do
 (pick up the prescription). Approve all, or pick some. Approval creates Bee todos with
-alarms; the mock logs `Mock Bee todo: "..."`. The activity feed says "Approved care changes
+alarms; the mock logs `Mock Bee todo: "..."`. The dose change starts next Monday, so it is
+**scheduled, not applied**: Donepezil stays at 10 mg at 08:00 today, gets the note "From
+Monday ...: 5 mg at 20:00.", and Bee gets a todo "Donepezil changes to 5 mg at 20:00
+today" with an alarm at 08:00 that Monday. A change dated today (or undated) applies at
+once. The activity feed says "Approved care changes
 from a Bee note."
 
 Each conversation id makes one proposal. Use `demo-2`, `demo-3` for retakes.

@@ -38,7 +38,7 @@ const KIND: Record<AlertKind, { label: string; tone: Tone }> = {
   door_unusual_hour: { label: 'Door at an unusual hour', tone: 'attention' },
   missed_dose: { label: 'Missed dose', tone: 'attention' },
   'door.night_activity': { label: 'Front door at night', tone: 'incident' },
-  'visit.no_show': { label: 'Visit didn\'t happen', tone: 'attention' },
+  'visit.no_show': { label: 'Expected visit missed', tone: 'attention' },
 };
 
 /** How a sighting reads: expected (with why) or a stranger. */

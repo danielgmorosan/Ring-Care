@@ -22,7 +22,9 @@ export type RingCareOutcome =
   /** Motion that is not a person (vehicle, package delivery, plain motion): timeline only. */
   | 'not_a_person'
   /** A person at the door outside the night window: timeline only. */
-  | 'daytime';
+  | 'daytime'
+  /** The camera is not placed on the front door (indoor, other): not judged further. */
+  | 'not_front_door';
 
 export interface RingCareDecision {
   ringEventId: string;
@@ -33,6 +35,11 @@ export interface RingCareDecision {
   outcome: RingCareOutcome;
   incidentId: string | null;
   visitId: string | null;
+  /**
+   * When the decision was recorded (our wall clock), set by the repository on read. The
+   * de-duplication anchor: Ring's own `at` can repeat (a replay, the demo simulator).
+   */
+  recordedAt?: string;
 }
 
 /**

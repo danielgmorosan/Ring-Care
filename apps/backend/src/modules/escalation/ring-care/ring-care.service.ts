@@ -34,9 +34,9 @@ import {
 } from './ring-care-decision.repository';
 
 /**
- * Repeated front-door activity within this many minutes of a night door response joins
- * it instead of opening another (Ring often sends motion and a ding together, and a
- * person lingering at the door keeps triggering motion).
+ * Repeated front-door activity received within this many minutes (wall clock) of a
+ * no-engine night door alert joins it instead of alerting again (Ring often sends motion
+ * and a ding together). With the engine, activity joins while the incident is running.
  */
 export const NIGHT_DOOR_DEDUPE_MINUTES = 10;
 
@@ -53,7 +53,7 @@ const HUMAN_SUBTYPE = 'human';
  *     Activity during a visit never opens an incident, even at night.
  *  3. A person in the night window (RING_NIGHT_START..RING_NIGHT_END, household clock,
  *     wrapping past midnight): open a `door.night_activity` incident on the family-only
- *     ladder (no voice check-in, never emergency services), or join the open one.
+ *     ladder (no voice check-in, never emergency services), or join the one still running.
  *  4. Otherwise (daytime): timeline only.
  *
  * Every judgement is recorded, append-only, in ring_care_decisions: the audit of why an
@@ -101,7 +101,12 @@ export class RingCareService {
     return decision?.interpretation ?? null;
   }
 
-  /** Judge one event. Serialized per family; never throws. */
+  /** Whether this Ring event already has its decision on record (the catch-up sweep). */
+  async isJudged(ringEventId: string): Promise<boolean> {
+    return (await this.decisions.findByRingEvent(ringEventId)) !== null;
+  }
+
+  /** Judge one event. Serialized per family; never throws. Idempotent per event. */
   handle(payload: RingActivityPayload, kind: RingActivityKind): Promise<void> {
     const previous = this.queues.get(payload.familyId) ?? Promise.resolve();
     const next = previous.then(() => this.judge(payload, kind));
@@ -114,7 +119,6 @@ export class RingCareService {
 
   private async judge(payload: RingActivityPayload, kind: RingActivityKind): Promise<void> {
     try {
-      if (payload.placement !== 'front_door') return;
       if (await this.decisions.findByRingEvent(payload.ringEventId)) return; // redelivered
 
       const at = new Date(payload.occurredAt).toISOString();
@@ -125,6 +129,12 @@ export class RingCareService {
         incidentId: null,
         visitId: null,
       };
+
+      // Never silent: an event ignored for its camera's placement is on record as such.
+      if (payload.placement !== 'front_door') {
+        await this.record({ ...base, interpretation: null, outcome: 'not_front_door' });
+        return;
+      }
 
       const isPerson = kind === 'ding' || payload.subType === HUMAN_SUBTYPE;
       if (!isPerson) {
@@ -163,7 +173,7 @@ export class RingCareService {
         return;
       }
 
-      const open = await this.openNightDoorResponse(payload.familyId, at);
+      const open = await this.openNightDoorResponse(payload.familyId, payload.receivedAt);
       if (open) {
         this.logger.log(
           `Night door activity ${payload.ringEventId} joins ${open.incidentId ?? 'the alert'} ` +
@@ -186,19 +196,22 @@ export class RingCareService {
   }
 
   /**
-   * The night door response this activity should join: the family's latest one, if it is
-   * within the de-duplication window or its incident is still running.
+   * The night door response this activity should join: the family's latest one, if its
+   * incident is still running, or (for a no-engine alert, which has no incident) if it was
+   * recorded within the de-duplication window. Both sides use our wall clock (when the
+   * event was received, when the decision was recorded), never Ring's `occurredAt`: a
+   * replay or a rehearsed demo can repeat the same 03:04 and must still start a new ladder.
    */
   private async openNightDoorResponse(
     familyId: string,
-    at: string,
+    receivedAt: string,
   ): Promise<RingCareDecision | null> {
     const latest = await this.decisions.latestNightDoorOpener(familyId);
     if (!latest) return null;
-    const gapMs = Math.abs(Date.parse(at) - Date.parse(latest.at));
-    if (gapMs <= NIGHT_DOOR_DEDUPE_MINUTES * 60_000) return latest;
-    if (latest.incidentId && (await this.isActive(latest.incidentId))) return latest;
-    return null;
+    if (latest.incidentId) return (await this.isActive(latest.incidentId)) ? latest : null;
+    const anchor = latest.recordedAt ?? latest.at;
+    const gapMs = Math.abs(Date.parse(receivedAt) - Date.parse(anchor));
+    return gapMs <= NIGHT_DOOR_DEDUPE_MINUTES * 60_000 ? latest : null;
   }
 
   private async isActive(incidentId: string): Promise<boolean> {
@@ -214,6 +227,25 @@ export class RingCareService {
     timezone: string,
     base: Pick<RingCareDecision, 'ringEventId' | 'familyId' | 'at' | 'incidentId' | 'visitId'>,
   ): Promise<void> {
+    // Crash-safe re-judging: if a previous run opened this event's incident but died
+    // before recording the decision, record it now instead of opening a second one.
+    const prior = (await this.incidents.listByFamily(payload.familyId)).find(
+      (i) => i.triggeringEventId === payload.ringEventId,
+    );
+    if (prior) {
+      this.logger.warn(
+        `Night door activity ${payload.ringEventId} already opened incident ${prior.id}; ` +
+          `recording the decision`,
+      );
+      await this.record({
+        ...base,
+        interpretation: 'night_door',
+        outcome: 'incident_opened',
+        incidentId: prior.id,
+      });
+      return;
+    }
+
     if (this.config.hasTemporal) {
       try {
         const contacts = await this.contacts.listByFamily(payload.familyId);

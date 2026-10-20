@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { redactUrl } from './redact-url';
 import { getRequestId } from './request-context';
 
 /** Standard reason phrases for the statuses this API returns. */
@@ -68,7 +69,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else {
       // Unknown/unexpected: log it (with the correlation id) but never leak internals.
       const detail = exception instanceof Error ? exception.stack : String(exception);
-      this.logger.error(`Unhandled ${req.method} ${req.url} [${requestId ?? 'no-id'}]: ${detail}`);
+      // Never log a credential: the Bee webhook may carry its secret as ?secret=.
+      this.logger.error(
+        `Unhandled ${req.method} ${redactUrl(req.url)} [${requestId ?? 'no-id'}]: ${detail}`,
+      );
     }
 
     const envelope: ErrorEnvelope = {
@@ -77,7 +81,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message,
       requestId,
       timestamp: new Date().toISOString(),
-      path: req.url,
+      path: redactUrl(req.url),
     };
     res.status(status).json(envelope);
   }

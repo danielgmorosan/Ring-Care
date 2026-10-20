@@ -17,9 +17,11 @@ interface DecisionRow extends QueryResultRow {
   outcome: string;
   incident_id: string | null;
   visit_id: string | null;
+  recorded_at: Date;
 }
 
-const COLUMNS = 'ring_event_id, family_id, at, interpretation, outcome, incident_id, visit_id';
+const COLUMNS =
+  'ring_event_id, family_id, at, interpretation, outcome, incident_id, visit_id, recorded_at';
 
 function toDecision(r: DecisionRow): RingCareDecision {
   return {
@@ -30,6 +32,7 @@ function toDecision(r: DecisionRow): RingCareDecision {
     outcome: r.outcome as RingCareOutcome,
     incidentId: r.incident_id,
     visitId: r.visit_id,
+    recordedAt: r.recorded_at.toISOString(),
   };
 }
 
@@ -61,7 +64,7 @@ export class PgRingCareDecisionRepository implements RingCareDecisionRepository 
     const { rows } = await this.pool.query<DecisionRow>(
       `SELECT ${COLUMNS} FROM ring_care_decisions
         WHERE family_id = $1 AND outcome = ANY($2::text[])
-        ORDER BY at DESC
+        ORDER BY recorded_at DESC
         LIMIT 1`,
       [familyId, [...NIGHT_DOOR_OPENER_OUTCOMES]],
     );

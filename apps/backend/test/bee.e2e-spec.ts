@@ -77,10 +77,12 @@ describe('Bee care proposals (e2e)', () => {
       .set(auth())
       .send({ itemIds: [medItem] })
       .expect(200);
-    expect(approved.body).toEqual({ applied: [medItem], todosCreated: 0 });
+    // "From Monday" is always a future day: scheduled, with a Bee todo for that morning.
+    expect(approved.body).toEqual({ applied: [], scheduled: [medItem], todosCreated: 1 });
 
     const meds = await request(http).get('/me/medications').set(auth()).expect(200);
-    expect(meds.body[0]).toMatchObject({ name: 'Donepezil', dosage: '5 mg', times: ['20:00'] });
+    expect(meds.body[0]).toMatchObject({ name: 'Donepezil', dosage: '10 mg', times: ['08:00'] });
+    expect(meds.body[0].notes).toMatch(/^From Monday \d+ \w+: 5 mg at 20:00\.$/);
 
     const again = await request(http)
       .post(`/me/care/proposals/${proposal.id}/approve`)

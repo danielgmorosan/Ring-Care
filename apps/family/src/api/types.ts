@@ -357,6 +357,18 @@ export const visitSchema = z.object({
 export type Visit = z.infer<typeof visitSchema>;
 export const visitListSchema = z.array(visitSchema);
 
+/** An expected visitor arrived, seen at the front door by Ring (decision 0011). Append-only.
+ * `text` is the backend's timeline line in the household's clock: "Anna arrived at 9:02." */
+export const visitArrivalSchema = z.object({
+  id: z.string(),
+  visitId: z.string(),
+  visitorLabel: z.string(),
+  arrivedAt: z.string(),
+  text: z.string(),
+});
+export type VisitArrival = z.infer<typeof visitArrivalSchema>;
+export const visitArrivalListSchema = z.array(visitArrivalSchema);
+
 export interface CreateVisitBody {
   visitorLabel: string;
   startsAt: string;
@@ -449,6 +461,8 @@ export const careProposalListSchema = z.array(careProposalSchema);
 
 export const approveResultSchema = z.object({
   applied: z.array(z.string()),
+  /** Changes that start on a later date: noted now, with a reminder for that day. */
+  scheduled: z.array(z.string()).optional(),
   todosCreated: z.number(),
 });
 export type ApproveResult = z.infer<typeof approveResultSchema>;

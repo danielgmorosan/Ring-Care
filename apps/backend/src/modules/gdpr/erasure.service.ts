@@ -1,4 +1,6 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import { RING_REPOSITORY, type RingRepository } from '../ring/ring.repository';
+import { VisitsService } from '../visits/visits.service';
 import type { AuthUser } from '../auth/user.repository';
 import { USER_REPOSITORY, type UserRepository } from '../auth/user.repository';
 import { AppointmentsService } from '../care/appointments.service';
@@ -16,9 +18,15 @@ const ERASED_HOUSEHOLD = 'Erased household';
  * already non-identifying (labels + roles, never names). See docs/decisions/0005.
  *
  * - Redacted in place (rows referenced by the append-only trail): contacts, device
- *   names, caregiver accounts (email → tombstone, password disabled), family name.
- * - Deleted (standalone, unreferenced): medications, appointments, push tokens.
- * - Untouched: event_stream, incidents, incident_steps, narratives, access_log.
+ *   names, Ring camera names, caregiver accounts (email → tombstone, password
+ *   disabled), family name.
+ * - Deleted (standalone, unreferenced): medications, appointments, push tokens,
+ *   expected visits.
+ * - Untouched (append-only, retained under Art. 17(3)): event_stream, incidents,
+ *   incident_steps, narratives, access_log, ring_events, ring_care_decisions,
+ *   visit_arrivals, care_proposals, care_proposal_decisions. The last three carry
+ *   free text (a visitor's label, a proposal's summary and items); decision 0005 lists
+ *   them as an open retention question for founder sign-off.
  *
  * Irreversible, so it requires the caregiver to type their exact family name back.
  */
@@ -34,6 +42,8 @@ export class ErasureService {
     private readonly pushTokens: PushTokensService,
     private readonly devices: DevicesService,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
+    private readonly visits: VisitsService,
+    @Inject(RING_REPOSITORY) private readonly ring: RingRepository,
   ) {}
 
   async erase(user: AuthUser, confirmName: string): Promise<{ erased: true }> {
@@ -48,6 +58,7 @@ export class ErasureService {
     // Redact rows the append-only trail references (keep the row, drop the identity).
     await this.contacts.redactForFamily(familyId);
     await this.devices.redactNamesForFamily(familyId);
+    await this.ring.redactCameraNamesForFamily(familyId); // ring_events reference the rows
 
     // Delete standalone, unreferenced records.
     for (const m of await this.medications.list(familyId)) {
@@ -58,6 +69,11 @@ export class ErasureService {
     }
     for (const t of await this.pushTokens.listForFamily(familyId)) {
       await this.pushTokens.unregister(familyId, t.token);
+    }
+    // Expected visits are editable configuration (visitor labels, notes). visit_arrivals
+    // keeps its own copy of the label and carries no foreign key, so nothing breaks.
+    for (const v of await this.visits.list(familyId)) {
+      await this.visits.delete(familyId, v.id);
     }
 
     // Irreversibly erase the caregiver accounts, then the family name last.

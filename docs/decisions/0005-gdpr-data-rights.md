@@ -39,7 +39,9 @@ lawful-basis exception above.
 
 `POST /me/export` returns a structured JSON bundle of everything the family owns:
 account, family, guardians, contacts, medications, appointments, incidents (with their
-full step trail and narrative), registered devices, and the activity log. Family-scoped
+full step trail and narrative), registered devices, the activity log, and the hackathon
+tables below (Bee care proposals with their decisions, expected visits, visit arrivals,
+Ring cameras and Ring events). Family-scoped
 and ownership-guarded like every `/me` route, and the export itself is recorded on the
 append-only activity trail (rule #7). This satisfies Art. 15 and Art. 20.
 
@@ -63,11 +65,37 @@ name back (irreversible). The approach:
 Because erasure is destructive and irreversible, it is gated on founder sign-off of
 this record and will require an explicit confirmation from the caregiver.
 
+### Hackathon tables (Ring, visits, Bee): added 2026-10-20
+
+Decisions 0011 (Ring) and 0012 (Bee) added tables. They follow the same split:
+
+| Table | Kind | Export | Erasure |
+| --- | --- | --- | --- |
+| `ring_cameras` | editable | `ringCameras` | name redacted; row kept (`ring_events` references it) |
+| `expected_visits` | editable | `expectedVisits` | deleted |
+| `ring_events` | append-only | `ringEvents` | retained: labels, ids and times only (rule #1) |
+| `ring_care_decisions` | append-only | not in the bundle (the incidents it opened are) | retained: ids, outcomes and times only |
+| `visit_arrivals` | append-only | `visitArrivals` | retained, see open question 4 |
+| `care_proposals` | append-only | `careProposals` | retained, see open question 4 |
+| `care_proposal_decisions` | append-only | inside each `careProposals[].decision` | retained, see open question 4 |
+
+The append-only triggers forbid UPDATE and DELETE on these rows by design (rule #2), so
+erasure does not touch them, exactly as for `event_stream` and `incidents`. Unlike that
+trail, three of them carry free text: `visit_arrivals.visitor_label` (a visitor's first
+name, copied from the visit) and the `summary` and `items` of `care_proposals` (derived
+from the caregiver's own Bee note, which can name a medication: health data under Art.
+9). `care_proposal_decisions.result` can echo a medication name in its messages.
+
 ## Decision (erasure, to be completed by Souheila / Wil / Daniel)
 
 1. Confirm the retention basis and period for the append-only trail after erasure.
 2. Confirm the redaction map above is complete (no identifying field missed).
 3. Confirm the caregiver confirmation flow and that erasure is logged.
+4. Confirm the retention basis for the free text in `visit_arrivals`,
+   `care_proposals` and `care_proposal_decisions` after erasure. Art. 17(3) covers the
+   safety audit; it is less clearly a basis for a care-plan suggestion. If it does not
+   hold, the fix is a schema change recorded here (for example, encrypt those columns
+   with a per-family key and destroy the key on erasure), not a DELETE.
 
 ## Consequences
 

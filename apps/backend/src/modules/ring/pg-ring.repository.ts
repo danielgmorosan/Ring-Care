@@ -85,15 +85,20 @@ export class PgRingRepository implements RingRepository {
     return rows[0] ? toCamera(rows[0]) : null;
   }
 
-  async ensureCamera(familyId: string, ringDeviceId: string): Promise<RingCamera> {
-    // The no-op DO UPDATE makes RETURNING yield the existing row on conflict.
+  async ensureCamera(
+    familyId: string,
+    ringDeviceId: string,
+    placementIfNew: RingPlacement = 'other',
+  ): Promise<RingCamera> {
+    // The no-op DO UPDATE makes RETURNING yield the existing row on conflict, so an
+    // existing camera keeps its placement.
     const { rows } = await this.pool.query<CameraRow>(
-      `INSERT INTO ring_cameras (family_id, ring_device_id)
-       VALUES ($1, $2)
+      `INSERT INTO ring_cameras (family_id, ring_device_id, placement)
+       VALUES ($1, $2, $3)
        ON CONFLICT (family_id, ring_device_id)
          DO UPDATE SET ring_device_id = EXCLUDED.ring_device_id
        RETURNING ${CAMERA_COLUMNS}`,
-      [familyId, ringDeviceId],
+      [familyId, ringDeviceId, placementIfNew],
     );
     return toCamera(rows[0]!);
   }
@@ -133,6 +138,11 @@ export class PgRingRepository implements RingRepository {
     );
   }
 
+  async redactCameraNamesForFamily(familyId: string): Promise<void> {
+    // ring_cameras is editable configuration (not append-only): an UPDATE is allowed.
+    await this.pool.query(`UPDATE ring_cameras SET name = '' WHERE family_id = $1`, [familyId]);
+  }
+
   async setOnline(familyId: string, id: string, online: boolean): Promise<void> {
     await this.pool.query(`UPDATE ring_cameras SET online = $3 WHERE family_id = $1 AND id = $2`, [
       familyId,
@@ -167,6 +177,19 @@ export class PgRingRepository implements RingRepository {
       `SELECT ${EVENT_COLUMNS} FROM ring_events WHERE family_id = $1
        ORDER BY occurred_at DESC LIMIT $2`,
       [familyId, limit],
+    );
+    return rows.map(toEvent);
+  }
+
+  async listActivityReceivedBetween(from: string, to: string): Promise<RingEventRecord[]> {
+    const { rows } = await this.pool.query<EventRow>(
+      `SELECT ${EVENT_COLUMNS} FROM ring_events
+        WHERE received_at BETWEEN $1 AND $2
+          AND kind IN ('motion', 'ding')
+          AND ring_camera_id IS NOT NULL
+        ORDER BY received_at ASC
+        LIMIT 500`,
+      [from, to],
     );
     return rows.map(toEvent);
   }

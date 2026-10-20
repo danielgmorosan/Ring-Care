@@ -22,7 +22,7 @@ const REASONS: Record<string, ReasonInfo> = {
     source: 'Seen by Ring at the front door',
   },
   'visit.no_show': {
-    label: "Visit didn't happen",
+    label: 'Expected visit missed',
     glyph: '◷',
     tone: 'attention',
     source: 'No arrival at the front door',
