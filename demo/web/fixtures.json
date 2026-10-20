@@ -1,0 +1,742 @@
+{
+ "__meta": {
+  "recordedAt": "2026-10-20",
+  "familyTimezone": "Europe/Lisbon",
+  "login": {
+   "email": "sofia@example.com",
+   "password": "demo-pass-123",
+   "note": "any email and password log in"
+  },
+  "recorded": "Real backend (apps/backend, Postgres, mock Twilio/Bee/AI, no Temporal) seeded per docs/hackathon/demo-runbook.md; responses captured with a real JWT.",
+  "sample": [
+   "GET /me/incidents",
+   "GET /me/incidents/5d0c3f1e-8a77-4c2b-9e61-0d3b1f6a2c04",
+   "GET /me/incidents/b8e2a4d6-1f3c-4e5a-9b7d-2c6e8f0a1b35",
+   "GET /me/summary/today (text and counts, to agree with the sample incidents)",
+   "GET /me/fleet and GET /me/devices: guardian shown online with battery and version (no MQTT link ran)",
+   "Ring camera name \"Front door\" (a webhook-created camera starts unnamed; only a Ring sync names it)",
+   "POST /auth/login token replaced with a placeholder"
+  ],
+  "whySample": "Temporal could not run while recording, so the night exit raised a family alert but no incident ladder."
+ },
+ "__afterApprove": {
+  "GET /me/medications": [
+   {
+    "id": "dcb72a30-1be6-4194-b0ea-576c2c00aec2",
+    "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+    "name": "Vitamin D",
+    "dosage": "1000 IU",
+    "times": [
+     "08:00"
+    ],
+    "notes": null,
+    "createdAt": "2026-10-20T12:47:43.918Z"
+   },
+   {
+    "id": "89376efa-74cb-481b-80e3-27017fa7f713",
+    "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+    "name": "Donepezil",
+    "dosage": "2.5 mg",
+    "times": [
+     "08:00"
+    ],
+    "notes": "From Monday 26 October: 5 mg at 20:00.",
+    "createdAt": "2026-10-20T12:47:43.939Z"
+   }
+  ],
+  "GET /me/appointments": [
+   {
+    "id": "cefe9749-717d-4cb9-ba59-24ab40ebaeb3",
+    "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+    "title": "Blood test",
+    "at": "2026-11-03T09:00:00.000Z",
+    "location": null,
+    "notes": "Added from a Bee note. No time was given, so please check it.",
+    "createdAt": "2026-10-20T12:48:25.530Z"
+   }
+  ],
+  "GET /me/care/today": {
+   "date": "2026-10-20",
+   "medications": [
+    {
+     "id": "dcb72a30-1be6-4194-b0ea-576c2c00aec2",
+     "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+     "name": "Vitamin D",
+     "dosage": "1000 IU",
+     "times": [
+      "08:00"
+     ],
+     "notes": null,
+     "createdAt": "2026-10-20T12:47:43.918Z"
+    },
+    {
+     "id": "89376efa-74cb-481b-80e3-27017fa7f713",
+     "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+     "name": "Donepezil",
+     "dosage": "2.5 mg",
+     "times": [
+      "08:00"
+     ],
+     "notes": "From Monday 26 October: 5 mg at 20:00.",
+     "createdAt": "2026-10-20T12:47:43.939Z"
+    }
+   ],
+   "appointments": []
+  },
+  "GET /me/activity": [
+   {
+    "id": "fe15dff0-6bd6-4aae-bc31-41c593239637",
+    "at": "2026-10-20T12:48:25.535Z",
+    "label": "Approved care changes from a Bee note"
+   },
+   {
+    "id": "56035d69-ba2a-4aea-9611-a7dff54f51fa",
+    "at": "2026-10-20T12:48:25.508Z",
+    "label": "Asked Obrigada a question"
+   },
+   {
+    "id": "e11f6704-b8ec-4a31-b89a-fe00c6dd113f",
+    "at": "2026-10-20T12:47:46.103Z",
+    "label": "Updated a Ring camera"
+   },
+   {
+    "id": "8b7c1f27-3a57-439b-b463-fad9127de17e",
+    "at": "2026-10-20T12:47:43.941Z",
+    "label": "Added a medication"
+   },
+   {
+    "id": "310c5355-a742-4717-a7e4-3584f153cf13",
+    "at": "2026-10-20T12:47:43.922Z",
+    "label": "Added a medication"
+   },
+   {
+    "id": "9b5c7a3b-d541-4ad5-a986-9f01ce45580a",
+    "at": "2026-10-20T12:47:43.897Z",
+    "label": "Logged an expected visit"
+   },
+   {
+    "id": "02ed5c2e-cea4-44b5-afdf-7efea9729d65",
+    "at": "2026-10-20T12:47:43.703Z",
+    "label": "Added a contact"
+   },
+   {
+    "id": "46d6dffc-4d41-4f85-afe2-7722247820c8",
+    "at": "2026-10-20T12:47:43.683Z",
+    "label": "Added a contact"
+   },
+   {
+    "id": "2f862173-eee7-45ab-bf07-a7e6aeda439d",
+    "at": "2026-10-20T12:47:43.660Z",
+    "label": "Added a contact"
+   }
+  ],
+  "GET /me/care/proposals?status=pending": [],
+  "GET /me/care/proposals?status=approved": [
+   {
+    "id": "71e475ef-5468-4220-9e15-5ca13566c06d",
+    "source": "bee",
+    "createdAt": "2026-10-20T12:47:49.881Z",
+    "summary": "From your note: Donepezil to 5 mg at 20:00 from Monday 26 October; Blood test on Tuesday 3 November; Pick up the new prescription.",
+    "status": "approved",
+    "items": [
+     {
+      "id": "43e5bf95-0eac-404e-a5ea-d2b2261f9bde",
+      "data": {
+       "dose": "5 mg",
+       "times": [
+        "20:00"
+       ],
+       "startDate": "2026-10-26",
+       "medicationName": "Donepezil"
+      },
+      "kind": "medication_change",
+      "title": "Donepezil to 5 mg at 20:00 from Monday 26 October",
+      "detail": "You said: \"Mom's Donepezil goes to 5 mg at 8 pm from Monday\"."
+     },
+     {
+      "id": "2e086703-d300-465a-ae74-41f0bc878a28",
+      "data": {
+       "date": "2026-11-03",
+       "time": null,
+       "title": "Blood test",
+       "location": null
+      },
+      "kind": "appointment",
+      "title": "Blood test on Tuesday 3 November",
+      "detail": "You said: \"blood test in two weeks\". No time was given."
+     },
+     {
+      "id": "cf632a06-a183-47c0-b88d-e082aacd5f9b",
+      "data": {
+       "text": "Pick up the new prescription",
+       "dueDate": null,
+       "dueTime": null
+      },
+      "kind": "todo",
+      "title": "Pick up the new prescription",
+      "detail": "You said: \"pick up the new prescription\"."
+     }
+    ],
+    "decision": {
+     "decision": "approved",
+     "decidedAt": "2026-10-20T12:48:25.533Z",
+     "result": {
+      "items": [
+       {
+        "kind": "medication_change",
+        "itemId": "43e5bf95-0eac-404e-a5ea-d2b2261f9bde",
+        "status": "scheduled",
+        "message": "Scheduled for Monday 26 October. The current plan stays until then.",
+        "beeTodoId": "mock-59c4e451-2842-450b-a930-bafb6755b809",
+        "medicationId": "89376efa-74cb-481b-80e3-27017fa7f713"
+       },
+       {
+        "kind": "appointment",
+        "itemId": "2e086703-d300-465a-ae74-41f0bc878a28",
+        "status": "applied",
+        "beeTodoId": "mock-679b2ef5-86ed-48c8-9710-d0b8b8422014",
+        "appointmentId": "cefe9749-717d-4cb9-ba59-24ab40ebaeb3"
+       },
+       {
+        "kind": "todo",
+        "itemId": "cf632a06-a183-47c0-b88d-e082aacd5f9b",
+        "status": "applied",
+        "beeTodoId": "mock-7212ecbf-d29d-4f74-b7e9-d94b907be8e6"
+       }
+      ],
+      "applied": [
+       "2e086703-d300-465a-ae74-41f0bc878a28",
+       "cf632a06-a183-47c0-b88d-e082aacd5f9b"
+      ],
+      "scheduled": [
+       "43e5bf95-0eac-404e-a5ea-d2b2261f9bde"
+      ],
+      "todosCreated": 3
+     }
+    }
+   }
+  ]
+ },
+ "__recordedAskAnswer": {
+  "answer": "Here is what I can tell you from the record. Nothing has needed attention recently. No guardian is set up yet. Two medications on the schedule. Nothing is on the calendar."
+ },
+ "__nightIncidentId": "5d0c3f1e-8a77-4c2b-9e61-0d3b1f6a2c04",
+ "GET /auth/me": {
+  "user": {
+   "id": "6eaf008d-fb77-4c40-839e-3e3a9b200b47",
+   "email": "sofia@example.com"
+  },
+  "family": {
+   "id": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "name": "Ferreira"
+  }
+ },
+ "GET /me/devices": [
+  {
+   "id": "c313ae14-de45-4e81-a78d-ef3aa00a0a12",
+   "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "name": "Kitchen shelf",
+   "status": "online",
+   "registeredAt": "2026-10-20T12:49:51.104Z"
+  }
+ ],
+ "GET /me/fleet": [
+  {
+   "id": "c313ae14-de45-4e81-a78d-ef3aa00a0a12",
+   "name": "Kitchen shelf",
+   "status": "online",
+   "online": true,
+   "lastSeenAt": "2026-10-20T13:10:02.000Z",
+   "batteryPct": 78,
+   "thermalC": 31.5,
+   "appVersion": "0.9.3",
+   "models": null
+  }
+ ],
+ "GET /me/zones": [],
+ "GET /me/summary/today": {
+  "date": "2026-10-20",
+  "text": "A calm day. Someone was at the front door at 3:04 this morning, and Miguel answered our call and took care of it. Anna arrived for her visit at 13:47. Your guardian watched over the home throughout the day.",
+  "incidentCount": 1,
+  "guardiansTotal": 1,
+  "guardiansOnline": 1,
+  "visitsExpected": 1,
+  "visitsArrived": 1,
+  "visitsMissed": 0
+ },
+ "GET /me/incidents": [
+  {
+   "id": "5d0c3f1e-8a77-4c2b-9e61-0d3b1f6a2c04",
+   "reason": "door.night_activity",
+   "label": "Front door at night",
+   "openedAt": "2026-10-20T02:04:48.401Z",
+   "outcome": "acknowledged",
+   "stepCount": 6
+  },
+  {
+   "id": "b8e2a4d6-1f3c-4e5a-9b7d-2c6e8f0a1b35",
+   "reason": "fall.suspected",
+   "label": "Possible fall",
+   "openedAt": "2026-10-14T09:41:12.220Z",
+   "outcome": "stood_down",
+   "stepCount": 3
+  }
+ ],
+ "GET /me/contacts": [
+  {
+   "id": "a856b107-8895-4ec7-ab99-e4347f1a6fe1",
+   "name": "Sofia",
+   "role": "daughter",
+   "phone": "+351912000101",
+   "pushToken": null,
+   "priority": 0,
+   "quietHours": {
+    "end": "07:00",
+    "start": "22:00",
+    "wakeForConfirmedFallOnly": true
+   }
+  },
+  {
+   "id": "ed9f8403-fad8-4a57-895b-50d9f9d8ca96",
+   "name": "Miguel",
+   "role": "son",
+   "phone": "+351912000102",
+   "pushToken": null,
+   "priority": 1,
+   "quietHours": null
+  },
+  {
+   "id": "0006b144-6854-44b8-a319-9d07ef862a06",
+   "name": "Rosa",
+   "role": "neighbour",
+   "phone": "+351912000103",
+   "pushToken": null,
+   "priority": 2,
+   "quietHours": null
+  }
+ ],
+ "GET /me/medications": [
+  {
+   "id": "dcb72a30-1be6-4194-b0ea-576c2c00aec2",
+   "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "name": "Vitamin D",
+   "dosage": "1000 IU",
+   "times": [
+    "08:00"
+   ],
+   "notes": null,
+   "createdAt": "2026-10-20T12:47:43.918Z"
+  },
+  {
+   "id": "89376efa-74cb-481b-80e3-27017fa7f713",
+   "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "name": "Donepezil",
+   "dosage": "2.5 mg",
+   "times": [
+    "08:00"
+   ],
+   "notes": null,
+   "createdAt": "2026-10-20T12:47:43.939Z"
+  }
+ ],
+ "GET /me/appointments": [],
+ "GET /me/care/today": {
+  "date": "2026-10-20",
+  "medications": [
+   {
+    "id": "dcb72a30-1be6-4194-b0ea-576c2c00aec2",
+    "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+    "name": "Vitamin D",
+    "dosage": "1000 IU",
+    "times": [
+     "08:00"
+    ],
+    "notes": null,
+    "createdAt": "2026-10-20T12:47:43.918Z"
+   },
+   {
+    "id": "89376efa-74cb-481b-80e3-27017fa7f713",
+    "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+    "name": "Donepezil",
+    "dosage": "2.5 mg",
+    "times": [
+     "08:00"
+    ],
+    "notes": null,
+    "createdAt": "2026-10-20T12:47:43.939Z"
+   }
+  ],
+  "appointments": []
+ },
+ "GET /me/activity": [
+  {
+   "id": "e11f6704-b8ec-4a31-b89a-fe00c6dd113f",
+   "at": "2026-10-20T12:47:46.103Z",
+   "label": "Updated a Ring camera"
+  },
+  {
+   "id": "8b7c1f27-3a57-439b-b463-fad9127de17e",
+   "at": "2026-10-20T12:47:43.941Z",
+   "label": "Added a medication"
+  },
+  {
+   "id": "310c5355-a742-4717-a7e4-3584f153cf13",
+   "at": "2026-10-20T12:47:43.922Z",
+   "label": "Added a medication"
+  },
+  {
+   "id": "9b5c7a3b-d541-4ad5-a986-9f01ce45580a",
+   "at": "2026-10-20T12:47:43.897Z",
+   "label": "Logged an expected visit"
+  },
+  {
+   "id": "02ed5c2e-cea4-44b5-afdf-7efea9729d65",
+   "at": "2026-10-20T12:47:43.703Z",
+   "label": "Added a contact"
+  },
+  {
+   "id": "46d6dffc-4d41-4f85-afe2-7722247820c8",
+   "at": "2026-10-20T12:47:43.683Z",
+   "label": "Added a contact"
+  },
+  {
+   "id": "2f862173-eee7-45ab-bf07-a7e6aeda439d",
+   "at": "2026-10-20T12:47:43.660Z",
+   "label": "Added a contact"
+  }
+ ],
+ "GET /me/family": {
+  "id": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+  "name": "Ferreira",
+  "timezone": "Europe/Lisbon",
+  "checkinLanguage": "en",
+  "createdAt": "2026-10-20T12:47:15.338Z"
+ },
+ "GET /me/alerts": [
+  {
+   "id": "d3897c6b-7762-46e0-b933-82ab382d6edb",
+   "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "deviceId": null,
+   "kind": "door.night_activity",
+   "message": "Someone was at the front door at 3:04. Open the app to take a look.",
+   "ref": "93599f4a-bd19-4c0f-aaac-ce92318244e8",
+   "at": "2026-10-20T02:04:47.900Z",
+   "createdAt": "2026-10-20T12:47:48.000Z"
+  }
+ ],
+ "GET /me/people": [],
+ "GET /me/sightings": [],
+ "GET /me/visits": [
+  {
+   "id": "f43c0533-40f6-46c0-b1ff-5d06944150af",
+   "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "visitorLabel": "Anna",
+   "startsAt": "2026-10-20T12:47:43.753Z",
+   "endsAt": "2026-10-20T15:47:43.847Z",
+   "notes": "Morning carer visit",
+   "createdAt": "2026-10-20T12:47:43.893Z"
+  }
+ ],
+ "GET /me/visits/arrivals": [
+  {
+   "id": "ff677094-a161-44f3-b4b7-b3bf6b9f9254",
+   "visitId": "f43c0533-40f6-46c0-b1ff-5d06944150af",
+   "familyId": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "ringEventId": "9f47981c-54d1-40ef-ac4d-92ddbdee966e",
+   "visitorLabel": "Anna",
+   "arrivedAt": "2026-10-20T12:47:49.619Z",
+   "text": "Anna arrived at 13:47."
+  }
+ ],
+ "GET /me/ring/status": {
+  "mode": "off",
+  "webhooks": true,
+  "cameras": [
+   {
+    "id": "90f1f223-f970-44eb-a813-12a79b67082b",
+    "ringDeviceId": "ring-sim-front-door",
+    "name": "Front door",
+    "placement": "front_door",
+    "online": true,
+    "lastEventAt": "2026-10-20T12:47:49.619Z"
+   }
+  ]
+ },
+ "GET /me/ring/cameras": [
+  {
+   "id": "90f1f223-f970-44eb-a813-12a79b67082b",
+   "ringDeviceId": "ring-sim-front-door",
+   "name": "Front door",
+   "placement": "front_door",
+   "online": true,
+   "lastEventAt": "2026-10-20T12:47:49.619Z"
+  }
+ ],
+ "GET /me/ring/activity?limit=50": [
+  {
+   "id": "9f47981c-54d1-40ef-ac4d-92ddbdee966e",
+   "cameraId": "90f1f223-f970-44eb-a813-12a79b67082b",
+   "cameraName": "Front door",
+   "placement": "front_door",
+   "kind": "ding",
+   "subType": null,
+   "occurredAt": "2026-10-20T12:47:49.619Z",
+   "source": "simulator",
+   "interpretation": "visit_arrival"
+  },
+  {
+   "id": "93599f4a-bd19-4c0f-aaac-ce92318244e8",
+   "cameraId": "90f1f223-f970-44eb-a813-12a79b67082b",
+   "cameraName": "Front door",
+   "placement": "front_door",
+   "kind": "motion",
+   "subType": "human",
+   "occurredAt": "2026-10-20T02:04:47.900Z",
+   "source": "simulator",
+   "interpretation": "night_door"
+  },
+  {
+   "id": "2ab5e404-b78b-450e-8ed8-b8321cedba13",
+   "cameraId": "90f1f223-f970-44eb-a813-12a79b67082b",
+   "cameraName": "Front door",
+   "placement": "front_door",
+   "kind": "motion",
+   "subType": "human",
+   "occurredAt": "2026-10-19T13:00:00.000Z",
+   "source": "simulator",
+   "interpretation": null
+  }
+ ],
+ "GET /me/ring/activity?limit=5": [
+  {
+   "id": "9f47981c-54d1-40ef-ac4d-92ddbdee966e",
+   "cameraId": "90f1f223-f970-44eb-a813-12a79b67082b",
+   "cameraName": "Front door",
+   "placement": "front_door",
+   "kind": "ding",
+   "subType": null,
+   "occurredAt": "2026-10-20T12:47:49.619Z",
+   "source": "simulator",
+   "interpretation": "visit_arrival"
+  },
+  {
+   "id": "93599f4a-bd19-4c0f-aaac-ce92318244e8",
+   "cameraId": "90f1f223-f970-44eb-a813-12a79b67082b",
+   "cameraName": "Front door",
+   "placement": "front_door",
+   "kind": "motion",
+   "subType": "human",
+   "occurredAt": "2026-10-20T02:04:47.900Z",
+   "source": "simulator",
+   "interpretation": "night_door"
+  },
+  {
+   "id": "2ab5e404-b78b-450e-8ed8-b8321cedba13",
+   "cameraId": "90f1f223-f970-44eb-a813-12a79b67082b",
+   "cameraName": "Front door",
+   "placement": "front_door",
+   "kind": "motion",
+   "subType": "human",
+   "occurredAt": "2026-10-19T13:00:00.000Z",
+   "source": "simulator",
+   "interpretation": null
+  }
+ ],
+ "GET /me/care/proposals?status=pending": [
+  {
+   "id": "71e475ef-5468-4220-9e15-5ca13566c06d",
+   "source": "bee",
+   "createdAt": "2026-10-20T12:47:49.881Z",
+   "summary": "From your note: Donepezil to 5 mg at 20:00 from Monday 26 October; Blood test on Tuesday 3 November; Pick up the new prescription.",
+   "status": "pending",
+   "items": [
+    {
+     "id": "43e5bf95-0eac-404e-a5ea-d2b2261f9bde",
+     "data": {
+      "dose": "5 mg",
+      "times": [
+       "20:00"
+      ],
+      "startDate": "2026-10-26",
+      "medicationName": "Donepezil"
+     },
+     "kind": "medication_change",
+     "title": "Donepezil to 5 mg at 20:00 from Monday 26 October",
+     "detail": "You said: \"Mom's Donepezil goes to 5 mg at 8 pm from Monday\"."
+    },
+    {
+     "id": "2e086703-d300-465a-ae74-41f0bc878a28",
+     "data": {
+      "date": "2026-11-03",
+      "time": null,
+      "title": "Blood test",
+      "location": null
+     },
+     "kind": "appointment",
+     "title": "Blood test on Tuesday 3 November",
+     "detail": "You said: \"blood test in two weeks\". No time was given."
+    },
+    {
+     "id": "cf632a06-a183-47c0-b88d-e082aacd5f9b",
+     "data": {
+      "text": "Pick up the new prescription",
+      "dueDate": null,
+      "dueTime": null
+     },
+     "kind": "todo",
+     "title": "Pick up the new prescription",
+     "detail": "You said: \"pick up the new prescription\"."
+    }
+   ]
+  }
+ ],
+ "GET /me/care/proposals?status=approved": [],
+ "GET /me/care/proposals?status=rejected": [],
+ "GET /me/medications/dcb72a30-1be6-4194-b0ea-576c2c00aec2/doses": [],
+ "GET /me/medications/89376efa-74cb-481b-80e3-27017fa7f713/doses": [],
+ "POST /auth/login": {
+  "token": "demo-recorded-session-token",
+  "user": {
+   "id": "6eaf008d-fb77-4c40-839e-3e3a9b200b47",
+   "email": "sofia@example.com"
+  },
+  "family": {
+   "id": "3943a8a4-c011-4287-a885-61c24d1a8fae",
+   "name": "Ferreira"
+  }
+ },
+ "POST /me/care/proposals/:id/approve": {
+  "applied": [
+   "2e086703-d300-465a-ae74-41f0bc878a28",
+   "cf632a06-a183-47c0-b88d-e082aacd5f9b"
+  ],
+  "scheduled": [
+   "43e5bf95-0eac-404e-a5ea-d2b2261f9bde"
+  ],
+  "todosCreated": 3
+ },
+ "POST /me/devices/:id/claim-code": {
+  "code": "Y22X-FXJP",
+  "expiresAt": "2026-10-20T13:05:01.544Z"
+ },
+ "GET /me/incidents/5d0c3f1e-8a77-4c2b-9e61-0d3b1f6a2c04": {
+  "id": "5d0c3f1e-8a77-4c2b-9e61-0d3b1f6a2c04",
+  "reason": "door.night_activity",
+  "label": "Front door at night",
+  "openedAt": "2026-10-20T02:04:48.401Z",
+  "outcome": "acknowledged",
+  "narrative": "Someone was at the front door at 3:04. We called Sofia first. Quiet hours don't hold back a night door call. She didn't pick up, so we called Miguel. He answered at 3:06 and pressed 1 to say he was handling it. The calls stopped there. No one else was woken.",
+  "steps": [
+   {
+    "seq": 0,
+    "kind": "incident_opened",
+    "contactName": null,
+    "contactRole": null,
+    "detail": {
+     "reason": "door.night_activity",
+     "confirmedFall": false,
+     "voiceCheckin": false,
+     "emergencyServices": false
+    },
+    "occurredAt": "2026-10-20T02:04:48.412Z"
+   },
+   {
+    "seq": 1,
+    "kind": "push_sent",
+    "contactName": "Sofia",
+    "contactRole": "daughter",
+    "detail": {
+     "device": true
+    },
+    "occurredAt": "2026-10-20T02:04:48.903Z"
+   },
+   {
+    "seq": 2,
+    "kind": "call_placed",
+    "contactName": "Sofia",
+    "contactRole": "daughter",
+    "detail": {
+     "phone": "+351912000101"
+    },
+    "occurredAt": "2026-10-20T02:04:49.611Z"
+   },
+   {
+    "seq": 3,
+    "kind": "call_no_answer",
+    "contactName": "Sofia",
+    "contactRole": "daughter",
+    "detail": {},
+    "occurredAt": "2026-10-20T02:05:34.702Z"
+   },
+   {
+    "seq": 4,
+    "kind": "call_placed",
+    "contactName": "Miguel",
+    "contactRole": "son",
+    "detail": {
+     "phone": "+351912000102"
+    },
+    "occurredAt": "2026-10-20T02:05:35.118Z"
+   },
+   {
+    "seq": 5,
+    "kind": "call_answered",
+    "contactName": "Miguel",
+    "contactRole": "son",
+    "detail": {
+     "via": "press_1"
+    },
+    "occurredAt": "2026-10-20T02:06:01.847Z"
+   }
+  ],
+  "secondOpinion": null
+ },
+ "GET /me/incidents/b8e2a4d6-1f3c-4e5a-9b7d-2c6e8f0a1b35": {
+  "id": "b8e2a4d6-1f3c-4e5a-9b7d-2c6e8f0a1b35",
+  "reason": "fall.suspected",
+  "label": "Possible fall",
+  "openedAt": "2026-10-14T09:41:12.220Z",
+  "outcome": "stood_down",
+  "narrative": "Your mother sat down quickly in the kitchen at 10:41 and it looked like a possible fall. We asked if she was okay. She said she was fine, so we stood down. Nobody needed to be called.",
+  "steps": [
+   {
+    "seq": 0,
+    "kind": "incident_opened",
+    "contactName": null,
+    "contactRole": null,
+    "detail": {
+     "reason": "fall.suspected",
+     "confirmedFall": false
+    },
+    "occurredAt": "2026-10-14T09:41:12.233Z"
+   },
+   {
+    "seq": 1,
+    "kind": "voice_checkin_result",
+    "contactName": null,
+    "contactRole": null,
+    "detail": {
+     "result": "i_am_fine"
+    },
+    "occurredAt": "2026-10-14T09:41:27.950Z"
+   },
+   {
+    "seq": 2,
+    "kind": "stood_down",
+    "contactName": null,
+    "contactRole": null,
+    "detail": {
+     "reason": "voice_checkin_ok"
+    },
+    "occurredAt": "2026-10-14T09:41:28.104Z"
+   }
+  ],
+  "secondOpinion": {
+   "verdict": "refuted",
+   "onFloor": false,
+   "walkerNearby": true,
+   "confidence": 0.74,
+   "at": "2026-10-14T09:41:14.010Z"
+  }
+ }
+}
