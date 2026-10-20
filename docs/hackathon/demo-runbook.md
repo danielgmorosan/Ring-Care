@@ -203,7 +203,12 @@ What happens:
    no emergency step. It pushes the caregivers' registered devices:
    "Someone was at the front door at 3:04. We're calling Sofia now."
 4. Calls go down the chain in priority order: Sofia, then Miguel, then Rosa. Sofia is
-   rung inside her quiet hours.
+   rung inside her quiet hours (quiet hours are read on the household clock). With Twilio
+   and `PUBLIC_BASE_URL` set, each call says "This is Obrigada. Someone was at the front
+   door at 3:04. Press 1 if you are handling this." and the ladder waits the ack window
+   (45 s) before ringing the next person. Miguel presses 1: he hears "Thank you. We have
+   let the family know you are handling it.", the ladder stops with outcome
+   `acknowledged`, and the timeline shows "Miguel answered" with "Pressed 1. Handling it."
 5. If nobody answers, every contact gets a text and push: "Someone was at the front door
    at 3:04. We haven't reached anyone by phone yet. Please check on home." The ladder ends
    with outcome `family_alerted`. It never calls 112.
@@ -213,13 +218,11 @@ What happens:
 
 Important for filming:
 
-- **Twilio calls do not detect an answer yet.** `TwilioNotificationAdapter.placeCall`
-  returns "not answered" as soon as the call is created, so the ladder rings Sofia, Miguel
-  and Rosa within seconds of each other and then texts everyone. The mock behaves the same.
-  To show "Sofia acknowledged", open the incident in the app and tap **I'm handling this**
+- **Real calls with Twilio: press 1 to confirm.** See "Twilio calls and press 1" below.
+  Without `PUBLIC_BASE_URL` (or on the mock) calls are one-way: the ladder rings Sofia,
+  Miguel and Rosa within seconds of each other and then texts everyone. To show an
+  acknowledgement then, tap **I'm handling this** in the app
   (`POST /incidents/:id/acknowledge`), then **All clear** (`POST /incidents/:id/resolve`).
-  The timeline then shows who responded. Tap quickly: the ladder may finish before you do.
-  **(verify)** the timing on a dry run, or show the acknowledgement on a second run.
 - A second Ring event within 10 minutes joins the same incident. Wait 10 minutes, or let the
   incident finish, before re-running the scene.
 - "Through Do Not Disturb": a Twilio call is an ordinary call. On Sofia's iPhone, save the
@@ -228,6 +231,45 @@ Important for filming:
 - Live view: Open Ring, **See live**. With the mock Ring client the backend returns a
   placeholder SDP answer, so no picture appears. Real live view needs a Ring token and a
   device. Never film a real person's door without consent.
+
+### Twilio calls and press 1
+
+Set these in `apps/backend/.env` (credentials from the vault, never committed):
+
+```sh
+TWILIO_ACCOUNT_SID=AC...
+TWILIO_AUTH_TOKEN=...
+TWILIO_FROM_NUMBER=+351...
+PUBLIC_BASE_URL=https://<your-tunnel-host>     # https origin only, no path, no trailing slash
+# CALLBACK_SIGNING_SECRET=<16+ chars>          # optional; derived from JWT_SECRET when unset
+```
+
+`PUBLIC_BASE_URL` is what turns on press 1. Twilio posts the key press to
+`$PUBLIC_BASE_URL/twilio/calls/confirm?...` on a link we sign (HMAC), and we also check
+Twilio's `X-Twilio-Signature` with the auth token. Without it, calls are one-way and the
+ladder moves straight on.
+
+Expose the local backend so Twilio can reach it, for example:
+
+```sh
+cloudflared tunnel --url http://localhost:3000     # or: ngrok http 3000
+# copy the https://... host it prints into PUBLIC_BASE_URL and restart the backend
+```
+
+Use the exact host the tunnel prints. Twilio signs the URL it calls, so a different host
+or an added path makes every press 1 fail with 403. A new tunnel host means a restart.
+
+Trial accounts, before filming:
+
+- A trial account can only call **verified numbers**. Verify Sofia's, Miguel's and Rosa's
+  phones in the Twilio console first, or those calls fail.
+- A trial call plays Twilio's own preamble before our message, and the person must
+  **press a key to hear the message**. Then they hear ours and press 1. Rehearse it once
+  on each phone. Allow for the preamble: the ack window is 45 s from when the call is
+  placed. A press 1 that arrives a little late, while the next person is ringing, still
+  stops the ladder and is credited to whoever pressed it.
+- Keep the backend log visible: `Placed Twilio call ... (press 1 to confirm)` and
+  `Contact ... confirmed incident ... by phone (press 1)`.
 
 ### Scene B: the fall indoors
 
@@ -359,6 +401,7 @@ with AWS credentials in the shell (`AWS_PROFILE=...` or exported keys).
 | Missing | What still works | How to film it |
 | --- | --- | --- |
 | Twilio | The full ladder runs on the mock. Each call and text is a log line with the words. | Show the timeline and the backend log side by side. Label "Simulated calls". |
+| Tunnel / `PUBLIC_BASE_URL` | Real calls ring, one-way, with no press 1. The ladder rings everyone quickly. | Show the acknowledgement from the app instead (**I'm handling this**). |
 | Bedrock | The deterministic mock writes narratives, summaries and answers. Bee extraction falls back to the rules extractor. | Unset `AI_PROVIDER` or set `mock`. Do not claim Bedrock wrote the words on screen. |
 | Ring access | The signed simulator posts the same webhook shape Ring sends. | Label "Simulated event". The app marks those rows Simulated. |
 | Ring Playground webhooks | The Playground does not deliver webhooks to us. | Use the simulator for events; use the Playground for the device list and API calls only, labelled "Ring Developer Playground". |

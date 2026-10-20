@@ -3,6 +3,7 @@ import {
   DEFAULT_ESCALATION_RULES,
   NIGHT_DOOR_REASON,
   escalationRulesFor,
+  localMinutesOfDay,
   shouldSkipForQuietHours,
   withinWindow,
   type EscalationContact,
@@ -97,5 +98,27 @@ describe('escalationRulesFor', () => {
   it('rule sets are frozen so nothing can switch 112 back on at runtime', () => {
     expect(Object.isFrozen(escalationRulesFor(NIGHT_DOOR_REASON))).toBe(true);
     expect(Object.isFrozen(DEFAULT_ESCALATION_RULES)).toBe(true);
+  });
+});
+
+describe('localMinutesOfDay (quiet hours on the household clock)', () => {
+  const at = (iso: string): number => Date.parse(iso);
+
+  it('reads the instant in the household timezone, across DST', () => {
+    // Lisbon is UTC+1 in summer and UTC+0 in winter.
+    expect(localMinutesOfDay(at('2026-07-15T02:04:00Z'), 'Europe/Lisbon')).toBe(3 * 60 + 4);
+    expect(localMinutesOfDay(at('2026-01-15T03:04:00Z'), 'Europe/Lisbon')).toBe(3 * 60 + 4);
+    expect(localMinutesOfDay(at('2026-07-15T14:00:00Z'), 'Asia/Tokyo')).toBe(23 * 60);
+    expect(localMinutesOfDay(at('2026-07-15T03:30:00Z'), 'America/New_York')).toBe(23 * 60 + 30);
+  });
+
+  it('wraps midnight to 0, never 1440', () => {
+    expect(localMinutesOfDay(at('2026-07-14T23:00:00Z'), 'Europe/Lisbon')).toBe(0);
+  });
+
+  it('defaults to UTC when the zone is missing or unknown', () => {
+    expect(localMinutesOfDay(at('2026-07-15T06:30:00Z'), undefined)).toBe(6 * 60 + 30);
+    expect(localMinutesOfDay(at('2026-07-15T06:30:00Z'), 'UTC')).toBe(6 * 60 + 30);
+    expect(localMinutesOfDay(at('2026-07-15T06:30:00Z'), 'Not/AZone')).toBe(6 * 60 + 30);
   });
 });

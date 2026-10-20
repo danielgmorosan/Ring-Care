@@ -2,6 +2,11 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AppConfig } from '../src/config/env.validation';
+import {
+  buildConfirmUrl,
+  deriveCallbackKey,
+} from '../src/modules/escalation/notifications/call-confirmation';
 
 describe('Obrigada backend (e2e)', () => {
   let app: INestApplication;
@@ -79,6 +84,52 @@ describe('Obrigada backend (e2e)', () => {
       .post('/auth/signup')
       .send({ email: 'weak@example.com', password: 'short', familyName: 'C' })
       .expect(400);
+  });
+
+  describe('the Twilio press-1 callback', () => {
+    const signedPath = (incidentId: string, contactId: string): string => {
+      const config = app.get(AppConfig);
+      const url = new URL(
+        buildConfirmUrl({
+          publicBaseUrl: 'https://obrigada.example',
+          key: deriveCallbackKey({
+            callbackSigningSecret: config.callbackSigningSecret,
+            jwtSecret: config.jwtSecret,
+          }),
+          incidentId,
+          contactId,
+          exp: Math.floor(Date.now() / 1000) + 600,
+        }),
+      );
+      return url.pathname + url.search;
+    };
+
+    it('is public but refuses a forged link (403, not 401)', async () => {
+      await request(http)
+        .post('/twilio/calls/confirm?incident=inc-1&contact=miguel&exp=9999999999&token=forged')
+        .type('form')
+        .send({ Digits: '1', CallSid: 'CA1' })
+        .expect(403);
+    });
+
+    it('answers a signed link with TwiML: another digit hangs up', async () => {
+      const res = await request(http)
+        .post(signedPath('inc-1', 'miguel'))
+        .type('form')
+        .send({ Digits: '2', CallSid: 'CA1' })
+        .expect(200);
+      expect(res.headers['content-type']).toMatch(/text\/xml/);
+      expect(res.text).toContain('<Hangup/>');
+    });
+
+    it('a press 1 for an incident that is not running is answered politely', async () => {
+      const res = await request(http)
+        .post(signedPath('no-such-incident', 'miguel'))
+        .type('form')
+        .send({ Digits: '1', CallSid: 'CA1' })
+        .expect(200);
+      expect(res.text).toContain('already closed');
+    });
   });
 
   describe('an authenticated caregiver', () => {

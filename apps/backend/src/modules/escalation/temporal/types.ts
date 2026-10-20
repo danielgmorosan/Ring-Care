@@ -49,6 +49,12 @@ export interface EscalationInput {
    * an LLM). Absent for falls, which keep the original generic texts.
    */
   messages?: EscalationMessages;
+  /**
+   * The household's IANA timezone (e.g. "Europe/Lisbon"). Contacts' quiet hours are
+   * household-local clock times, so the workflow reads its own clock in this zone.
+   * Absent on incidents started before this field existed: those keep UTC.
+   */
+  timeZone?: string;
 }
 
 export interface EscalationMessages {
@@ -56,6 +62,11 @@ export interface EscalationMessages {
   device?: string;
   /** The SMS and push to the whole chain when nobody handled it. */
   unanswered?: string;
+  /**
+   * What a family call says aloud, before "Press 1 if you are handling this." Absent for
+   * falls, which keep the generic call text.
+   */
+  call?: string;
 }
 
 /**
@@ -138,6 +149,19 @@ export interface PlaceCallInput {
   incidentId: string;
   contact: EscalationContact;
   ringSeconds: number;
+  /** The words spoken on the call (deterministic, never an LLM). Absent: the generic text. */
+  message?: string;
+}
+
+export interface PlaceCallResult {
+  /** A human picked up and is engaged. Only ever true when the adapter can know it. */
+  answered: boolean;
+  /**
+   * The call asks the contact to press 1, and that confirmation arrives later as the
+   * contactConfirmed signal. The workflow then waits the ack window before moving on.
+   * False or absent: move on immediately (mock adapter, Twilio without callbacks).
+   */
+  awaitsConfirmation?: boolean;
 }
 
 export interface ContactMessageInput {
@@ -164,7 +188,7 @@ export interface NotifyEmergencyInput {
  */
 export interface EscalationActivities {
   recordStep(input: RecordStepInput): Promise<void>;
-  placeCall(input: PlaceCallInput): Promise<{ answered: boolean }>;
+  placeCall(input: PlaceCallInput): Promise<PlaceCallResult>;
   sendSms(input: ContactMessageInput): Promise<void>;
   pushCriticalAlert(input: ContactMessageInput): Promise<void>;
   pushDeviceAlert(input: DeviceAlertInput): Promise<void>;
@@ -191,6 +215,8 @@ export const ACK_SIGNAL = 'contactAcknowledged';
 export const CAREGIVER_ACK_SIGNAL = 'caregiverAcknowledged';
 /** The caregiver's "All clear" that resolves an acknowledged incident (0008). */
 export const RESOLVE_SIGNAL = 'incidentResolved';
+/** A called contact pressed 1 on the call: "I am handling this" (0003 follow-up). */
+export const CONTACT_CONFIRMED_SIGNAL = 'contactConfirmed';
 
 /** How long the workflow waits for a pending voice check-in before proceeding. */
 export const CHECKIN_WAIT_SECONDS = 20;
@@ -234,4 +260,33 @@ export function shouldSkipForQuietHours(
   if (!qh) return false;
   if (confirmedFall && qh.wakeForConfirmedFallOnly) return false;
   return withinWindow(qh.start, qh.end, nowMinutes);
+}
+
+/**
+ * Minutes since local midnight (0–1439) of an instant in an IANA timezone. Pure: the
+ * workflow feeds it workflow time (Date.now() is deterministic inside the Temporal
+ * sandbox), so a replay computes exactly what the original run did. An unknown or
+ * missing zone falls back to UTC.
+ */
+export function localMinutesOfDay(epochMs: number, timeZone: string | null | undefined): number {
+  const utc = (): number => {
+    const d = new Date(epochMs);
+    return d.getUTCHours() * 60 + d.getUTCMinutes();
+  };
+  if (!timeZone || timeZone === 'UTC') return utc();
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(epochMs));
+    const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 'NaN') % 24;
+    const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? 'NaN');
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) return utc();
+    return hour * 60 + minute;
+  } catch {
+    // RangeError for an unknown zone: keep the old UTC behaviour rather than fail the ladder.
+    return utc();
+  }
 }

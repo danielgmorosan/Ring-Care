@@ -3,6 +3,7 @@ import type {
   DeviceAlertInput,
   NotifyEmergencyInput,
   PlaceCallInput,
+  PlaceCallResult,
 } from '../temporal/types';
 import { NotificationPort } from './notification.port';
 import { PushPort } from './push.port';
@@ -20,7 +21,7 @@ export class CompositeNotificationAdapter implements NotificationPort {
     private readonly push: PushPort,
   ) {}
 
-  placeCall(input: PlaceCallInput): Promise<{ answered: boolean }> {
+  placeCall(input: PlaceCallInput): Promise<PlaceCallResult> {
     return this.comms.placeCall(input);
   }
 

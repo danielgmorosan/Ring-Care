@@ -5,7 +5,16 @@ import type {
   DeviceAlertInput,
   NotifyEmergencyInput,
   PlaceCallInput,
+  PlaceCallResult,
 } from '../temporal/types';
+import {
+  CONFIRM_LINK_TTL_SECONDS,
+  GENERIC_CALL_MESSAGE,
+  buildConfirmCallTwiml,
+  buildConfirmUrl,
+  buildOneWayCallTwiml,
+  deriveCallbackKey,
+} from './call-confirmation';
 import { NotificationPort } from './notification.port';
 
 /**
@@ -30,26 +39,52 @@ export class TwilioNotificationAdapter implements NotificationPort {
 
   /**
    * Ring a contact. Twilio's call-creation REST call cannot synchronously report
-   * whether a human answered, so this returns `answered: false` — the safety core
-   * must never falsely believe a contact picked up and stop escalating. Real
-   * answered-detection (status callback / AMD) is an additive follow-up.
+   * whether a human answered, so this never returns `answered: true`: the safety core
+   * must never falsely believe a contact picked up and stop escalating.
+   *
+   * When Twilio can reach us back (PUBLIC_BASE_URL), the call asks "Press 1 if you are
+   * handling this." and reports `awaitsConfirmation: true`; the key press arrives later on
+   * a signed callback that signals the workflow (decision 0003, follow-up). Otherwise the
+   * call is one-way and the ladder moves straight on, as before.
    */
-  async placeCall(input: PlaceCallInput): Promise<{ answered: boolean }> {
+  async placeCall(input: PlaceCallInput): Promise<PlaceCallResult> {
     if (!input.contact.phone) {
       this.logger.warn(`No phone for ${input.contact.role}; cannot place call`);
       return { answered: false };
     }
-    // A minimal spoken message; TwiML read aloud by Twilio's TTS.
-    const twiml =
-      '<Response><Say voice="alice">This is an Obrigada safety alert. ' +
-      'Please open your Obrigada app to check on your family member.</Say></Response>';
+    const message = input.message ?? GENERIC_CALL_MESSAGE;
+    const confirmUrl = this.confirmUrl(input);
+    const twiml = confirmUrl
+      ? buildConfirmCallTwiml({ message, actionUrl: confirmUrl })
+      : buildOneWayCallTwiml(message);
     await this.post('Calls.json', {
       To: input.contact.phone,
       From: this.from(),
       Twiml: twiml,
+      // Stop ringing at the end of the ack window; the ladder moves on then anyway.
+      ...(confirmUrl ? { Timeout: String(Math.min(600, Math.max(5, input.ringSeconds))) } : {}),
     });
-    this.logger.log(`Placed Twilio call to ${input.contact.role} for incident ${input.incidentId}`);
-    return { answered: false };
+    this.logger.log(
+      `Placed Twilio call to ${input.contact.role} for incident ${input.incidentId}` +
+        (confirmUrl ? ' (press 1 to confirm)' : ''),
+    );
+    return confirmUrl ? { answered: false, awaitsConfirmation: true } : { answered: false };
+  }
+
+  /** The signed press-1 callback link, or null when Twilio cannot reach us back. */
+  private confirmUrl(input: PlaceCallInput): string | null {
+    const publicBaseUrl = this.config.publicBaseUrl;
+    if (!publicBaseUrl) return null;
+    return buildConfirmUrl({
+      publicBaseUrl,
+      key: deriveCallbackKey({
+        callbackSigningSecret: this.config.callbackSigningSecret,
+        jwtSecret: this.config.jwtSecret,
+      }),
+      incidentId: input.incidentId,
+      contactId: input.contact.id,
+      exp: Math.floor(Date.now() / 1000) + CONFIRM_LINK_TTL_SECONDS,
+    });
   }
 
   async sendSms(input: ContactMessageInput): Promise<void> {

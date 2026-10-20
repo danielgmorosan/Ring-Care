@@ -4,7 +4,9 @@ import type { AppConfig } from '../../config/env.validation';
 import type { ContactRepository } from './contact.repository';
 import type { IncidentRepository } from './incident.repository';
 import type { PushTokensService } from '../push/push-tokens.service';
+import type { FamiliesService } from '../families/families.service';
 import { EscalationService } from './escalation.service';
+import type { EscalationInput } from './temporal/types';
 
 function build(incidentFamilyId: string | null) {
   const signal = jest.fn().mockResolvedValue(undefined);
@@ -145,5 +147,104 @@ describe('EscalationService.recordDeviceCheckin (F1.3)', () => {
     );
     await service.recordDeviceCheckin('dev-1', 'distress');
     expect(findActiveForDevice).not.toHaveBeenCalled();
+  });
+});
+
+describe('EscalationService.startEscalation passes the household timezone (quiet hours)', () => {
+  function build(families: Partial<FamiliesService> | undefined) {
+    const start = jest.fn().mockResolvedValue(undefined);
+    const client = { workflow: { start } } as unknown as Client;
+    const incidents = {
+      open: jest.fn().mockResolvedValue(undefined),
+    } as unknown as IncidentRepository;
+    const contacts = {
+      listByFamily: jest.fn().mockResolvedValue([]),
+    } as unknown as ContactRepository;
+    const pushTokens = {
+      listForFamily: jest.fn().mockResolvedValue([]),
+    } as unknown as PushTokensService;
+    const service = new EscalationService(
+      { temporalTaskQueue: 'q' } as AppConfig,
+      client,
+      incidents,
+      contacts,
+      pushTokens,
+      families as FamiliesService | undefined,
+    );
+    const inputOf = (): EscalationInput =>
+      (start.mock.calls[0]![1] as { args: [EscalationInput] }).args[0];
+    return { service, inputOf };
+  }
+  const params = { familyId: 'fam-1', deviceId: 'dev-1', reason: 'fall.suspected' };
+
+  it("looks up the family's timezone", async () => {
+    const { service, inputOf } = build({
+      findByIdOrFail: jest.fn().mockResolvedValue({ timezone: 'Europe/Lisbon' }),
+    });
+    await service.startEscalation(params);
+    expect(inputOf().timeZone).toBe('Europe/Lisbon');
+  });
+
+  it('uses a timezone the caller already has', async () => {
+    const findByIdOrFail = jest.fn();
+    const { service, inputOf } = build({ findByIdOrFail });
+    await service.startEscalation({ ...params, timeZone: 'Asia/Tokyo' });
+    expect(inputOf().timeZone).toBe('Asia/Tokyo');
+    expect(findByIdOrFail).not.toHaveBeenCalled();
+  });
+
+  it('falls back to UTC for an invalid zone or a failed lookup, and still starts', async () => {
+    const invalid = build({
+      findByIdOrFail: jest.fn().mockResolvedValue({ timezone: 'Nope/Zone' }),
+    });
+    await invalid.service.startEscalation(params);
+    expect(invalid.inputOf().timeZone).toBe('UTC');
+
+    const failing = build({ findByIdOrFail: jest.fn().mockRejectedValue(new Error('gone')) });
+    await failing.service.startEscalation(params);
+    expect(failing.inputOf().timeZone).toBe('UTC');
+  });
+});
+
+describe('EscalationService.confirmByCall (press 1)', () => {
+  it('signals contactConfirmed on the incident workflow', async () => {
+    const signal = jest.fn().mockResolvedValue(undefined);
+    const getHandle = jest.fn().mockReturnValue({ signal });
+    const client = { workflow: { getHandle } } as unknown as Client;
+    const incidents = {
+      findById: jest.fn().mockResolvedValue({ id: 'inc-1', familyId: 'fam-1' }),
+    } as unknown as IncidentRepository;
+    const service = new EscalationService(
+      {} as AppConfig,
+      client,
+      incidents,
+      {} as ContactRepository,
+      {} as PushTokensService,
+    );
+    await service.confirmByCall('inc-1', 'miguel');
+    expect(getHandle).toHaveBeenCalledWith('incident-inc-1');
+    expect(signal).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'contactConfirmed' }),
+      'miguel',
+    );
+  });
+
+  it('refuses an unknown incident', async () => {
+    const signal = jest.fn();
+    const client = { workflow: { getHandle: () => ({ signal }) } } as unknown as Client;
+    const incidents = {
+      findById: jest.fn().mockResolvedValue(null),
+    } as unknown as IncidentRepository;
+    const service = new EscalationService(
+      {} as AppConfig,
+      client,
+      incidents,
+      {} as ContactRepository,
+      {} as PushTokensService,
+    );
+    await expect(service.confirmByCall('missing', 'miguel')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(signal).not.toHaveBeenCalled();
   });
 });

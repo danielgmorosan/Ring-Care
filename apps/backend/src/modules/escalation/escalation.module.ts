@@ -38,6 +38,8 @@ import { NarrationService } from './narration/narration.service';
 import { NARRATIVE_REPOSITORY } from './narration/narrative.repository';
 import { PgNarrativeRepository } from './narration/pg-narrative.repository';
 import { selectNarrator } from './narration/select-narrator';
+import { CallConfirmationService } from './notifications/call-confirmation.service';
+import { TwilioCallbackController } from './notifications/twilio-callback.controller';
 import { CompositeNotificationAdapter } from './notifications/composite-notification.adapter';
 import { FcmPushAdapter } from './notifications/fcm-push.adapter';
 import { MockNotificationAdapter } from './notifications/mock-notification.adapter';
@@ -87,9 +89,11 @@ import { VisitNoShowSweepService } from './ring-care/visit-no-show-sweep.service
     DailySummaryController,
     SightingsController,
     AlertsController,
+    TwilioCallbackController,
   ],
   providers: [
     EscalationService,
+    CallConfirmationService,
     EscalationTriggerService,
     AlertsService,
     StrangerEvaluatorService,
