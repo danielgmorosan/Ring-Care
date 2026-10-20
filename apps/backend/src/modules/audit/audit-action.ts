@@ -15,6 +15,8 @@ function resourceOf(route: string): string {
 export function deriveAction(method: string, route: string): string {
   if (route.endsWith('/claim-code')) return 'device.pair';
   if (route.endsWith('/wipe')) return 'device.wipe';
+  if (/\/care\/proposals\/[^/]+\/approve$/.test(route)) return 'care-proposal.approve';
+  if (/\/care\/proposals\/[^/]+\/reject$/.test(route)) return 'care-proposal.reject';
   const verb = VERB[method] ?? method.toLowerCase();
   return `${resourceOf(route)}.${verb}`;
 }
@@ -43,6 +45,8 @@ const LABELS: Record<string, string> = {
   'appointments.update': 'Updated an appointment',
   'appointments.delete': 'Removed an appointment',
   'ask.create': 'Asked Obrigada a question',
+  'care-proposal.approve': 'Approved care changes from a Bee note',
+  'care-proposal.reject': 'Dismissed care changes from a Bee note',
   'family.update': 'Updated home settings',
   'push-tokens.create': 'Registered a device for alerts',
   'push-tokens.delete': 'Removed a device from alerts',
