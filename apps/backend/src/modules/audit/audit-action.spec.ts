@@ -10,6 +10,14 @@ describe('audit action mapping', () => {
     expect(deriveAction('POST', '/me/devices/:deviceId/claim-code')).toBe('device.pair');
     // So is remote wipe — otherwise it would read as a generic "fleet" action.
     expect(deriveAction('POST', '/me/fleet/:deviceId/wipe')).toBe('device.wipe');
+    // Bee care-proposal decisions (decision 0012).
+    expect(deriveAction('POST', '/me/care/proposals/:proposalId/approve')).toBe(
+      'care-proposal.approve',
+    );
+    expect(deriveAction('POST', '/me/care/proposals/:proposalId/reject')).toBe(
+      'care-proposal.reject',
+    );
+    expect(actionLabel('care-proposal.approve')).toBe('Approved care changes from a Bee note');
   });
 
   it('names Ring live-view opens and closes explicitly (rule #7)', () => {

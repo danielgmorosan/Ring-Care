@@ -1,4 +1,5 @@
 import { Logger, Module } from '@nestjs/common';
+import { EscalationModule } from '../escalation/escalation.module';
 import { Pool } from 'pg';
 import { AppConfig } from '../../config/env.validation';
 import { PG_POOL } from '../../database/database.tokens';
@@ -43,6 +44,8 @@ export function createRingClient(config: AppConfig): RingClient {
  * after an event is durably recorded; the care logic listens.
  */
 @Module({
+  // EscalationModule exports RingCareService, which interprets events for the activity feed.
+  imports: [EscalationModule],
   controllers: [RingController, RingWebhookController],
   providers: [
     RingService,

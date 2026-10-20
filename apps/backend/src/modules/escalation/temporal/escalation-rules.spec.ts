@@ -75,13 +75,18 @@ describe('escalationRulesFor', () => {
     for (const reason of ['fall.suspected', 'fall.confirmed', 'canary.fall', 'unknown']) {
       expect(escalationRulesFor(reason)).toBe(DEFAULT_ESCALATION_RULES);
     }
-    expect(DEFAULT_ESCALATION_RULES).toEqual({ voiceCheckin: true, emergencyServices: true });
+    expect(DEFAULT_ESCALATION_RULES).toEqual({
+      voiceCheckin: true,
+      emergencyServices: true,
+      wakesThroughQuietHours: false,
+    });
   });
 
   it('runs door.night_activity family-only: no check-in gate, never emergency services (0011)', () => {
     expect(escalationRulesFor(NIGHT_DOOR_REASON)).toEqual({
       voiceCheckin: false,
       emergencyServices: false,
+      wakesThroughQuietHours: true,
     });
   });
 

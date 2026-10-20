@@ -5,8 +5,10 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { RingCareService } from '../escalation/ring-care/ring-care.service';
 import { AppConfig } from '../../config/env.validation';
 import {
   RING_CLIENT,
@@ -60,6 +62,7 @@ export class RingService {
     private readonly config: AppConfig,
     @Inject(RING_REPOSITORY) private readonly repo: RingRepository,
     @Inject(RING_CLIENT) private readonly client: RingClient,
+    @Optional() private readonly ringCare?: RingCareService,
   ) {}
 
   private isLinked(familyId: string): boolean {
@@ -136,7 +139,9 @@ export class RingService {
         subType: e.subType,
         occurredAt: e.occurredAt,
         source: e.source,
-        interpretation: null,
+        interpretation: this.ringCare
+          ? await this.ringCare.interpretRingEvent(e.id).catch(() => null)
+          : null,
       });
     }
     return out;

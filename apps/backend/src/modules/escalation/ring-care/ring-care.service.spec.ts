@@ -152,7 +152,7 @@ describe('RingCareService', () => {
       );
     });
 
-    it('names the first contact quiet hours will not skip', async () => {
+    it('wakes the first contact even inside their quiet hours (a night exit is urgent)', async () => {
       contacts.set(familyId, [
         contact(ID(101), 'Sofia', 'daughter', 0, {
           start: '00:00',
@@ -162,7 +162,7 @@ describe('RingCareService', () => {
         contact(ID(102), 'Miguel', 'son', 1),
       ]);
       await service.onMotion(event());
-      expect(started[0]!.messages!.device).toContain("We're calling Miguel now.");
+      expect(started[0]!.messages!.device).toContain("We're calling Sofia now.");
     });
 
     it('evaluates the night window in the household timezone, across midnight', async () => {

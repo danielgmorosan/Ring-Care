@@ -462,7 +462,7 @@ describe('escalation workflow: door.night_activity (family only, decision 0011)'
     expect(n.calls).toEqual([]);
   });
 
-  it('respects quiet hours: it is not a confirmed fall', async () => {
+  it('wakes contacts through quiet hours: a parent leaving at night is urgent', async () => {
     const incidents = new InMemoryIncidentRepository();
     const n = new RecordingNotifications(new Set(['miguel']));
     const input = doorInput({
@@ -475,8 +475,8 @@ describe('escalation workflow: door.night_activity (family only, decision 0011)'
     });
     const { result } = await runProcess(input, incidents, n);
     expect(result!.outcome).toBe('acknowledged');
-    expect(n.calls).toEqual(['miguel']);
-    expect((await steps(incidents, 'inc-door')).map((s) => s.kind)).toContain(
+    expect(n.calls).toEqual(['sofia', 'miguel']);
+    expect((await steps(incidents, 'inc-door')).map((s) => s.kind)).not.toContain(
       'quiet_hours_skipped',
     );
   });

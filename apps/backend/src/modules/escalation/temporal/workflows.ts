@@ -114,7 +114,11 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   for (const contact of input.contacts) {
     // A contact answering, or a caregiver acknowledging from the app, stops the phone tree.
     if (acknowledgedBy || caregiverAckBy) break;
-    if (shouldSkipForQuietHours(contact, input.confirmedFall, nowMinutesUtc())) {
+    if (shouldSkipForQuietHours(
+        contact,
+        input.confirmedFall || rules.wakesThroughQuietHours,
+        nowMinutesUtc(),
+      )) {
       await step('quiet_hours_skipped', contact.id, {});
       continue;
     }

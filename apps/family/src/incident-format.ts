@@ -62,6 +62,8 @@ export function outcomeLabel(outcome: IncidentOutcome): { label: string; tone: S
       return { label: 'Answered by family', tone: 'well' };
     case 'emergency_notified':
       return { label: 'Emergency called', tone: 'incident' };
+    case 'family_alerted':
+      return { label: 'Family alerted', tone: 'attention' };
     case 'active':
     default:
       return { label: 'In progress', tone: 'attention' };

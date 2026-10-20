@@ -111,6 +111,7 @@ export const incidentOutcomeSchema = z.enum([
   'stood_down',
   'acknowledged',
   'emergency_notified',
+  'family_alerted',
 ]);
 export type IncidentOutcome = z.infer<typeof incidentOutcomeSchema>;
 
@@ -283,6 +284,8 @@ export const alertKindSchema = z.enum([
   'door_unusual_hour',
   'wander',
   'missed_dose',
+  'door.night_activity',
+  'visit.no_show',
 ]);
 export type AlertKind = z.infer<typeof alertKindSchema>;
 

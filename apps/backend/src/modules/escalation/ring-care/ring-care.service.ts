@@ -272,12 +272,13 @@ export class RingCareService {
 
 /**
  * The name of the first contact the ladder will ring right now, mirroring the workflow's
- * quiet-hours rule (a night door incident is not a confirmed fall, so quiet hours hold).
+ * quiet-hours rule. Night door incidents wake contacts through quiet hours
+ * (FAMILY_ONLY_ESCALATION_RULES.wakesThroughQuietHours), so the first contact is rung.
  * Used only for the words of the first push; the workflow alone decides who is called.
  */
 function firstCallable(contacts: EscalationContact[]): string | null {
   const now = new Date();
   const nowMinutesUtc = now.getUTCHours() * 60 + now.getUTCMinutes();
-  const contact = contacts.find((c) => !shouldSkipForQuietHours(c, false, nowMinutesUtc));
+  const contact = contacts.find((c) => !shouldSkipForQuietHours(c, true, nowMinutesUtc));
   return contact?.name ?? null;
 }

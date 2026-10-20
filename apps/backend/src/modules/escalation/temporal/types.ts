@@ -68,12 +68,19 @@ export interface EscalationRules {
   voiceCheckin: boolean;
   /** Notify emergency services (112) when nobody handled the incident. */
   emergencyServices: boolean;
+  /**
+   * Wake contacts even inside their quiet hours, as a confirmed fall does. A parent
+   * leaving home at night is exactly when the family must be woken.
+   */
+  wakesThroughQuietHours: boolean;
 }
 
 /** The fall ladder: voice check-in gate, family calls, then emergency services. */
 export const DEFAULT_ESCALATION_RULES: Readonly<EscalationRules> = Object.freeze({
   voiceCheckin: true,
   emergencyServices: true,
+  // Falls override quiet hours only once confirmed (input.confirmedFall), as before.
+  wakesThroughQuietHours: false,
 });
 
 /** Ring front-door activity inside the household's night window (decision 0011). */
@@ -87,6 +94,7 @@ export const NIGHT_DOOR_REASON = 'door.night_activity';
 export const FAMILY_ONLY_ESCALATION_RULES: Readonly<EscalationRules> = Object.freeze({
   voiceCheckin: false,
   emergencyServices: false,
+  wakesThroughQuietHours: true,
 });
 
 const RULES_BY_REASON: Readonly<Record<string, Readonly<EscalationRules>>> = Object.freeze({
