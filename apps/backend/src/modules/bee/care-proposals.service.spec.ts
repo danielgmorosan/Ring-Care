@@ -7,7 +7,8 @@ import { MedicationsService } from '../care/medications.service';
 import { FamiliesService } from '../families/families.service';
 import { InMemoryFamilyRepository } from '../families/in-memory-family.repository';
 import type { ProposalItem } from './care-proposal.entity';
-import { CareProposalsService } from './care-proposals.service';
+import type { Medication } from '../care/medication.entity';
+import { CareProposalsService, matchMedication } from './care-proposals.service';
 import { extractWithRules } from './extraction/rules-extractor';
 import { InMemoryCareProposalRepository } from './in-memory-care-proposal.repository';
 import { FakeBeeApi } from './testing/fake-bee-api';
@@ -275,6 +276,99 @@ describe('CareProposalsService', () => {
           alarmAt: '2026-10-26T08:00:00.000Z',
         },
       ]);
+    });
+  });
+
+  describe('medication matching', () => {
+    const med = (name: string): Medication => ({
+      id: name,
+      familyId: 'f',
+      name,
+      dosage: null,
+      times: [],
+      notes: null,
+      createdAt: '2026-10-01T00:00:00.000Z',
+    });
+    const pick = (names: string[], spoken: string) => {
+      const found = matchMedication(names.map(med), spoken);
+      return found.kind === 'match'
+        ? found.medication.name
+        : found.kind === 'ambiguous'
+          ? found.candidates.map((m) => m.name)
+          : null;
+    };
+
+    it('matches the full name, ignoring case, whitespace and punctuation', () => {
+      expect(pick(['Donepezil'], 'donepezil')).toBe('Donepezil');
+      expect(pick(['Vitamin-D3'], '  vitamin   d3 ')).toBe('Vitamin-D3');
+      expect(pick(['Co-codamol 30/500'], 'co codamol 30 500')).toBe('Co-codamol 30/500');
+    });
+
+    it('lets the stored name contain the spoken name as whole words', () => {
+      expect(pick(['Donepezil 10 mg tablets'], 'Donepezil')).toBe('Donepezil 10 mg tablets');
+      expect(pick(['Vitamin D 1000 IU'], 'vitamin d')).toBe('Vitamin D 1000 IU');
+      expect(pick(['Vitamin D3'], 'Vitamin D')).toBeNull(); // "d" is not the word "d3"
+    });
+
+    it('never matches on the first word alone', () => {
+      expect(pick(['Vitamin B12'], 'Vitamin D')).toBeNull();
+      expect(pick(['Aspirin'], 'Aspirin Cardio')).toBeNull();
+    });
+
+    it('prefers a unique exact match, and reports several candidates as ambiguous', () => {
+      expect(pick(['Vitamin D', 'Vitamin D 1000 IU'], 'Vitamin D')).toBe('Vitamin D');
+      expect(pick(['Vitamin D drops', 'Vitamin D 1000 IU'], 'Vitamin D')).toEqual([
+        'Vitamin D drops',
+        'Vitamin D 1000 IU',
+      ]);
+    });
+
+    function changeItem(name: string): ProposalItem {
+      return {
+        id: '00000000-0000-4000-8000-0000000000b1',
+        kind: 'medication_change',
+        title: `${name} to 2 drops at 09:00`,
+        detail: '',
+        data: { medicationName: name, dose: '2 drops', times: ['09:00'], startDate: null },
+      };
+    }
+
+    async function approveItem(item: ProposalItem, ref: string) {
+      const { proposal } = await repo.createIfAbsent({
+        familyId,
+        source: 'bee',
+        sourceRef: ref,
+        summary: 'From your note',
+        items: [item],
+        extractedBy: 'rules:v1',
+      });
+      return service.approve(familyId, 'user-1', proposal.id);
+    }
+
+    it('"Vitamin D" never updates "Vitamin B12": it is added as a new medication', async () => {
+      await medications.create(familyId, { name: 'Vitamin B12', dosage: '1 tablet' });
+      await approveItem(changeItem('Vitamin D'), 'conv-vit');
+      const list = await medications.list(familyId);
+      expect(list.find((m) => m.name === 'Vitamin B12')).toMatchObject({
+        dosage: '1 tablet',
+        times: [],
+      });
+      expect(list.find((m) => m.name === 'Vitamin D')).toMatchObject({
+        dosage: '2 drops',
+        times: ['09:00'],
+      });
+    });
+
+    it('an ambiguous name changes nothing and is recorded as a note', async () => {
+      await medications.create(familyId, { name: 'Vitamin D drops', dosage: '1 drop' });
+      await medications.create(familyId, { name: 'Vitamin D 1000 IU', dosage: '1 tablet' });
+      const before = await medications.list(familyId);
+      const result = await approveItem(changeItem('Vitamin D'), 'conv-amb');
+      expect(result).toEqual({ applied: [], scheduled: [], todosCreated: 0 });
+      expect(await medications.list(familyId)).toEqual(before);
+      const [view] = await service.list(familyId, 'approved');
+      expect(view!.decision!.result.items[0]).toMatchObject({ status: 'noted' });
+      expect(view!.decision!.result.items[0]!.message).toContain('matches more than one');
     });
   });
 

@@ -206,7 +206,18 @@ export class CareProposalsService {
     d: MedicationData,
   ): Promise<MedicationOutcome> {
     const current = await this.medications.list(familyId);
-    const match = findMedication(current, d.medicationName);
+    const found = matchMedication(current, d.medicationName);
+    // Never update the wrong one: a name that fits several medications changes nothing.
+    if (found.kind === 'ambiguous') {
+      return {
+        status: 'noted',
+        message:
+          `"${d.medicationName}" matches more than one medication ` +
+          `(${found.candidates.map((m) => m.name).join(', ')}). Nothing was changed. ` +
+          'Please update the right one in the care plan.',
+      };
+    }
+    const match = found.kind === 'match' ? found.medication : null;
     // "From Monday": a change that starts later is not applied now (the elder keeps the
     // current dose until then). Today, a past date, or no date: apply immediately.
     if (d.startDate && d.startDate > localDate(this.now(), tz)) {
@@ -357,18 +368,38 @@ function toView(p: StoredCareProposal, d: CareProposalDecision | null): CareProp
   };
 }
 
-function normalizeName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+/** Case, whitespace and punctuation-insensitive: "Vitamin-D3 (1000 IU)" -> "vitamin d3 1000 iu". */
+export function normalizeMedicationName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFKC')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
 }
 
-/** Exact (case-insensitive) name match first, then a name that starts with the spoken one. */
-export function findMedication(list: Medication[], spoken: string): Medication | null {
-  const wanted = normalizeName(spoken);
-  return (
-    list.find((m) => normalizeName(m.name) === wanted) ??
-    list.find((m) => normalizeName(m.name).split(' ')[0] === wanted.split(' ')[0]) ??
-    null
+export type MedicationMatch =
+  | { kind: 'match'; medication: Medication }
+  | { kind: 'none' }
+  | { kind: 'ambiguous'; candidates: Medication[] };
+
+/**
+ * Which listed medication a spoken name refers to. The full normalized name must match:
+ * exactly, or as whole words inside the stored name ("Donepezil" fits "Donepezil 10 mg
+ * tablets"). A first-word match is never enough, so "Vitamin D" does not fit "Vitamin
+ * B12". More than one candidate is ambiguous: the caller must not update any of them.
+ */
+export function matchMedication(list: Medication[], spoken: string): MedicationMatch {
+  const wanted = normalizeMedicationName(spoken);
+  if (!wanted) return { kind: 'none' };
+  const exact = list.filter((m) => normalizeMedicationName(m.name) === wanted);
+  if (exact.length === 1) return { kind: 'match', medication: exact[0]! };
+  if (exact.length > 1) return { kind: 'ambiguous', candidates: exact };
+  const containing = list.filter((m) =>
+    ` ${normalizeMedicationName(m.name)} `.includes(` ${wanted} `),
   );
+  if (containing.length === 1) return { kind: 'match', medication: containing[0]! };
+  if (containing.length > 1) return { kind: 'ambiguous', candidates: containing };
+  return { kind: 'none' };
 }
 
 function describeDose(d: MedicationData): string {
