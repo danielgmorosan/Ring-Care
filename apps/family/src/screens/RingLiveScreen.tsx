@@ -1,8 +1,10 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { RingCamera } from '../api/types';
+import { Icon, Pulse, type IconName } from '../components/ui';
 import { useRingLiveSession } from '../ring-live';
-import { color, radius, space, text } from '../theme/tokens';
+import { color, font, gradient, radius, space, text } from '../theme/tokens';
 import { createRingPeer, RingLiveVideo } from './RingLiveView';
 
 /** Elapsed live time as "0:42". */
@@ -38,17 +40,17 @@ export function RingLiveScreen({ camera, onClose }: { camera: RingCamera; onClos
   return (
     <Modal visible animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={s.shell}>
+        <LinearGradient colors={gradient.camera} style={s.stage} />
         <View style={s.stage}>
           {stream && phase === 'live' ? <RingLiveVideo stream={stream} muted={muted} /> : null}
 
           {phase === 'connecting' ? (
-            <Centered>
-              <ActivityIndicator color={color.textInverse} />
+            <Centered icon="video" busy>
               <Text style={s.title}>Connecting to {camera.name}</Text>
               <Text style={s.dim}>Asking Ring for a live picture.</Text>
             </Centered>
           ) : phase === 'ended' ? (
-            <Centered>
+            <Centered icon="video">
               <Text style={s.title}>Live view ended</Text>
               <Text style={s.dim}>
                 Ring closes live view after about a minute. Nothing was saved.
@@ -56,14 +58,13 @@ export function RingLiveScreen({ camera, onClose }: { camera: RingCamera; onClos
               <PillButton label="Watch again" onPress={retry} />
             </Centered>
           ) : phase === 'error' ? (
-            <Centered>
+            <Centered icon="camera">
               <Text style={s.title}>We couldn&apos;t open the camera</Text>
               <Text style={s.dim}>{error ?? 'Ring did not start the live view.'}</Text>
               <PillButton label="Try again" onPress={retry} />
             </Centered>
           ) : phase === 'live' && !stream ? (
-            <Centered>
-              <ActivityIndicator color={color.textInverse} />
+            <Centered icon="video" busy>
               <Text style={s.dim}>Waiting for the picture.</Text>
             </Centered>
           ) : null}
@@ -71,23 +72,39 @@ export function RingLiveScreen({ camera, onClose }: { camera: RingCamera; onClos
 
         <View style={s.topBar} pointerEvents="box-none">
           <View style={s.liveTag}>
-            <View style={[s.liveDot, phase !== 'live' && s.liveDotIdle]} />
-            <Text style={s.liveText}>
-              {phase === 'live' ? `Live from Ring · ${elapsed(liveSince, now)}` : 'Live from Ring'}
-            </Text>
+            <View style={s.liveDotWrap}>
+              {phase === 'live' ? <Pulse color={color.incident500} size={8} /> : null}
+              <View style={[s.liveDot, phase !== 'live' && s.liveDotIdle]} />
+            </View>
+            {phase === 'live' ? (
+              <>
+                <Text style={s.liveText}>LIVE</Text>
+                <View style={s.liveSep} />
+                <Text style={s.liveText}>{elapsed(liveSince, now)}</Text>
+              </>
+            ) : (
+              <Text style={s.liveText}>Ring live view</Text>
+            )}
           </View>
           <Pressable
             onPress={onClose}
             hitSlop={12}
-            style={s.chipBtn}
+            style={s.roundBtn}
             accessibilityRole="button"
             accessibilityLabel="Close live view"
           >
-            <Text style={s.chipText}>Close</Text>
+            <Icon name="x" size={22} color={color.textInverse} />
           </Pressable>
         </View>
 
         <View style={s.bottomBar} pointerEvents="box-none">
+          <View style={s.bottomTag}>
+            <View style={[s.liveDot, phase !== 'live' && s.liveDotIdle]} />
+            <Text style={[s.bottomTagText, phase !== 'live' && s.bottomTagIdle]}>
+              {phase === 'live' ? 'LIVE' : 'RING'}
+            </Text>
+          </View>
+          <View style={s.bottomSep} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={s.cameraName}>{camera.name}</Text>
             <Text style={s.note}>Ring live view ends after about a minute.</Text>
@@ -96,10 +113,11 @@ export function RingLiveScreen({ camera, onClose }: { camera: RingCamera; onClos
             <Pressable
               onPress={() => setMuted((m) => !m)}
               hitSlop={12}
-              style={s.chipBtn}
+              style={s.roundBtn}
               accessibilityRole="button"
+              accessibilityLabel={muted ? 'Sound on' : 'Mute'}
             >
-              <Text style={s.chipText}>{muted ? 'Sound on' : 'Mute'}</Text>
+              <Icon name={muted ? 'volume-x' : 'volume-2'} size={20} color={color.textInverse} />
             </Pressable>
           ) : null}
         </View>
@@ -108,8 +126,27 @@ export function RingLiveScreen({ camera, onClose }: { camera: RingCamera; onClos
   );
 }
 
-function Centered({ children }: { children: ReactNode }) {
-  return <View style={s.centered}>{children}</View>;
+function Centered({
+  children,
+  icon,
+  busy,
+}: {
+  children: ReactNode;
+  icon: IconName;
+  busy?: boolean;
+}) {
+  return (
+    <View style={s.centered}>
+      <View style={s.orb}>
+        {busy ? (
+          <ActivityIndicator color={color.textInverse} />
+        ) : (
+          <Icon name={icon} size={28} color={color.textInverse} />
+        )}
+      </View>
+      {children}
+    </View>
+  );
 }
 
 function PillButton({ label, onPress }: { label: string; onPress: () => void }) {
@@ -130,8 +167,32 @@ const s = StyleSheet.create({
     gap: space[3],
     padding: space[6],
   },
-  title: { color: color.textInverse, fontSize: text.lg, fontWeight: '600', textAlign: 'center' },
-  dim: { color: color.white75, fontSize: text.md, textAlign: 'center', maxWidth: 320 },
+  orb: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: space[2],
+    backgroundColor: color.white10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    ...font.semibold,
+    color: color.textInverse,
+    fontSize: 22,
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  dim: {
+    ...font.regular,
+    color: color.white75,
+    fontSize: text.md,
+    lineHeight: 23,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
   topBar: {
     position: 'absolute',
     top: 0,
@@ -140,55 +201,65 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: space[10],
+    paddingTop: space[8],
     paddingHorizontal: space[5],
   },
   bottomBar: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: space[4],
+    right: space[4],
+    bottom: space[8],
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[3],
-    paddingHorizontal: space[5],
-    paddingTop: space[4],
-    paddingBottom: space[8],
-    backgroundColor: color.black35,
+    paddingHorizontal: space[4],
+    paddingVertical: space[3],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(20,20,20,0.82)',
   },
+  bottomTag: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bottomTagText: { ...font.bold, fontSize: 13, letterSpacing: 1.6, color: color.incident500 },
+  bottomTagIdle: { color: color.white75 },
+  bottomSep: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.18)' },
   liveTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[2],
-    backgroundColor: color.black60,
-    paddingVertical: 6,
-    paddingHorizontal: space[3],
+    backgroundColor: color.white20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: radius.pill,
   },
+  liveDotWrap: { width: 8, height: 8, alignItems: 'center', justifyContent: 'center' },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.incident500 },
   liveDotIdle: { backgroundColor: color.white55 },
+  liveSep: { width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.3)' },
   liveText: {
+    ...font.semibold,
     color: color.textInverse,
-    fontSize: text.xs,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 13,
+    letterSpacing: 1,
     fontVariant: ['tabular-nums'],
   },
-  chipBtn: {
-    backgroundColor: color.black60,
-    paddingVertical: 8,
-    paddingHorizontal: space[4],
-    borderRadius: radius.pill,
+  roundBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: color.white20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  chipText: { color: color.textInverse, fontSize: text.sm, fontWeight: '600' },
-  cameraName: { color: color.textInverse, fontSize: text.md, fontWeight: '600' },
-  note: { color: color.white75, fontSize: text.xs },
+  cameraName: { ...font.semibold, color: color.textInverse, fontSize: 17 },
+  note: { ...font.regular, color: color.white75, fontSize: 13 },
   pill: {
     marginTop: space[2],
-    backgroundColor: color.white20,
-    borderRadius: radius.pill,
-    paddingVertical: 12,
+    backgroundColor: color.bgSurface,
+    borderRadius: radius.md,
+    minHeight: 48,
+    justifyContent: 'center',
     paddingHorizontal: space[6],
   },
-  pillText: { color: color.textInverse, fontSize: text.md, fontWeight: '600' },
+  pillText: { ...font.semibold, color: color.textPrimary, fontSize: text.md },
 });

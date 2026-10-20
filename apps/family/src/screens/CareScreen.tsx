@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import {
   useAppointments,
   useCareToday,
@@ -13,9 +13,20 @@ import {
   useUpdateMedication,
 } from '../api/hooks';
 import type { Appointment, Medication } from '../api/types';
-import { Body, Button, Card, Caption, Chip, Field, H1, H2, Screen } from '../components/ui';
+import {
+  Body,
+  Button,
+  Card,
+  Caption,
+  Field,
+  IconBadge,
+  PageHeader,
+  Screen,
+  SectionHeader,
+  TextAction,
+} from '../components/ui';
 import { relativeTime } from '../incident-format';
-import { color, space, text } from '../theme/tokens';
+import { color, font, radius, space, text } from '../theme/tokens';
 import { CareProposals } from './CareProposals';
 
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -72,31 +83,26 @@ function MedicationCard({
 
   return (
     <Card style={{ gap: space[3] }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-        <View style={{ flex: 1 }}>
-          <Body>{med.name}</Body>
+      <View style={st.rowHead}>
+        <IconBadge icon="pill" tone="neutral" />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={st.name}>{med.name}</Text>
           {med.dosage ? <Caption>{med.dosage}</Caption> : null}
         </View>
-        <Pressable onPress={onEdit} hitSlop={10}>
-          <Text style={st.edit}>Edit</Text>
-        </Pressable>
-        <Pressable onPress={onRemove} hitSlop={10}>
-          <Text style={st.remove}>Remove</Text>
-        </Pressable>
       </View>
 
       {med.times.length > 0 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
           {med.times.map((t) => (
-            <Chip key={t} tone="accent">
-              {t}
-            </Chip>
+            <View key={t} style={st.timePill}>
+              <Text style={st.timePillText}>{t}</Text>
+            </View>
           ))}
         </View>
       ) : null}
 
-      <View style={{ gap: space[1] }}>
-        <Caption>RECENTLY TAKEN</Caption>
+      <View style={st.taken}>
+        <Text style={st.takenLabel}>RECENTLY TAKEN</Text>
         {doses.isLoading ? (
           <Caption>Loading…</Caption>
         ) : recent.length === 0 ? (
@@ -108,6 +114,10 @@ function MedicationCard({
             </Caption>
           ))
         )}
+      </View>
+      <View style={st.actions}>
+        <TextAction label="Edit" onPress={onEdit} />
+        <TextAction label="Remove" danger onPress={onRemove} />
       </View>
     </Card>
   );
@@ -220,19 +230,14 @@ export function CareScreen() {
   return (
     <Screen>
       <View style={{ padding: space[6], gap: space[5] }}>
-        <View style={{ gap: space[1] }}>
-          <Caption>THE DAILY ROUTINE</Caption>
-          <H1>Care</H1>
-        </View>
+        <PageHeader title="Care" subtitle="The daily routine" />
 
         <CareProposals />
 
-        <Card
-          style={{ gap: space[3], backgroundColor: color.lilac100, borderColor: 'transparent' }}
-        >
-          <Caption>TODAY</Caption>
+        <SectionHeader icon="calendar" label="Today" />
+        <Card style={{ gap: space[3] }}>
           {todaysAppts.length === 0 ? (
-            <Body>
+            <Body muted>
               {medCount > 0
                 ? 'Nothing on the calendar today. The usual medications are below.'
                 : 'A calm day. Nothing scheduled yet.'}
@@ -250,7 +255,15 @@ export function CareScreen() {
         </Card>
 
         <View style={{ gap: space[3] }}>
-          <H2>Medications</H2>
+          <SectionHeader
+            icon="pill"
+            label="Medications"
+            right={
+              medications.data && medications.data.length > 0 ? (
+                <Text style={st.count}>{medications.data.length}</Text>
+              ) : null
+            }
+          />
           {medications.isLoading ? (
             <Card>
               <Body muted>Loading medications.</Body>
@@ -281,7 +294,10 @@ export function CareScreen() {
           ) : null}
 
           <Card style={{ gap: space[4] }}>
-            <Caption>{editingMedId ? 'EDIT MEDICATION' : 'ADD A MEDICATION'}</Caption>
+            <SectionHeader
+              icon={editingMedId ? 'pencil' : 'plus'}
+              label={editingMedId ? 'Edit medication' : 'Add a medication'}
+            />
             <Field
               label="Name"
               placeholder="Bisoprolol"
@@ -309,19 +325,24 @@ export function CareScreen() {
         </View>
 
         <View style={{ gap: space[3] }}>
-          <H2>Appointments</H2>
+          <SectionHeader icon="stethoscope" label="Appointments" />
           {(appointments.data ?? []).map((a: Appointment) => (
-            <Card key={a.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-              <View style={{ flex: 1 }}>
-                <Body>{a.title}</Body>
-                <Caption>{`${formatAppt(a.at)}${a.location ? ` · ${a.location}` : ''}`}</Caption>
+            <Card key={a.id} style={{ gap: space[2] }}>
+              <View style={st.rowHead}>
+                <IconBadge icon="calendar" tone="info" />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={st.name}>{a.title}</Text>
+                  <Caption>{`${formatAppt(a.at)}${a.location ? ` · ${a.location}` : ''}`}</Caption>
+                </View>
               </View>
-              <Pressable onPress={() => startEditAppt(a)} hitSlop={10}>
-                <Text style={st.edit}>Edit</Text>
-              </Pressable>
-              <Pressable onPress={() => void deleteAppointment.mutate(a.id)} hitSlop={10}>
-                <Text style={st.remove}>Remove</Text>
-              </Pressable>
+              <View style={st.actions}>
+                <TextAction label="Edit" onPress={() => startEditAppt(a)} />
+                <TextAction
+                  label="Remove"
+                  danger
+                  onPress={() => void deleteAppointment.mutate(a.id)}
+                />
+              </View>
             </Card>
           ))}
           {appointments.data?.length === 0 ? (
@@ -331,7 +352,10 @@ export function CareScreen() {
           ) : null}
 
           <Card style={{ gap: space[4] }}>
-            <Caption>{editingApptId ? 'EDIT APPOINTMENT' : 'ADD AN APPOINTMENT'}</Caption>
+            <SectionHeader
+              icon={editingApptId ? 'pencil' : 'plus'}
+              label={editingApptId ? 'Edit appointment' : 'Add an appointment'}
+            />
             <Field
               label="What"
               placeholder="Dr. Almeida, cardiology"
@@ -367,7 +391,35 @@ export function CareScreen() {
 }
 
 const st = StyleSheet.create({
-  remove: { color: color.incident500, fontSize: text.sm, fontWeight: '600' },
-  edit: { color: color.action, fontSize: text.sm, fontWeight: '600' },
-  apptTime: { fontSize: text.md, fontWeight: '600', color: color.action, minWidth: 120 },
+  rowHead: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  name: { ...font.semibold, fontSize: 17, color: color.textPrimary },
+  count: { ...font.semibold, fontSize: text.sm, color: color.textPrimary },
+  timePill: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    backgroundColor: color.bgSunken,
+    borderWidth: 1,
+    borderColor: color.borderStrong,
+  },
+  timePillText: {
+    ...font.semibold,
+    fontSize: 13,
+    color: color.textPrimary,
+    fontVariant: ['tabular-nums'],
+  },
+  taken: {
+    gap: 4,
+    backgroundColor: color.bgCanvas,
+    borderRadius: radius.sm,
+    padding: space[3],
+  },
+  takenLabel: { ...font.semibold, fontSize: 11, letterSpacing: 1.1, color: color.textTertiary },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: space[4],
+    marginBottom: -space[2],
+  },
+  apptTime: { ...font.semibold, fontSize: text.md, color: color.textPrimary, minWidth: 120 },
 });

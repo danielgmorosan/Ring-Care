@@ -1,7 +1,9 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, type ReactNode } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLiveToken } from '../api/hooks';
-import { color, radius, space, text } from '../theme/tokens';
+import { Icon, Pulse } from '../components/ui';
+import { color, font, gradient, radius, space, text } from '../theme/tokens';
 import { LiveView } from './LiveView';
 
 /**
@@ -29,6 +31,7 @@ export function LiveScreen({
   return (
     <Modal visible animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={s.shell}>
+        <LinearGradient colors={gradient.camera} style={s.stage} />
         <View style={s.stage}>
           {live.isPending ? (
             <Centered>
@@ -48,11 +51,22 @@ export function LiveScreen({
 
         <View style={s.topBar} pointerEvents="box-none">
           <View style={s.liveTag}>
-            <View style={s.liveDot} />
-            <Text style={s.liveText}>LIVE · {guardianName}</Text>
+            <View style={s.liveDotWrap}>
+              <Pulse color={color.incident500} size={8} />
+              <View style={s.liveDot} />
+            </View>
+            <Text style={s.liveText}>LIVE</Text>
+            <View style={s.liveSep} />
+            <Text style={s.liveText}>{guardianName}</Text>
           </View>
-          <Pressable onPress={onClose} hitSlop={12} style={s.closeBtn}>
-            <Text style={s.closeText}>Close</Text>
+          <Pressable
+            onPress={onClose}
+            hitSlop={12}
+            style={s.closeBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Close live view"
+          >
+            <Icon name="x" size={22} color={color.textInverse} />
           </Pressable>
         </View>
       </View>
@@ -74,7 +88,7 @@ const s = StyleSheet.create({
     gap: space[3],
     padding: space[6],
   },
-  dim: { color: color.white75, fontSize: text.md, textAlign: 'center' },
+  dim: { ...font.regular, color: color.white75, fontSize: text.md, textAlign: 'center' },
   topBar: {
     position: 'absolute',
     top: 0,
@@ -83,25 +97,28 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: space[10],
+    paddingTop: space[8],
     paddingHorizontal: space[5],
   },
   liveTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[2],
-    backgroundColor: color.black60,
-    paddingVertical: 6,
-    paddingHorizontal: space[3],
-    borderRadius: radius.pill,
-  },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.incident500 },
-  liveText: { color: color.textInverse, fontSize: text.xs, fontWeight: '700', letterSpacing: 1 },
-  closeBtn: {
-    backgroundColor: color.black60,
+    backgroundColor: color.white20,
     paddingVertical: 8,
-    paddingHorizontal: space[4],
+    paddingHorizontal: 14,
     borderRadius: radius.pill,
   },
-  closeText: { color: color.textInverse, fontSize: text.sm, fontWeight: '600' },
+  liveDotWrap: { width: 8, height: 8, alignItems: 'center', justifyContent: 'center' },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.incident500 },
+  liveSep: { width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.3)' },
+  liveText: { ...font.semibold, color: color.textInverse, fontSize: 13, letterSpacing: 1 },
+  closeBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: color.white20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

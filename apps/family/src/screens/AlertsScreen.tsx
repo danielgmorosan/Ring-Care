@@ -1,10 +1,24 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useAlerts, useCreateVisit, useDeleteVisit, useSightings, useVisits } from '../api/hooks';
 import type { AlertKind, Sighting } from '../api/types';
-import { Body, Button, Caption, Card, Chip, Field, H1, H2, Screen } from '../components/ui';
+import {
+  Body,
+  Button,
+  Caption,
+  Card,
+  Chip,
+  Divider,
+  Field,
+  IconBadge,
+  PageHeader,
+  Screen,
+  SectionHeader,
+  TextAction,
+  type IconName,
+} from '../components/ui';
 import { relativeTime } from '../incident-format';
-import { color, space, text } from '../theme/tokens';
+import { color, font, radius, space } from '../theme/tokens';
 
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
@@ -31,14 +45,14 @@ type Tone = 'incident' | 'attention' | 'neutral' | 'well';
 
 /** How each alert kind reads and how loud it looks. Stranger and wander are the two
  * that mean a person is where they should not be, so they carry the incident tone. */
-const KIND: Record<AlertKind, { label: string; tone: Tone }> = {
-  stranger: { label: 'Stranger', tone: 'incident' },
-  wander: { label: 'Wandering', tone: 'incident' },
-  hazard_zone: { label: 'Hazard zone', tone: 'attention' },
-  door_unusual_hour: { label: 'Door at an unusual hour', tone: 'attention' },
-  missed_dose: { label: 'Missed dose', tone: 'attention' },
-  'door.night_activity': { label: 'Front door at night', tone: 'incident' },
-  'visit.no_show': { label: 'Expected visit missed', tone: 'attention' },
+const KIND: Record<AlertKind, { label: string; tone: Tone; icon: IconName }> = {
+  stranger: { label: 'Stranger', tone: 'incident', icon: 'user' },
+  wander: { label: 'Wandering', tone: 'incident', icon: 'footprints' },
+  hazard_zone: { label: 'Hazard zone', tone: 'attention', icon: 'alert-triangle' },
+  door_unusual_hour: { label: 'Door at an unusual hour', tone: 'attention', icon: 'door-open' },
+  missed_dose: { label: 'Missed dose', tone: 'attention', icon: 'pill' },
+  'door.night_activity': { label: 'Front door at night', tone: 'incident', icon: 'moon' },
+  'visit.no_show': { label: 'Expected visit missed', tone: 'attention', icon: 'hourglass' },
 };
 
 /** How a sighting reads: expected (with why) or a stranger. */
@@ -94,14 +108,80 @@ export function AlertsScreen() {
   return (
     <Screen>
       <View style={{ padding: space[6], gap: space[5] }}>
-        <View style={{ gap: space[1] }}>
-          <Caption>ALERTS</Caption>
-          <H1>What we&apos;ve flagged</H1>
-        </View>
+        <PageHeader title="Alerts" subtitle={"What we've flagged"} />
+
+        {alerts.isLoading ? (
+          <Card>
+            <Body muted>Loading alerts.</Body>
+          </Card>
+        ) : alerts.isError ? (
+          <Card style={{ gap: space[3] }}>
+            <Body muted>We couldn&apos;t load alerts just now.</Body>
+            <Button
+              label="Try again"
+              variant="secondary"
+              onPress={() => void alerts.refetch()}
+              loading={alerts.isFetching}
+            />
+          </Card>
+        ) : list.length === 0 ? (
+          <Card>
+            <Body muted>
+              Nothing to flag. When Obrigada sees a stranger, a hazard, a late-night door, or a
+              missed dose, it shows up here.
+            </Body>
+          </Card>
+        ) : (
+          <View style={{ gap: space[3] }}>
+            {list.map((alert) => {
+              const kind = KIND[alert.kind as AlertKind] ?? {
+                label: alert.kind.replace(/[._]/g, ' '),
+                tone: 'attention' as const,
+                icon: 'bell' as const,
+              };
+              return (
+                <Card key={alert.id} style={s.alert}>
+                  <View style={[s.alertBar, { backgroundColor: barColor[kind.tone] }]} />
+                  <View style={s.head}>
+                    <IconBadge icon={kind.icon} tone={kind.tone} />
+                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                      <Text style={s.title}>{kind.label}</Text>
+                      <Caption>{relativeTime(alert.at)}</Caption>
+                    </View>
+                  </View>
+                  <Body>{alert.message}</Body>
+                </Card>
+              );
+            })}
+          </View>
+        )}
+
+        {seen.length > 0 ? (
+          <View style={{ gap: space[3] }}>
+            <SectionHeader icon="scan-face" label="Who's been seen" />
+            <Card style={{ paddingVertical: space[2] }}>
+              {seen.map((sighting, i) => {
+                const chip = sightingChip(sighting);
+                return (
+                  <View key={sighting.id}>
+                    {i > 0 ? <Divider /> : null}
+                    <View style={[s.head, { paddingVertical: space[3] }]}>
+                      <Chip tone={chip.tone} dot>
+                        {chip.label}
+                      </Chip>
+                      <View style={{ flex: 1 }} />
+                      <Caption>{relativeTime(sighting.at)}</Caption>
+                    </View>
+                  </View>
+                );
+              })}
+            </Card>
+          </View>
+        ) : null}
 
         <Card style={{ gap: space[4] }}>
-          <View style={{ gap: space[1] }}>
-            <Caption>EXPECTING SOMEONE?</Caption>
+          <View style={{ gap: space[2] }}>
+            <SectionHeader icon="calendar" label="Expecting someone?" />
             <Body muted>
               Log a visit and we won&apos;t flag them as a stranger while they&apos;re here. A
               uniform never counts as trust on its own.
@@ -109,13 +189,12 @@ export function AlertsScreen() {
           </View>
           {(visits.data ?? []).map((v) => (
             <View key={v.id} style={s.visitRow}>
-              <View style={{ flex: 1 }}>
-                <Body>{v.visitorLabel}</Body>
+              <IconBadge icon="user" tone="well" />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={s.title}>{v.visitorLabel}</Text>
                 <Caption>{formatWindow(v.startsAt, v.endsAt)}</Caption>
               </View>
-              <Pressable onPress={() => void deleteVisit.mutate(v.id)} hitSlop={10}>
-                <Text style={s.remove}>Remove</Text>
-              </Pressable>
+              <TextAction label="Remove" danger onPress={() => void deleteVisit.mutate(v.id)} />
             </View>
           ))}
           <Field
@@ -148,83 +227,31 @@ export function AlertsScreen() {
           />
           {visitError ? <Caption>{visitError}</Caption> : null}
         </Card>
-
-        {alerts.isLoading ? (
-          <Card>
-            <Body muted>Loading alerts.</Body>
-          </Card>
-        ) : alerts.isError ? (
-          <Card style={{ gap: space[3] }}>
-            <Body muted>We couldn&apos;t load alerts just now.</Body>
-            <Button
-              label="Try again"
-              variant="secondary"
-              onPress={() => void alerts.refetch()}
-              loading={alerts.isFetching}
-            />
-          </Card>
-        ) : list.length === 0 ? (
-          <Card>
-            <Body muted>
-              Nothing to flag. When Obrigada sees a stranger, a hazard, a late-night door, or a
-              missed dose, it shows up here.
-            </Body>
-          </Card>
-        ) : (
-          <View style={{ gap: space[3] }}>
-            {list.map((alert) => {
-              const kind = KIND[alert.kind as AlertKind] ?? {
-                label: alert.kind.replace(/[._]/g, ' '),
-                tone: 'attention' as const,
-              };
-              return (
-                <Card key={alert.id}>
-                  <View style={s.head}>
-                    <Chip tone={kind.tone}>{kind.label}</Chip>
-                    <Caption>{relativeTime(alert.at)}</Caption>
-                  </View>
-                  <View style={{ height: space[2] }} />
-                  <Body>{alert.message}</Body>
-                </Card>
-              );
-            })}
-          </View>
-        )}
-
-        {seen.length > 0 ? (
-          <View style={{ gap: space[3] }}>
-            <View style={{ gap: space[1] }}>
-              <Caption>WHO&apos;S BEEN SEEN</Caption>
-              <H2>Sightings</H2>
-            </View>
-            {seen.map((sighting) => {
-              const chip = sightingChip(sighting);
-              return (
-                <Card key={sighting.id}>
-                  <View style={s.head}>
-                    <Chip tone={chip.tone}>{chip.label}</Chip>
-                    <Caption>{relativeTime(sighting.at)}</Caption>
-                  </View>
-                </Card>
-              );
-            })}
-          </View>
-        ) : null}
       </View>
     </Screen>
   );
 }
 
+const barColor: Record<Tone, string> = {
+  incident: color.incident500,
+  attention: color.attention500,
+  well: color.success,
+  neutral: color.neutral200,
+};
+
 const s = StyleSheet.create({
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  title: { ...font.semibold, fontSize: 17, lineHeight: 22, color: color.textPrimary },
+  alert: { gap: space[3], overflow: 'hidden', paddingLeft: space[5] + 2 },
+  alertBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
   visitRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[3],
     paddingVertical: space[2],
-    borderTopWidth: 1,
-    borderTopColor: color.neutral75,
+    paddingHorizontal: space[3],
+    borderRadius: radius.md,
+    backgroundColor: color.bgCanvas,
   },
   timePair: { flexDirection: 'row', gap: space[3] },
-  remove: { color: color.incident500, fontSize: text.sm, fontWeight: '600' },
 });
