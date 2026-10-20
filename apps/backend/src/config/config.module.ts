@@ -12,6 +12,10 @@ import { AppConfig, validateEnv } from './env.validation';
     NestConfigModule.forRoot({
       isGlobal: true,
       cache: true,
+      // Tests (Jest sets NODE_ENV=test) see only the environment they set themselves, never
+      // a developer's apps/backend/.env: with the demo .env in place, e2e runs would write
+      // into the demo database and collide with their own earlier sign-ups.
+      ignoreEnvFile: process.env.NODE_ENV === 'test',
       validate: validateEnv,
     }),
   ],
