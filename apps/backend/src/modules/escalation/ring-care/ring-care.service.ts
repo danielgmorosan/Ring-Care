@@ -21,6 +21,7 @@ import {
 } from '../temporal/types';
 import {
   buildNightDoorAlertMessage,
+  buildNightDoorCallMessage,
   buildNightDoorMessage,
   buildNightDoorUnansweredMessage,
   type RingActivityKind,
@@ -225,7 +226,9 @@ export class RingCareService {
           messages: {
             device: buildNightDoorMessage(kind, at, timezone, firstCallable(contacts)),
             unanswered: buildNightDoorUnansweredMessage(kind, at, timezone),
+            call: buildNightDoorCallMessage(kind, at, timezone),
           },
+          timeZone: timezone,
         });
         this.logger.warn(
           `Night door activity ${payload.ringEventId}: opened incident ${incidentId} ` +

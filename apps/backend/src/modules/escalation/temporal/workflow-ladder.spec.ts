@@ -11,6 +11,9 @@
  *    side effects, and any divergence between the code and the history fails the test
  *    (non-determinism). The rest then runs live.
  *  - timers are skipped (condition timeouts fire once nothing else can progress).
+ *  - a signal can arrive mid-flow, right after a given contact's call is placed (a contact
+ *    pressing 1 on that call). Like any signal in a real history it sits at the same
+ *    point on replay, so a resumed worker sees it exactly where the original run did.
  */
 import { InMemoryIncidentRepository } from '../in-memory-incident.repository';
 import { createEscalationActivities } from './activities.impl';
@@ -18,11 +21,14 @@ import {
   ACK_SIGNAL,
   CAREGIVER_ACK_SIGNAL,
   CHECKIN_SIGNAL,
+  CONTACT_CONFIRMED_SIGNAL,
   RESOLVE_SIGNAL,
   type EscalationActivities,
   type EscalationContact,
   type EscalationInput,
   type EscalationResult,
+  type PlaceCallInput,
+  type PlaceCallResult,
 } from './types';
 import { escalationWorkflow } from './workflows';
 import type { NotificationPort } from '../notifications/notification.port';
@@ -40,6 +46,9 @@ class FakeWorkflowRuntime {
   private waiters: Array<{ fn: () => boolean; resolve: (fired: boolean) => void }> = [];
   private replayIndex = 0;
   killed = false;
+  timersFired = 0;
+  /** Signals delivered right after a given contact's placeCall completes (live or replay). */
+  signalsAfterCall: Record<string, Signal[]> = {};
 
   constructor(
     private readonly acts: EscalationActivities,
@@ -66,6 +75,7 @@ class FakeWorkflowRuntime {
         );
       }
       this.history.push(recorded);
+      this.afterActivity(name, args);
       return recorded.result;
     }
     if (this.killAfter !== null && this.history.length >= this.killAfter) {
@@ -75,7 +85,16 @@ class FakeWorkflowRuntime {
     }
     const result = await this.invoke(name, args);
     this.history.push({ name, args: serialized, result });
+    this.afterActivity(name, args);
     return result;
+  }
+
+  private afterActivity(name: string, args: unknown[]): void {
+    if (name !== 'placeCall') return;
+    const contactId = (args[0] as PlaceCallInput).contact.id;
+    for (const [signalName, ...signalArgs] of this.signalsAfterCall[contactId] ?? []) {
+      this.signal(signalName, ...signalArgs);
+    }
   }
 
   private invoke(name: string, args: unknown[]): Promise<unknown> {
@@ -115,6 +134,7 @@ class FakeWorkflowRuntime {
   fireTimers(): void {
     const waiters = this.waiters;
     this.waiters = [];
+    this.timersFired += waiters.length;
     for (const w of waiters) w.resolve(false);
   }
 }
@@ -166,10 +186,25 @@ class RecordingNotifications implements NotificationPort {
   }
 }
 
+/**
+ * Notification double for Twilio with callbacks: every call asks for a press-1 and reports
+ * `awaitsConfirmation`, so the workflow waits the ack window per contact.
+ */
+class ConfirmingNotifications extends RecordingNotifications {
+  readonly spoken: Array<string | undefined> = [];
+  override async placeCall(input: PlaceCallInput): Promise<PlaceCallResult> {
+    await super.placeCall(input);
+    this.spoken.push(input.message);
+    return { answered: false, awaitsConfirmation: true };
+  }
+}
+
 type Signal = [name: string, ...args: unknown[]];
 
 interface RunOptions {
   signals?: Signal[];
+  /** Signals that arrive right after the named contact's call is placed. */
+  signalsAfterCall?: Record<string, Signal[]>;
   replay?: HistoryEntry[];
   killAfter?: number | null;
   killAfterSideEffect?: boolean;
@@ -179,6 +214,8 @@ interface RunResult {
   result: EscalationResult | null;
   killed: boolean;
   history: HistoryEntry[];
+  /** How many condition timeouts fired (each is a window that ran out). */
+  timersFired: number;
 }
 
 /** Drive one worker "process" until the workflow finishes or the process is killed. */
@@ -194,6 +231,7 @@ async function runProcess(
     options.killAfter ?? null,
     options.killAfterSideEffect ?? false,
   );
+  rt.signalsAfterCall = options.signalsAfterCall ?? {};
   mockHolder.rt = rt;
   // Signals already in the history (delivered with the start) arrive on every run.
   for (const [name, ...args] of options.signals ?? []) rt.signal(name, ...args);
@@ -214,12 +252,14 @@ async function runProcess(
   for (let i = 0; i < 500; i++) {
     await flush();
     if (settled) break;
-    if (rt.killed) return { result: null, killed: true, history: rt.history };
+    if (rt.killed) {
+      return { result: null, killed: true, history: rt.history, timersFired: rt.timersFired };
+    }
     if (rt.pendingTimers > 0) rt.fireTimers();
   }
   if (error) throw error;
   if (!settled) throw new Error('workflow did not settle');
-  return { result, killed: false, history: rt.history };
+  return { result, killed: false, history: rt.history, timersFired: rt.timersFired };
 }
 
 const contact = (
@@ -253,6 +293,8 @@ const fallInput = (over: Partial<EscalationInput> = {}): EscalationInput => ({
 const DOOR_DEVICE = "Someone was at the front door at 3:04. We're calling sofia now.";
 const DOOR_UNANSWERED =
   "Someone was at the front door at 3:04. We haven't reached anyone by phone yet. Please check on home.";
+
+const DOOR_CALL = 'This is Obrigada. Someone was at the front door at 3:04.';
 
 const doorInput = (over: Partial<EscalationInput> = {}): EscalationInput => ({
   incidentId: 'inc-door',
@@ -507,10 +549,21 @@ describe('escalation workflow: killing the process mid-flow and resuming', () =>
     signals: Signal[],
     killAfterSideEffect: boolean,
     expected: { outcome: EscalationResult['outcome']; emergency: boolean },
+    extra: {
+      /** Builds the notification double; default answers for `answerFor`. */
+      notifications?: () => RecordingNotifications;
+      signalsAfterCall?: Record<string, Signal[]>;
+    } = {},
   ): Promise<void> {
+    const makeNotifications =
+      extra.notifications ?? (() => new RecordingNotifications(new Set(answerFor)));
+    const signalsAfterCall = extra.signalsAfterCall ?? {};
     const baseline = new InMemoryIncidentRepository();
-    const baseNotifications = new RecordingNotifications(new Set(answerFor));
-    const uninterrupted = await runProcess(makeInput(), baseline, baseNotifications, { signals });
+    const baseNotifications = makeNotifications();
+    const uninterrupted = await runProcess(makeInput(), baseline, baseNotifications, {
+      signals,
+      signalsAfterCall,
+    });
     expect(uninterrupted.result!.outcome).toBe(expected.outcome);
     expect(baseNotifications.emergencies.length).toBe(expected.emergency ? 1 : 0);
     const expectedSteps = await steps(baseline, makeInput().incidentId);
@@ -519,17 +572,19 @@ describe('escalation workflow: killing the process mid-flow and resuming', () =>
 
     for (let killAfter = 0; killAfter < total; killAfter++) {
       const incidents = new InMemoryIncidentRepository(); // the durable store (Postgres)
-      const first = new RecordingNotifications(new Set(answerFor));
+      const first = makeNotifications();
       const crashed = await runProcess(makeInput(), incidents, first, {
         signals,
+        signalsAfterCall,
         killAfter,
         killAfterSideEffect,
       });
       expect(crashed.killed).toBe(true);
 
-      const second = new RecordingNotifications(new Set(answerFor));
+      const second = makeNotifications();
       const resumed = await runProcess(makeInput(), incidents, second, {
         signals,
+        signalsAfterCall,
         replay: crashed.history,
       });
 
@@ -586,6 +641,48 @@ describe('escalation workflow: killing the process mid-flow and resuming', () =>
     });
   });
 
+  it('door.night_activity, press 1: resumes through the ack-window wait, Miguel confirms', async () => {
+    await killAndResumeEverywhere(
+      () => doorInput({ messages: { ...doorInput().messages, call: DOOR_CALL } }),
+      [],
+      [],
+      false,
+      { outcome: 'acknowledged', emergency: false },
+      {
+        notifications: () => new ConfirmingNotifications(),
+        signalsAfterCall: { miguel: [[CONTACT_CONFIRMED_SIGNAL, 'miguel']] },
+      },
+    );
+  });
+
+  it('door.night_activity, press 1 never comes: resumes through every wait to family_alerted', async () => {
+    await killAndResumeEverywhere(
+      () => doorInput(),
+      [],
+      [],
+      true,
+      {
+        outcome: 'family_alerted',
+        emergency: false,
+      },
+      { notifications: () => new ConfirmingNotifications() },
+    );
+  });
+
+  it('fall path, press 1 from the second contact: resumes and never calls 112', async () => {
+    await killAndResumeEverywhere(
+      () => fallInput(),
+      [],
+      [],
+      false,
+      { outcome: 'acknowledged', emergency: false },
+      {
+        notifications: () => new ConfirmingNotifications(),
+        signalsAfterCall: { c2: [[CONTACT_CONFIRMED_SIGNAL, 'c2']] },
+      },
+    );
+  });
+
   it('replaying a door history against fall rules is caught as non-determinism', async () => {
     const incidents = new InMemoryIncidentRepository();
     const door = await runProcess(doorInput(), incidents, new RecordingNotifications());
@@ -597,5 +694,222 @@ describe('escalation workflow: killing the process mid-flow and resuming', () =>
         { replay: door.history },
       ),
     ).rejects.toThrow(/Non-determinism/);
+  });
+});
+
+describe('escalation workflow: press 1 to confirm on family calls (0003 follow-up)', () => {
+  const hero = (over: Partial<EscalationInput> = {}): EscalationInput =>
+    doorInput({
+      messages: { device: DOOR_DEVICE, unanswered: DOOR_UNANSWERED, call: DOOR_CALL },
+      ...over,
+    });
+
+  it('hero scene: Sofia does not confirm, the window runs out, Miguel presses 1 and the ladder stops', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n, {
+      signalsAfterCall: { miguel: [[CONTACT_CONFIRMED_SIGNAL, 'miguel']] },
+    });
+
+    expect(run.result).toEqual({
+      outcome: 'acknowledged',
+      acknowledgedByContactId: 'miguel',
+      steps: 6,
+    });
+    expect((await steps(incidents, 'inc-door')).slice(2)).toEqual([
+      { kind: 'call_placed', detail: { phone: '+351910000000' } },
+      { kind: 'call_no_answer', detail: {} },
+      { kind: 'call_placed', detail: { phone: '+351910000001' } },
+      { kind: 'call_answered', detail: { via: 'press_1' } },
+    ]);
+    const trail = await incidents.listSteps('inc-door');
+    expect(trail[5]).toMatchObject({ kind: 'call_answered', detail: { via: 'press_1' } });
+    // Sofia's window ran out (one timer); Miguel's confirmation ended his wait early.
+    expect(run.timersFired).toBe(1);
+    expect(n.calls).toEqual(['sofia', 'miguel']);
+    // The call speaks the deterministic door text, not "We're calling Sofia now".
+    expect(n.spoken).toEqual([DOOR_CALL, DOOR_CALL]);
+    expect(n.sms).toEqual([]);
+    expect(n.emergencies).toEqual([]);
+  });
+
+  it('waits the ack window for each contact, then moves on and texts everyone when nobody confirms', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n);
+
+    expect(run.result!.outcome).toBe('family_alerted');
+    expect(run.timersFired).toBe(2); // one full window per contact before moving on
+    expect((await steps(incidents, 'inc-door')).map((s) => s.kind)).toEqual([
+      'incident_opened',
+      'push_sent',
+      'call_placed',
+      'call_no_answer',
+      'call_placed',
+      'call_no_answer',
+      'sms_sent',
+      'sms_sent',
+      'family_alerted',
+    ]);
+    expect(n.emergencies).toEqual([]);
+  });
+
+  it('a press 1 from the first contact stops the tree before anyone else is rung', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n, {
+      signalsAfterCall: { sofia: [[CONTACT_CONFIRMED_SIGNAL, 'sofia']] },
+    });
+    expect(run.result).toMatchObject({ outcome: 'acknowledged', acknowledgedByContactId: 'sofia' });
+    expect(run.timersFired).toBe(0);
+    expect(n.calls).toEqual(['sofia']);
+  });
+
+  it('a caregiver app acknowledgement during the wait holds the tree (0008), then lapses', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n, {
+      signalsAfterCall: { sofia: [[CAREGIVER_ACK_SIGNAL, 'user-sofia']] },
+    });
+
+    expect(run.result!.outcome).toBe('family_alerted');
+    expect(n.calls).toEqual(['sofia']); // Miguel is never rung
+    expect(run.timersFired).toBe(1); // only the all-clear window ran out, not Sofia's
+    expect((await steps(incidents, 'inc-door')).map((s) => s.kind)).toEqual([
+      'incident_opened',
+      'push_sent',
+      'call_placed',
+      'call_no_answer',
+      'caregiver_acknowledged',
+      'acknowledgement_lapsed',
+      'sms_sent',
+      'sms_sent',
+      'family_alerted',
+    ]);
+  });
+
+  it('a caregiver app acknowledgement during the wait, then an all-clear, stands down', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n, {
+      signalsAfterCall: { sofia: [[CAREGIVER_ACK_SIGNAL, 'user-sofia'], [RESOLVE_SIGNAL]] },
+    });
+    expect(run.result!.outcome).toBe('stood_down');
+    expect(n.calls).toEqual(['sofia']);
+  });
+
+  it('a late press 1 from Sofia while Miguel rings still ends the ladder, credited to Sofia', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n, {
+      signalsAfterCall: { miguel: [[CONTACT_CONFIRMED_SIGNAL, 'sofia']] },
+    });
+    expect(run.result).toMatchObject({ outcome: 'acknowledged', acknowledgedByContactId: 'sofia' });
+    const trail = await incidents.listSteps('inc-door');
+    expect(trail.at(-1)).toMatchObject({ kind: 'call_answered', detail: { via: 'press_1' } });
+    expect((await steps(incidents, 'inc-door')).map((s) => s.kind)).not.toContain('sms_sent');
+  });
+
+  it('ignores a confirmation from a contact the ladder has not called', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n, {
+      // Delivered before any call is placed: nobody has been asked yet.
+      signals: [[CONTACT_CONFIRMED_SIGNAL, 'miguel']],
+    });
+    expect(run.result!.outcome).toBe('family_alerted');
+    expect(n.calls).toEqual(['sofia', 'miguel']);
+  });
+
+  it('fall: press 1 from the second contact stops before SMS and 112', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(fallInput(), incidents, n, {
+      signalsAfterCall: { c2: [[CONTACT_CONFIRMED_SIGNAL, 'c2']] },
+    });
+    expect(run.result).toMatchObject({ outcome: 'acknowledged', acknowledgedByContactId: 'c2' });
+    // Falls keep the voice check-in gate and the generic call text.
+    const kinds = (await steps(incidents, 'inc-fall')).map((s) => s.kind);
+    expect(kinds.slice(0, 2)).toEqual(['incident_opened', 'voice_checkin_result']);
+    expect(n.spoken).toEqual([undefined, undefined]);
+    expect(n.emergencies).toEqual([]);
+  });
+
+  it('fall: nobody confirms, so the ladder still reaches 112 after every window', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(fallInput(), incidents, n);
+    expect(run.result!.outcome).toBe('emergency_notified');
+    expect(n.emergencies).toEqual(['fall.suspected']);
+  });
+
+  it('without awaitsConfirmation the ladder does not wait at all (mock, Twilio without callbacks)', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const run = await runProcess(hero(), incidents, new RecordingNotifications());
+    expect(run.timersFired).toBe(0);
+    expect(run.result!.outcome).toBe('family_alerted');
+  });
+});
+
+describe('escalation workflow: quiet hours are household-local', () => {
+  // Quiet 22:00 to 07:00; an unconfirmed fall respects it.
+  const sleepy = contact('c1', 0, {
+    quietHours: { start: '22:00', end: '07:00', wakeForConfirmedFallOnly: true },
+  });
+  const run = async (nowIso: string, timeZone?: string): Promise<string[]> => {
+    jest.useFakeTimers({
+      now: new Date(nowIso),
+      doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask'],
+    });
+    try {
+      const incidents = new InMemoryIncidentRepository();
+      await runProcess(
+        fallInput({ contacts: [sleepy, contact('c2', 1)], ...(timeZone ? { timeZone } : {}) }),
+        incidents,
+        new RecordingNotifications(),
+      );
+      return (await steps(incidents, 'inc-fall')).map((s) => s.kind);
+    } finally {
+      jest.useRealTimers();
+    }
+  };
+
+  it('06:30 UTC is 07:30 in Lisbon (summer): Sofia is awake and is called', async () => {
+    const kinds = await run('2026-07-15T06:30:00.000Z', 'Europe/Lisbon');
+    expect(kinds).not.toContain('quiet_hours_skipped');
+  });
+
+  it('the same instant read as UTC (no timezone, old incidents) is still quiet', async () => {
+    const kinds = await run('2026-07-15T06:30:00.000Z');
+    expect(kinds).toContain('quiet_hours_skipped');
+  });
+
+  it('14:00 UTC is 23:00 in Tokyo: inside quiet hours there, so the contact is skipped', async () => {
+    expect(await run('2026-07-15T14:00:00.000Z', 'Asia/Tokyo')).toContain('quiet_hours_skipped');
+    expect(await run('2026-07-15T14:00:00.000Z', 'UTC')).not.toContain('quiet_hours_skipped');
+  });
+
+  it('an unknown timezone falls back to UTC rather than failing the ladder', async () => {
+    expect(await run('2026-07-15T06:30:00.000Z', 'Mars/Olympus')).toContain('quiet_hours_skipped');
+  });
+
+  it('a confirmed fall still wakes a contact who opted in, whatever the zone', async () => {
+    jest.useFakeTimers({
+      now: new Date('2026-07-15T14:00:00.000Z'),
+      doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask'],
+    });
+    try {
+      const incidents = new InMemoryIncidentRepository();
+      await runProcess(
+        fallInput({ contacts: [sleepy], timeZone: 'Asia/Tokyo', confirmedFall: true }),
+        incidents,
+        new RecordingNotifications(),
+      );
+      expect((await steps(incidents, 'inc-fall')).map((s) => s.kind)).not.toContain(
+        'quiet_hours_skipped',
+      );
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

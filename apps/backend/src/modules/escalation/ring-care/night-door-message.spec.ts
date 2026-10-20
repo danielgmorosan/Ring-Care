@@ -1,5 +1,6 @@
 import {
   buildNightDoorAlertMessage,
+  buildNightDoorCallMessage,
   buildNightDoorMessage,
   buildNightDoorUnansweredMessage,
 } from './night-door-message';
@@ -32,12 +33,23 @@ describe('night door messages', () => {
     );
   });
 
+  it('speaks to the person being called, without "We\'re calling X now"', () => {
+    expect(buildNightDoorCallMessage('motion', AT, TZ)).toBe(
+      'This is Obrigada. Someone was at the front door at 3:04.',
+    );
+    expect(buildNightDoorCallMessage('ding', AT, TZ)).toBe(
+      'This is Obrigada. Someone rang the front doorbell at 3:04.',
+    );
+    expect(buildNightDoorCallMessage('motion', AT, TZ)).not.toMatch(/calling|\u2014/);
+  });
+
   it('keeps the brand voice: no em dashes, no exclamation marks, no capitals shouting', () => {
     const all = [
       buildNightDoorMessage('motion', AT, TZ, 'Sofia'),
       buildNightDoorMessage('ding', AT, TZ, null),
       buildNightDoorUnansweredMessage('ding', AT, TZ),
       buildNightDoorAlertMessage('ding', AT, TZ),
+      buildNightDoorCallMessage('ding', AT, TZ),
     ];
     for (const text of all) {
       expect(text).not.toMatch(/[—–!]/);

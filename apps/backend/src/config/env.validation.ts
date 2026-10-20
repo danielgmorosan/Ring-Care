@@ -72,6 +72,18 @@ export const envSchema = z.object({
   TWILIO_FROM_NUMBER: z.string().min(1).optional(),
   // Twilio API host — default is the EU (Ireland) edge for data residency (rule #6).
   TWILIO_API_BASE_URL: z.string().url().default('https://api.twilio.com'),
+  // The backend's public https origin (e.g. a tunnel in the demo), no trailing path. Needed
+  // for Twilio callbacks: with Twilio configured AND this set, family calls say "Press 1 if
+  // you are handling this" and Twilio posts the key press to /twilio/calls/confirm. Unset:
+  // calls are one-way and the ladder moves on at once, as before.
+  PUBLIC_BASE_URL: z
+    .string()
+    .url()
+    .refine((v) => v.startsWith('https://'), 'PUBLIC_BASE_URL must be an https URL')
+    .optional(),
+  // Signs the call-confirmation callback URLs (HMAC-SHA256) so nobody can forge a press-1.
+  // Optional: when unset, a key is derived from JWT_SECRET. From the vault in production.
+  CALLBACK_SIGNING_SECRET: z.string().min(16).optional(),
   // Critical-alert push (F1.6). When the full FCM service-account set is present the
   // real adapter sends critical push via FCM (and APNs for iOS, configured in the
   // Firebase project); otherwise the mock notifies no device and the ladder still
@@ -352,6 +364,23 @@ export class AppConfig {
    */
   get hasTwilio(): boolean {
     return Boolean(this.twilioAccountSid && this.twilioAuthToken && this.twilioFromNumber);
+  }
+
+  /** The backend's public https origin (no trailing slash), or undefined. */
+  get publicBaseUrl(): string | undefined {
+    return this.config.get('PUBLIC_BASE_URL', { infer: true })?.replace(/\/+$/, '');
+  }
+
+  get callbackSigningSecret(): string | undefined {
+    return this.config.get('CALLBACK_SIGNING_SECRET', { infer: true });
+  }
+
+  /**
+   * True when family calls can ask for, and receive, a press-1 confirmation: Twilio is
+   * configured and Twilio can reach us back at PUBLIC_BASE_URL.
+   */
+  get hasCallConfirmation(): boolean {
+    return this.hasTwilio && Boolean(this.publicBaseUrl);
   }
 
   get fcmProjectId(): string | undefined {

@@ -4,6 +4,7 @@ import type {
   DeviceAlertInput,
   NotifyEmergencyInput,
   PlaceCallInput,
+  PlaceCallResult,
 } from '../temporal/types';
 import { NotificationPort } from './notification.port';
 
@@ -17,11 +18,11 @@ import { NotificationPort } from './notification.port';
 export class MockNotificationAdapter implements NotificationPort {
   private readonly logger = new Logger(MockNotificationAdapter.name);
 
-  async placeCall(input: PlaceCallInput): Promise<{ answered: boolean }> {
+  async placeCall(input: PlaceCallInput): Promise<PlaceCallResult> {
     this.logger.log(
       `[mock] would ring ${input.contact.role} (${input.contact.phone ?? 'no phone'})`,
     );
-    return { answered: false };
+    return { answered: false }; // never awaits a confirmation: the ladder moves straight on
   }
 
   async sendSms(input: ContactMessageInput): Promise<void> {

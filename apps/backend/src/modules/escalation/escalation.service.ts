@@ -3,11 +3,14 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Client } from '@temporalio/client';
 import { v4 as uuidv4 } from 'uuid';
 import { AppConfig } from '../../config/env.validation';
+import { FamiliesService } from '../families/families.service';
+import { normalizeTimeZone } from '../families/timezone';
 import { PushTokensService } from '../push/push-tokens.service';
 import { CONTACT_REPOSITORY, type ContactRepository } from './contact.repository';
 import { INCIDENT_REPOSITORY, type IncidentRepository } from './incident.repository';
@@ -22,6 +25,7 @@ import {
   ackSignal,
   caregiverAckSignal,
   checkinSignal,
+  contactConfirmedSignal,
   escalationWorkflow,
   resolveSignal,
 } from './temporal/workflows';
@@ -37,6 +41,8 @@ export interface StartEscalationParams {
   ackWindowSeconds?: number;
   /** Deterministic family-facing wording; omitted for falls (generic texts). */
   messages?: EscalationMessages;
+  /** The household's IANA timezone, if the caller already has it; otherwise looked up. */
+  timeZone?: string;
 }
 
 /** Default ring time per contact ("call the daughter, wait 45s, call the son"). */
@@ -56,7 +62,25 @@ export class EscalationService {
     @Inject(INCIDENT_REPOSITORY) private readonly incidents: IncidentRepository,
     @Inject(CONTACT_REPOSITORY) private readonly contacts: ContactRepository,
     private readonly pushTokens: PushTokensService,
+    // Optional only so focused unit tests can omit it; Nest always injects it.
+    @Optional() private readonly families?: FamiliesService,
   ) {}
+
+  /**
+   * The household's timezone for quiet hours. Never blocks an escalation: an unknown
+   * family or a lookup failure falls back to UTC (the previous behaviour).
+   */
+  private async householdTimeZone(params: StartEscalationParams): Promise<string> {
+    if (params.timeZone) return normalizeTimeZone(params.timeZone);
+    try {
+      const family = await this.families?.findByIdOrFail(params.familyId);
+      return normalizeTimeZone(family?.timezone);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`No timezone for family ${params.familyId} (${message}); using UTC`);
+      return 'UTC';
+    }
+  }
 
   private workflowId(incidentId: string): string {
     return `incident-${incidentId}`;
@@ -94,6 +118,7 @@ export class EscalationService {
       initialCheckin: params.initialCheckin ?? 'pending',
       // Only set when provided, so a fall's workflow input is exactly what it always was.
       ...(params.messages ? { messages: params.messages } : {}),
+      timeZone: await this.householdTimeZone(params),
     };
 
     await client.workflow.start(escalationWorkflow, {
@@ -151,6 +176,19 @@ export class EscalationService {
     await this.assertOwnership(incidentId, familyId);
     const handle = this.requireClient().workflow.getHandle(this.workflowId(incidentId));
     await handle.signal(ackSignal, contactId);
+  }
+
+  /**
+   * A called contact pressed 1 on the phone (decision 0003, follow-up). The caller (the
+   * Twilio callback) has already verified the signed link, which binds this contact to a
+   * call this incident placed. The workflow records it on the append-only trail.
+   */
+  async confirmByCall(incidentId: string, contactId: string): Promise<void> {
+    const incident = await this.incidents.findById(incidentId);
+    if (!incident) throw new NotFoundException(`Incident ${incidentId} not found`);
+    const handle = this.requireClient().workflow.getHandle(this.workflowId(incidentId));
+    await handle.signal(contactConfirmedSignal, contactId);
+    this.logger.log(`Contact ${contactId} confirmed incident ${incidentId} by phone (press 1)`);
   }
 
   /**

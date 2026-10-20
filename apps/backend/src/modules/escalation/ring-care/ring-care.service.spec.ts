@@ -137,7 +137,11 @@ describe('RingCareService', () => {
           device: "Someone was at the front door at 3:04. We're calling Sofia now.",
           unanswered:
             "Someone was at the front door at 3:04. We haven't reached anyone by phone yet. Please check on home.",
+          // Spoken on the call itself, before "Press 1 if you are handling this."
+          call: 'This is Obrigada. Someone was at the front door at 3:04.',
         },
+        // Quiet hours are read in the household's own timezone.
+        timeZone: 'Europe/Lisbon',
       });
       expect(await service.interpretRingEvent(e.ringEventId)).toBe('night_door');
       expect(raised).toEqual([]); // the ladder alerts; no duplicate alert

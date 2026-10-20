@@ -5,9 +5,11 @@ import {
   CAREGIVER_ACK_SIGNAL,
   CHECKIN_SIGNAL,
   CHECKIN_WAIT_SECONDS,
+  CONTACT_CONFIRMED_SIGNAL,
   DEFAULT_ESCALATION_RULES,
   RESOLVE_SIGNAL,
   escalationRulesFor,
+  localMinutesOfDay,
   shouldSkipForQuietHours,
   type EscalationActivities,
   type EscalationInput,
@@ -37,6 +39,8 @@ export const checkinSignal = defineSignal<[VoiceCheckinResult]>(CHECKIN_SIGNAL);
 export const ackSignal = defineSignal<[string]>(ACK_SIGNAL);
 export const caregiverAckSignal = defineSignal<[string]>(CAREGIVER_ACK_SIGNAL);
 export const resolveSignal = defineSignal(RESOLVE_SIGNAL);
+/** A called contact pressed 1: they answered and are handling it (0003 follow-up). */
+export const contactConfirmedSignal = defineSignal<[string]>(CONTACT_CONFIRMED_SIGNAL);
 
 export async function escalationWorkflow(input: EscalationInput): Promise<EscalationResult> {
   let seq = 0;
@@ -45,6 +49,10 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   // A caregiver acknowledged from the app (provisional, needs an all-clear within the window).
   let caregiverAckBy: string | null = null;
   let resolved = false;
+  // A called contact pressed 1 on the call ("I am handling this"). Only contacts the ladder
+  // has already dialed can confirm; the callback that sends this is HMAC-bound to that call.
+  let confirmedBy: string | null = null;
+  const called = new Set<string>();
 
   setHandler(checkinSignal, (result) => {
     if (checkin === 'pending') checkin = result;
@@ -57,6 +65,9 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   });
   setHandler(resolveSignal, () => {
     resolved = true;
+  });
+  setHandler(contactConfirmedSignal, (contactId) => {
+    if (!confirmedBy && called.has(contactId)) confirmedBy = contactId;
   });
 
   const step = (
@@ -105,36 +116,59 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
     await step('push_sent', null, { device: true });
   }
 
-  // Then run the contact ladder in priority order.
-  const nowMinutesUtc = (): number => {
-    const now = new Date();
-    return now.getUTCHours() * 60 + now.getUTCMinutes();
-  };
+  // Then run the contact ladder in priority order. Quiet hours are household-local clock
+  // times: read workflow time (deterministic under replay) in the household's timezone.
+  const nowLocalMinutes = (): number => localMinutesOfDay(Date.now(), input.timeZone);
+  const callMessage = input.messages?.call;
 
   for (const contact of input.contacts) {
-    // A contact answering, or a caregiver acknowledging from the app, stops the phone tree.
-    if (acknowledgedBy || caregiverAckBy) break;
+    // A contact answering or confirming, or a caregiver acknowledging from the app, stops
+    // the phone tree.
+    if (acknowledgedBy || caregiverAckBy || confirmedBy) break;
     if (shouldSkipForQuietHours(
         contact,
         input.confirmedFall || rules.wakesThroughQuietHours,
-        nowMinutesUtc(),
+        nowLocalMinutes(),
       )) {
       await step('quiet_hours_skipped', contact.id, {});
       continue;
     }
     await step('call_placed', contact.id, { phone: contact.phone });
-    const { answered } = await acts.placeCall({
+    called.add(contact.id);
+    const { answered, awaitsConfirmation } = await acts.placeCall({
       incidentId: input.incidentId,
       contact,
       ringSeconds: input.ackWindowSeconds,
+      ...(callMessage ? { message: callMessage } : {}),
     });
     if (answered) {
       acknowledgedBy = contact.id;
       await step('call_answered', contact.id, {});
       break;
     }
+    // The call asks them to press 1. Give them the ack window to answer and confirm before
+    // ringing the next person, instead of ringing everyone within seconds. A caregiver's
+    // app acknowledgement during the wait holds the tree too, exactly as it does today.
+    if (awaitsConfirmation) {
+      await condition(
+        () => confirmedBy !== null || caregiverAckBy !== null || acknowledgedBy !== null,
+        `${input.ackWindowSeconds}s`,
+      );
+    }
+    if (confirmedBy) break;
     await step('call_no_answer', contact.id, {});
   }
+
+  // A called contact pressed 1. That is the attentive act of answering, so it ends the
+  // ladder exactly like an answered call does.
+  const recordConfirmation = async (): Promise<EscalationResult | null> => {
+    if (!confirmedBy || acknowledgedBy) return null;
+    acknowledgedBy = confirmedBy;
+    await step('call_answered', confirmedBy, { via: 'press_1' });
+    return { outcome: 'acknowledged', acknowledgedByContactId: confirmedBy, steps: seq };
+  };
+  const confirmedDuringLadder = await recordConfirmation();
+  if (confirmedDuringLadder) return confirmedDuringLadder;
 
   // A contact answered a call — an attentive human is engaged. Full stop (existing behavior).
   if (acknowledgedBy) {
@@ -147,7 +181,14 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   // — a mis-tap or a distracted caregiver can only ever delay help, never suppress it.
   if (caregiverAckBy) {
     await step('caregiver_acknowledged', null, { by: caregiverAckBy });
-    const clearedInTime = await condition(() => resolved, `${ACK_RESOLVE_WINDOW_SECONDS}s`);
+    const clearedInTime = await condition(
+      () => resolved || confirmedBy !== null,
+      `${ACK_RESOLVE_WINDOW_SECONDS}s`,
+    );
+    // A called contact pressing 1 while the app acknowledgement is pending is a stronger,
+    // attentive answer: it ends the ladder as acknowledged.
+    const confirmedDuringHold = await recordConfirmation();
+    if (confirmedDuringHold) return confirmedDuringHold;
     if (clearedInTime) {
       await step('stood_down', null, { reason: 'caregiver_all_clear' });
       return { outcome: 'stood_down', acknowledgedByContactId: caregiverAckBy, steps: seq };

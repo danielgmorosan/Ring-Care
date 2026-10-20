@@ -3,6 +3,7 @@ import type {
   DeviceAlertInput,
   NotifyEmergencyInput,
   PlaceCallInput,
+  PlaceCallResult,
 } from '../temporal/types';
 
 /**
@@ -11,7 +12,7 @@ import type {
  * places no real calls. Credentials come from the vault, never the repo.
  */
 export interface NotificationPort {
-  placeCall(input: PlaceCallInput): Promise<{ answered: boolean }>;
+  placeCall(input: PlaceCallInput): Promise<PlaceCallResult>;
   sendSms(input: ContactMessageInput): Promise<void>;
   pushCriticalAlert(input: ContactMessageInput): Promise<void>;
   /** Critical-alert a registered caregiver device (routed to the push channel). */

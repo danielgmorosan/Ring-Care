@@ -31,6 +31,15 @@ export function buildNightDoorMessage(
   return `${opening(kind, at, tz)} ${next}`;
 }
 
+/**
+ * What a family call says aloud: "This is Obrigada. Someone was at the front door at 3:04."
+ * The call itself adds "Press 1 if you are handling this." No "We're calling X now": the
+ * person hearing it is the one being called.
+ */
+export function buildNightDoorCallMessage(kind: RingActivityKind, at: string, tz: string): string {
+  return `This is Obrigada. ${opening(kind, at, tz)}`;
+}
+
 /** The text and push to the whole chain when nobody picked up. */
 export function buildNightDoorUnansweredMessage(
   kind: RingActivityKind,

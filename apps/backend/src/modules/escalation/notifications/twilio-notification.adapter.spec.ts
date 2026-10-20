@@ -86,4 +86,60 @@ describe('TwilioNotificationAdapter', () => {
       adapter.sendSms({ incidentId: 'i1', contact: daughter, message: 'hi' }),
     ).rejects.toThrow(/Twilio Messages.json failed \(401\)/);
   });
+
+  describe('with PUBLIC_BASE_URL (press 1 to confirm)', () => {
+    const confirmConfig = {
+      ...config,
+      publicBaseUrl: 'https://obrigada.example',
+      jwtSecret: 'jwt-secret',
+      callbackSigningSecret: undefined,
+    } as unknown as AppConfig;
+
+    it('asks for a press 1, signs the callback link, and reports awaitsConfirmation', async () => {
+      const confirming = new TwilioNotificationAdapter(confirmConfig);
+      const result = await confirming.placeCall({
+        incidentId: 'inc-1',
+        contact: daughter,
+        ringSeconds: 45,
+        message: 'This is Obrigada. Someone was at the front door at 3:04.',
+      });
+
+      expect(result).toEqual({ answered: false, awaitsConfirmation: true });
+      const body = new URLSearchParams(fetchMock.mock.calls[0]![1].body as string);
+      const twiml = body.get('Twiml')!;
+      expect(twiml).toContain('<Gather numDigits="1" timeout="10" method="POST" action="');
+      expect(twiml).toContain(
+        'This is Obrigada. Someone was at the front door at 3:04. Press 1 if you are handling this.',
+      );
+      const action = /action="([^"]+)"/.exec(twiml)![1]!.replace(/&amp;/g, '&');
+      const url = new URL(action);
+      expect(url.origin + url.pathname).toBe('https://obrigada.example/twilio/calls/confirm');
+      expect(url.searchParams.get('incident')).toBe('inc-1');
+      expect(url.searchParams.get('contact')).toBe('c1');
+      expect(url.searchParams.get('token')).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(body.get('Timeout')).toBe('45');
+    });
+
+    it('keeps the generic falls text when no message is given', async () => {
+      const confirming = new TwilioNotificationAdapter(confirmConfig);
+      await confirming.placeCall({ incidentId: 'inc-1', contact: daughter, ringSeconds: 45 });
+      const twiml = new URLSearchParams(fetchMock.mock.calls[0]![1].body as string).get('Twiml')!;
+      expect(twiml).toContain('Obrigada safety alert');
+      expect(twiml).toContain('Press 1 if you are handling this.');
+    });
+
+    it('without PUBLIC_BASE_URL a message is still spoken, one-way, and nothing is awaited', async () => {
+      const result = await adapter.placeCall({
+        incidentId: 'i1',
+        contact: daughter,
+        ringSeconds: 45,
+        message: 'Tom & Jerry <at> the door',
+      });
+      expect(result).toEqual({ answered: false });
+      const twiml = new URLSearchParams(fetchMock.mock.calls[0]![1].body as string).get('Twiml')!;
+      expect(twiml).toBe(
+        '<Response><Say voice="alice">Tom &amp; Jerry &lt;at&gt; the door</Say></Response>',
+      );
+    });
+  });
 });

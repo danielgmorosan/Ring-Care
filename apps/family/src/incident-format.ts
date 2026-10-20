@@ -105,7 +105,12 @@ export function stepLabel(step: IncidentStep): {
     case 'call_placed':
       return { title: `We called ${who}`, subtitle: null, tone: 'attention' };
     case 'call_answered':
-      return { title: `${who} answered`, subtitle: null, tone: 'well' };
+      return {
+        title: `${who} answered`,
+        // A press 1 on the call: they confirmed they are handling it.
+        subtitle: detailString(step.detail, 'via') === 'press_1' ? 'Pressed 1. Handling it.' : null,
+        tone: 'well',
+      };
     case 'call_no_answer':
       return { title: `${who} did not answer`, subtitle: null, tone: 'attention' };
     case 'sms_sent':
