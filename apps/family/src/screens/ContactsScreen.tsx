@@ -10,8 +10,21 @@ import {
   useUpdateContact,
 } from '../api/hooks';
 import type { Contact, HouseholdRole } from '../api/types';
-import { Body, Button, Card, Caption, Chip, Field, H1, H2, Screen } from '../components/ui';
-import { color, radius, space, text } from '../theme/tokens';
+import {
+  Avatar,
+  Body,
+  Button,
+  Card,
+  Caption,
+  Chip,
+  Divider,
+  Field,
+  PageHeader,
+  Screen,
+  SectionHeader,
+  TextAction,
+} from '../components/ui';
+import { color, font, radius, space, text } from '../theme/tokens';
 import { StyleSheet, Text } from 'react-native';
 
 const ROLES: { key: HouseholdRole; label: string }[] = [
@@ -94,28 +107,38 @@ export function ContactsScreen() {
   return (
     <Screen>
       <View style={{ padding: space[6], gap: space[5] }}>
-        <View style={{ gap: space[1] }}>
-          <Caption>WHO BELONGS</Caption>
-          <H1>Household</H1>
+        <PageHeader title="People" subtitle="Who belongs, and who we call" />
+
+        <View style={{ gap: space[3] }}>
+          <SectionHeader icon="home" label="Household" />
           <Body muted>
             The people the guardian should recognize. Photos and face data stay on the guardian
             phone; here you keep only a name and a role.
           </Body>
-        </View>
-
-        <View style={{ gap: space[3] }}>
-          {(people.data ?? []).map((p) => (
-            <Card key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-              <View style={{ flex: 1 }}>
-                <Body>{p.title}</Body>
-                <Caption>{ROLE_LABEL[p.role]}</Caption>
-              </View>
-              {p.role === 'resident' ? <Chip tone="accent">Protected</Chip> : null}
-              <Pressable onPress={() => void deletePerson.mutate(p.id)} hitSlop={10}>
-                <Text style={st.remove}>Remove</Text>
-              </Pressable>
+          {(people.data ?? []).length > 0 ? (
+            <Card style={st.list}>
+              {(people.data ?? []).map((p, i) => (
+                <View key={p.id}>
+                  {i > 0 ? <Divider /> : null}
+                  <View style={st.personRow}>
+                    <Avatar name={p.title} size={44} />
+                    <View style={st.nameCol}>
+                      <Text style={st.name} numberOfLines={1}>
+                        {p.title}
+                      </Text>
+                      <Caption>{ROLE_LABEL[p.role]}</Caption>
+                    </View>
+                    {p.role === 'resident' ? <Chip tone="accent">Protected</Chip> : null}
+                    <TextAction
+                      label="Remove"
+                      danger
+                      onPress={() => void deletePerson.mutate(p.id)}
+                    />
+                  </View>
+                </View>
+              ))}
             </Card>
-          ))}
+          ) : null}
           {people.data?.length === 0 ? (
             <Card>
               <Body muted>No one enrolled yet. Add the people who live here or visit often.</Body>
@@ -124,7 +147,7 @@ export function ContactsScreen() {
         </View>
 
         <Card style={{ gap: space[4] }}>
-          <Caption>ENROLL SOMEONE</Caption>
+          <SectionHeader icon="plus" label="Enroll someone" />
           <Field
             label="Name or title"
             placeholder="Grandfather"
@@ -158,31 +181,51 @@ export function ContactsScreen() {
           {personError ? <Caption>{`Could not save: ${personError}`}</Caption> : null}
         </Card>
 
-        <View style={{ gap: space[1] }}>
-          <Caption>WHO WE CALL, IN ORDER</Caption>
-          <H2>Escalation chain</H2>
-        </View>
-
         <View style={{ gap: space[3] }}>
-          {(contacts.data ?? []).map((c, i) => (
-            <Card key={c.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-              <View style={st.avatar}>
-                <Text style={st.avatarText}>{c.name.slice(0, 2).toUpperCase()}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Body>{c.name}</Body>
-                <Caption>{`${c.role}${c.phone ? ` · ${c.phone}` : ''}`}</Caption>
-              </View>
-              {i === 0 ? <Chip tone="accent">Called first</Chip> : null}
-              {c.quietHours ? <Chip tone="attention">Quiet hours</Chip> : null}
-              <Pressable onPress={() => startEdit(c)} hitSlop={10}>
-                <Text style={st.edit}>Edit</Text>
-              </Pressable>
-              <Pressable onPress={() => void deleteContact.mutate(c.id)} hitSlop={10}>
-                <Text style={st.remove}>Remove</Text>
-              </Pressable>
+          <SectionHeader icon="phone-call" label="Who we call, in order" />
+          {(contacts.data ?? []).length > 0 ? (
+            <Card style={st.list}>
+              {(contacts.data ?? []).map((c, i) => (
+                <View key={c.id}>
+                  {i > 0 ? <Divider /> : null}
+                  <View style={st.contact}>
+                    <View style={st.contactTop}>
+                      <View style={st.order}>
+                        <Text style={st.orderText}>{i + 1}</Text>
+                      </View>
+                      <Avatar name={c.name} size={48} />
+                      <View style={st.nameCol}>
+                        <Text style={st.name} numberOfLines={1}>
+                          {c.name}
+                        </Text>
+                        <Caption>{`${c.role}${c.phone ? ` · ${c.phone}` : ''}`}</Caption>
+                        {i === 0 || c.quietHours ? (
+                          <View style={st.chips}>
+                            {i === 0 ? <Chip tone="accent">Called first</Chip> : null}
+                            {c.quietHours ? (
+                              <Chip tone="attention" dot>
+                                Quiet hours
+                              </Chip>
+                            ) : null}
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                    <View style={st.contactBottom}>
+                      <View style={st.actions}>
+                        <TextAction label="Edit" onPress={() => startEdit(c)} />
+                        <TextAction
+                          label="Remove"
+                          danger
+                          onPress={() => void deleteContact.mutate(c.id)}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              ))}
             </Card>
-          ))}
+          ) : null}
           {contacts.data?.length === 0 ? (
             <Card>
               <Body muted>No contacts yet. Add the first person we should call.</Body>
@@ -191,7 +234,10 @@ export function ContactsScreen() {
         </View>
 
         <Card style={{ gap: space[4] }}>
-          <Caption>{editingId ? 'EDIT CONTACT' : 'ADD A CONTACT'}</Caption>
+          <SectionHeader
+            icon={editingId ? 'pencil' : 'plus'}
+            label={editingId ? 'Edit contact' : 'Add a contact'}
+          />
           <Field
             label="Name"
             placeholder="Ana"
@@ -223,28 +269,41 @@ export function ContactsScreen() {
 }
 
 const st = StyleSheet.create({
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(83,104,255,0.12)',
+  list: { paddingVertical: space[1], paddingHorizontal: space[4] },
+  personRow: { flexDirection: 'row', alignItems: 'center', gap: space[3], minHeight: 68 },
+  nameCol: { flex: 1, minWidth: 0, gap: 2 },
+  name: { ...font.semibold, fontSize: 17, color: color.textPrimary },
+  contact: { paddingVertical: space[3], gap: space[2] },
+  contactTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
+  contactBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: space[2],
+    paddingLeft: 24 + space[3],
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[2] },
+  actions: { flexDirection: 'row', gap: space[3], marginLeft: 'auto' },
+  order: {
+    marginTop: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: color.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: color.action, fontWeight: '600', fontSize: text.sm },
-  edit: { color: color.action, fontSize: text.sm, fontWeight: '600' },
-  remove: { color: color.incident500, fontSize: text.sm, fontWeight: '600' },
-  roleLabel: { fontSize: text.md, fontWeight: '600', color: color.textPrimary },
+  orderText: { ...font.bold, fontSize: 12, color: color.textInverse },
+  roleLabel: { ...font.semibold, fontSize: text.sm, color: color.textPrimary },
   roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
   rolePill: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
     borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: color.borderStrong,
-    backgroundColor: color.bgSurface,
+    backgroundColor: color.bgSunken,
   },
-  rolePillOn: { backgroundColor: color.pink500, borderColor: color.pink500 },
-  rolePillText: { fontSize: text.sm, fontWeight: '600', color: color.textSecondary },
-  rolePillTextOn: { color: '#fff' },
+  rolePillOn: { backgroundColor: color.ink },
+  rolePillText: { ...font.medium, fontSize: text.sm, color: color.textSecondary },
+  rolePillTextOn: { ...font.semibold, color: color.textInverse },
 });
