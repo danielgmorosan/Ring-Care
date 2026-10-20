@@ -1,5 +1,10 @@
 # Demo runbook
 
+> **Start with [windows-quickstart.md](./windows-quickstart.md)** for the live run. It
+> does steps 1 to 3 below with `pnpm demo:env`, `pnpm demo:up` and `pnpm demo:seed`, and
+> each scene with `pnpm demo:scene <name>`, in PowerShell or bash. This page is the
+> detailed reference: what each step does underneath, what to expect, and the fallbacks.
+
 How to stage every scene of the demo video on one laptop, with the family app in a browser
 and, if Twilio is set up, real phones ringing. Scenes match
 [video-script.md](./video-script.md).
@@ -372,7 +377,8 @@ In the app: Care tab, the proposals inbox. Three items: a medication change (Don
 5 mg at 20:00 from the next Monday), an appointment (blood test in two weeks) and a to-do
 (pick up the prescription). Approve all, or pick some. Approval creates Bee todos with
 alarms; the mock logs `Mock Bee todo: "..."`. The dose change starts next Monday, so it is
-**scheduled, not applied**: Donepezil stays at 10 mg at 08:00 today, gets the note "From
+**scheduled, not applied**: Donepezil stays at its current dose today (2.5 mg at 08:00
+after `pnpm demo:seed`), gets the note "From
 Monday ...: 5 mg at 20:00.", and Bee gets a todo "Donepezil changes to 5 mg at 20:00
 today" with an alarm at 08:00 that Monday. A change dated today (or undated) applies at
 once. The activity feed says "Approved care changes
