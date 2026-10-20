@@ -6,7 +6,7 @@ import type { NarrativeRecord, NarrativeRepository } from './narrative.repositor
 interface NarrativeRow extends QueryResultRow {
   incident_id: string;
   text: string;
-  generated_by: 'mock' | 'claude';
+  generated_by: 'mock' | 'claude' | 'bedrock';
   model: string | null;
   created_at: Date;
 }

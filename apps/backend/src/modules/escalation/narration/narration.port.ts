@@ -36,8 +36,8 @@ export interface NarrationRequest {
 export interface Narration {
   text: string;
   /** Which adapter produced this — recorded in the audit trail. */
-  generatedBy: 'mock' | 'claude';
-  /** The model id when produced by Claude; null for the mock. */
+  generatedBy: 'mock' | 'claude' | 'bedrock';
+  /** The model id (Claude model or Bedrock inference profile); null for the mock. */
   model: string | null;
 }
 

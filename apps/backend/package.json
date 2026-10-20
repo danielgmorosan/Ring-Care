@@ -19,6 +19,7 @@
     "db:migrate:create": "node-pg-migrate create"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1153.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",

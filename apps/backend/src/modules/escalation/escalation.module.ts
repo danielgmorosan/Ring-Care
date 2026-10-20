@@ -3,6 +3,7 @@ import { Client, Connection } from '@temporalio/client';
 import { Pool } from 'pg';
 import { AppConfig } from '../../config/env.validation';
 import { PG_POOL } from '../../database/database.tokens';
+import { AiModule } from '../ai/ai.module';
 import { DevicesModule } from '../devices/devices.module';
 import { EventsModule } from '../events/events.module';
 import { FamiliesModule } from '../families/families.module';
@@ -28,6 +29,7 @@ import { IncidentsController } from './incidents.controller';
 import { IncidentsQueryService } from './incidents-query.service';
 import { InMemoryContactRepository } from './in-memory-contact.repository';
 import { InMemoryIncidentRepository } from './in-memory-incident.repository';
+import { BedrockNarrationAdapter } from './narration/bedrock-narration.adapter';
 import { ClaudeNarrationAdapter } from './narration/claude-narration.adapter';
 import { InMemoryNarrativeRepository } from './narration/in-memory-narrative.repository';
 import { MockNarrationAdapter } from './narration/mock-narration.adapter';
@@ -35,6 +37,7 @@ import { NARRATION_PORT } from './narration/narration.port';
 import { NarrationService } from './narration/narration.service';
 import { NARRATIVE_REPOSITORY } from './narration/narrative.repository';
 import { PgNarrativeRepository } from './narration/pg-narrative.repository';
+import { selectNarrator } from './narration/select-narrator';
 import { CompositeNotificationAdapter } from './notifications/composite-notification.adapter';
 import { FcmPushAdapter } from './notifications/fcm-push.adapter';
 import { MockNotificationAdapter } from './notifications/mock-notification.adapter';
@@ -70,6 +73,7 @@ import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
     VisitsModule,
     ZonesModule,
     EventsModule,
+    AiModule,
   ],
   controllers: [
     EscalationController,
@@ -94,6 +98,7 @@ import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
     NarrationService,
     MockNarrationAdapter,
     ClaudeNarrationAdapter,
+    BedrockNarrationAdapter,
     MockNotificationAdapter,
     TwilioNotificationAdapter,
     MockPushAdapter,
@@ -122,16 +127,16 @@ import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
       ) => new CompositeNotificationAdapter(config.hasTwilio ? twilio : mock, push),
     },
     {
-      // The Claude adapter only when a key is configured (and, per rule #6, a
-      // recorded founder decision); otherwise the deterministic local mock and
-      // nothing leaves the backend.
+      // Follows config.aiProvider: Bedrock in an EU region (0013), the Claude API
+      // (gated on 0002), or the deterministic local mock and nothing leaves the backend.
       provide: NARRATION_PORT,
-      inject: [AppConfig, MockNarrationAdapter, ClaudeNarrationAdapter],
+      inject: [AppConfig, MockNarrationAdapter, ClaudeNarrationAdapter, BedrockNarrationAdapter],
       useFactory: (
         config: AppConfig,
         mock: MockNarrationAdapter,
         claude: ClaudeNarrationAdapter,
-      ) => (config.hasNarration ? claude : mock),
+        bedrock: BedrockNarrationAdapter,
+      ) => selectNarrator(config, { mock, claude, bedrock }),
     },
     {
       provide: NARRATIVE_REPOSITORY,

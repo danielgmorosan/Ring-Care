@@ -19,3 +19,6 @@ inside EU regions.
 3. The mock stays the default. Nothing leaves the backend unless a provider is set.
 4. This may resolve 0002's open question if the founders accept AWS (EU region) as the
    subprocessor.
+5. The backend refuses to boot with `AI_PROVIDER=bedrock` if `BEDROCK_REGION` is not an
+   EU region or `BEDROCK_MODEL_ID` is a non-EU (`us.`, `apac.`, `global.`, ...) inference
+   profile. Setup steps: `docs/hackathon/aws-bedrock.md`.

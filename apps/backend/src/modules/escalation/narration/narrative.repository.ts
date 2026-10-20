@@ -7,7 +7,7 @@
 export interface NarrativeRecord {
   incidentId: string;
   text: string;
-  generatedBy: 'mock' | 'claude';
+  generatedBy: 'mock' | 'claude' | 'bedrock';
   model: string | null;
   createdAt: string;
 }
