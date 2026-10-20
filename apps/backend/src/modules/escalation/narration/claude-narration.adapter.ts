@@ -7,6 +7,10 @@ import type {
   NarrationRequest,
   QuestionRequest,
 } from './narration.port';
+import { DAILY_SYSTEM_PROMPT, INCIDENT_SYSTEM_PROMPT, QA_SYSTEM_PROMPT } from './narration.prompts';
+
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_VERSION = '2023-06-01';
 
 /**
  * The real narration adapter: the Claude API turns the structured trail into a warm
@@ -15,42 +19,6 @@ import type {
  * itself gated on a recorded founder decision because the request leaves the EU
  * (rule #6). The request carries roles/labels/times/outcome only — no names.
  */
-const INCIDENT_SYSTEM_PROMPT = [
-  'You narrate eldercare safety incidents for a worried family member.',
-  'You receive a structured JSON log of what the system did. Write 2 to 4 short',
-  'sentences describing what happened and how it resolved.',
-  'Voice: warm without being sentimental, confident without being cold. Short',
-  'declarative sentences. No em dashes. Inform and reassure. Never dramatize and',
-  'never use exclamation marks. Refer to people by their role ("your daughter"),',
-  'never invent names, details, medical facts, or locations not present in the log.',
-  'Return only the summary text, no preamble.',
-].join(' ');
-
-const DAILY_SYSTEM_PROMPT = [
-  "You write a family member's calm daily recap for an eldercare guardian.",
-  'You receive structured JSON: the incidents of the day (may be empty) and how many',
-  'guardian devices are online. Write 2 to 3 short sentences. On a day with no',
-  'incidents, reassure plainly that it was calm. Otherwise summarize briefly and say',
-  'whether things are settled. Voice: warm, confident, never dramatic. Short',
-  'declarative sentences. No em dashes, no exclamation marks. Refer to people by role',
-  'only, never invent names, meals, activities, or facts not present in the JSON.',
-  'Return only the recap text, no preamble.',
-].join(' ');
-
-const QA_SYSTEM_PROMPT = [
-  "You answer a caregiver's question about their family, for an eldercare service.",
-  'You receive their question and a structured JSON snapshot of the family record:',
-  'recent incidents, guardian online counts, medications, and appointments. Answer the',
-  'question using ONLY those facts. If the snapshot does not contain the answer, say so',
-  'plainly and do not guess. Never invent incidents, people, medical facts, or dates',
-  'not present in the JSON. Refer to people by role, never by name. Voice: warm,',
-  'confident, brief. Short declarative sentences. No em dashes, no exclamation marks.',
-  'Return only the answer, no preamble.',
-].join(' ');
-
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const ANTHROPIC_VERSION = '2023-06-01';
-
 @Injectable()
 export class ClaudeNarrationAdapter implements NarrationPort {
   constructor(private readonly config: AppConfig) {}
