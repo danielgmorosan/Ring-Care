@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { useIncidents } from '../api/hooks';
-import type { IncidentSummary } from '../api/types';
+import { useIncidents, useVisitArrivals } from '../api/hooks';
+import type { IncidentSummary, VisitArrival } from '../api/types';
 import { Body, Button, Card, Caption, Chip, H1, IconBadge, Screen } from '../components/ui';
 import { space } from '../theme/tokens';
 import { outcomeLabel, reasonInfo, relativeTime } from '../incident-format';
@@ -30,6 +30,39 @@ function IncidentCard({ incident, onPress }: { incident: IncidentSummary; onPres
   );
 }
 
+/** An expected visitor arrived. Informational: nothing to open, nothing to act on. */
+function ArrivalCard({ arrival }: { arrival: VisitArrival }) {
+  return (
+    <Card style={{ gap: space[3] }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+        <IconBadge glyph="✓" tone="well" />
+        <View style={{ flex: 1 }}>
+          <Body>{arrival.text}</Body>
+          <Caption>{`${relativeTime(arrival.arrivedAt)} · Seen by Ring at the front door`}</Caption>
+        </View>
+        <Chip tone="well">Arrived</Chip>
+      </View>
+    </Card>
+  );
+}
+
+type TimelineEntry =
+  | { kind: 'incident'; at: string; incident: IncidentSummary }
+  | { kind: 'arrival'; at: string; arrival: VisitArrival };
+
+/** Incidents and arrivals in one list, newest first. */
+function mergeTimeline(incidents: IncidentSummary[], arrivals: VisitArrival[]): TimelineEntry[] {
+  const entries: TimelineEntry[] = [
+    ...incidents.map((incident) => ({
+      kind: 'incident' as const,
+      at: incident.openedAt,
+      incident,
+    })),
+    ...arrivals.map((arrival) => ({ kind: 'arrival' as const, at: arrival.arrivedAt, arrival })),
+  ];
+  return entries.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+}
+
 /**
  * The incident timeline. Lists incidents from the append-only trail; tapping one
  * opens the full step ladder in human words. The same record hospitals and
@@ -37,13 +70,15 @@ function IncidentCard({ incident, onPress }: { incident: IncidentSummary; onPres
  */
 export function TimelineScreen() {
   const incidents = useIncidents();
+  // Arrivals are extra context: if they fail to load, the incident timeline still shows.
+  const arrivals = useVisitArrivals();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (selectedId !== null) {
     return <IncidentDetailScreen id={selectedId} onBack={() => setSelectedId(null)} />;
   }
 
-  const list = incidents.data ?? [];
+  const list = mergeTimeline(incidents.data ?? [], arrivals.data ?? []);
 
   return (
     <Screen>
@@ -79,13 +114,17 @@ export function TimelineScreen() {
           </Card>
         ) : (
           <View style={{ gap: space[3] }}>
-            {list.map((incident) => (
-              <IncidentCard
-                key={incident.id}
-                incident={incident}
-                onPress={() => setSelectedId(incident.id)}
-              />
-            ))}
+            {list.map((entry) =>
+              entry.kind === 'incident' ? (
+                <IncidentCard
+                  key={`incident-${entry.incident.id}`}
+                  incident={entry.incident}
+                  onPress={() => setSelectedId(entry.incident.id)}
+                />
+              ) : (
+                <ArrivalCard key={`arrival-${entry.arrival.id}`} arrival={entry.arrival} />
+              ),
+            )}
           </View>
         )}
       </View>

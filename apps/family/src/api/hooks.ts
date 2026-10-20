@@ -7,6 +7,7 @@ import {
   sightingListSchema,
   visitListSchema,
   visitSchema,
+  visitArrivalListSchema,
   personSchema,
   askAnswerSchema,
   claimCodeSchema,
@@ -48,6 +49,7 @@ import {
   type Sighting,
   type CreateVisitBody,
   type Visit,
+  type VisitArrival,
   type Appointment,
   type AskAnswer,
   type CareToday,
@@ -425,6 +427,17 @@ export function useVisits() {
   return useQuery({
     queryKey: ['visits'],
     queryFn: (): Promise<Visit[]> => api('/me/visits', { schema: visitListSchema }),
+  });
+}
+
+/** Expected visitors who arrived, newest first (GET /me/visits/arrivals). For the Timeline. */
+export function useVisitArrivals() {
+  return useQuery({
+    queryKey: ['visits', 'arrivals'],
+    queryFn: (): Promise<VisitArrival[]> =>
+      api('/me/visits/arrivals', { schema: visitArrivalListSchema }),
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
 }
 
