@@ -42,3 +42,6 @@ apps/family/GoogleService-Info.plist
 # Production deploy secrets & certs (server-local, never commit)
 deploy/.env
 deploy/certs/
+
+# Demo tooling session (holds a login token): pnpm demo:seed
+/.demo/

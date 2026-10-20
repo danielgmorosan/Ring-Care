@@ -2,7 +2,7 @@
   "name": "obrigada",
   "version": "0.0.0",
   "private": true,
-  "description": "Obrigada — an AI guardian for older adults living at home",
+  "description": "Obrigada \u2014 an AI guardian for older adults living at home",
   "engines": {
     "node": ">=22"
   },
@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "pnpm --filter @obrigada/shared build && pnpm --filter @obrigada/backend build",
-    "test": "pnpm -r test",
+    "test": "pnpm -r test && pnpm demo:test",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -24,7 +24,13 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @obrigada/backend db:migrate",
-    "db:migrate:down": "pnpm --filter @obrigada/backend db:migrate:down"
+    "db:migrate:down": "pnpm --filter @obrigada/backend db:migrate:down",
+    "demo:env": "node scripts/demo/env.mjs",
+    "demo:up": "node scripts/demo/up.mjs",
+    "demo:seed": "node scripts/demo/seed.mjs",
+    "demo:scene": "node scripts/demo/scene.mjs",
+    "demo:check": "node scripts/demo/check.mjs",
+    "demo:test": "node --test scripts/demo/test/*.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
