@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { EventsService, type SecondOpinion } from '../events/events.service';
 import { FamiliesService } from '../families/families.service';
+import { incidentReasonLabel } from './incident-labels';
 import {
   INCIDENT_REPOSITORY,
   type IncidentRepository,
@@ -9,11 +10,19 @@ import {
 import { NarrationService } from './narration/narration.service';
 
 /** How an incident resolved, derived from its ladder steps. */
-export type IncidentOutcome = 'active' | 'stood_down' | 'acknowledged' | 'emergency_notified';
+export type IncidentOutcome =
+  | 'active'
+  | 'stood_down'
+  | 'acknowledged'
+  | 'emergency_notified'
+  // A family-only ladder (door.night_activity, 0011) reached everyone; no 112 step exists.
+  | 'family_alerted';
 
 export interface IncidentSummary {
   id: string;
   reason: string;
+  /** A short human label for the reason ("Front door at night"), for the Timeline. */
+  label: string;
   openedAt: string;
   outcome: IncidentOutcome;
   stepCount: number;
@@ -22,6 +31,8 @@ export interface IncidentSummary {
 export interface IncidentDetail {
   id: string;
   reason: string;
+  /** A short human label for the reason, for the incident header. */
+  label: string;
   openedAt: string;
   outcome: IncidentOutcome;
   /** Warm, human-words summary of the incident (F3.2). */
@@ -40,6 +51,7 @@ function outcomeFromKinds(kinds: string[]): IncidentOutcome {
   if (kinds.includes('stood_down')) return 'stood_down';
   if (kinds.includes('call_answered')) return 'acknowledged';
   if (kinds.includes('emergency_notified')) return 'emergency_notified';
+  if (kinds.includes('family_alerted')) return 'family_alerted';
   return 'active';
 }
 
@@ -68,6 +80,7 @@ export class IncidentsQueryService {
         return {
           id: incident.id,
           reason: incident.reason,
+          label: incidentReasonLabel(incident.reason),
           openedAt: incident.openedAt,
           outcome: outcomeFromKinds(kinds),
           stepCount: kinds.length,
@@ -88,6 +101,7 @@ export class IncidentsQueryService {
     return {
       id: incident.id,
       reason: incident.reason,
+      label: incidentReasonLabel(incident.reason),
       openedAt: incident.openedAt,
       outcome,
       narrative,
@@ -98,10 +112,11 @@ export class IncidentsQueryService {
 
   /** The latest VLM verdict about the flag that opened the incident, if any. */
   private async secondOpinionFor(
-    deviceId: string,
+    deviceId: string | null,
     triggeringEventId: string | null,
   ): Promise<SecondOpinion | null> {
-    if (!triggeringEventId) return null;
+    // A family-level incident (a Ring camera) has no guardian, so no VLM second opinion.
+    if (!deviceId || !triggeringEventId) return null;
     const opinions = await this.events.secondOpinionsFor(deviceId, triggeringEventId);
     return opinions[0] ?? null;
   }

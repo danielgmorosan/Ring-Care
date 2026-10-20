@@ -58,6 +58,18 @@ export interface DailySummaryRequest {
   incidents: DaySummaryIncident[];
   guardiansTotal: number;
   guardiansOnline: number;
+  /**
+   * The day's expected visits as counts only (never the visitor's label, which can be a
+   * name). Optional: absent means no visit information, and adapters may ignore it.
+   */
+  visits?: DaySummaryVisits;
+}
+
+/** Expected visits for the day: how many were due, arrived, and missed (no arrival). */
+export interface DaySummaryVisits {
+  expected: number;
+  arrived: number;
+  missed: number;
 }
 
 /**

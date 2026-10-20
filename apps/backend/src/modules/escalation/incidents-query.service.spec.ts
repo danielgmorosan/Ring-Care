@@ -121,6 +121,47 @@ describe('IncidentsQueryService', () => {
     );
   });
 
+  it('shows a Ring night door incident: family-level, labelled, family_alerted (0011)', async () => {
+    await repo.open(
+      incident({
+        id: 'inc-door',
+        openedAt: '2026-07-15T02:04:00.000Z',
+        deviceId: null,
+        reason: 'door.night_activity',
+        triggeringEventId: '33333333-3333-4333-8333-333333333333',
+      }),
+    );
+    await seedSteps('inc-door', [
+      'incident_opened',
+      'push_sent',
+      'call_placed',
+      'call_no_answer',
+      'sms_sent',
+      'family_alerted',
+    ]);
+
+    const [summary] = await service.listForFamily(familyId);
+    expect(summary).toMatchObject({
+      reason: 'door.night_activity',
+      label: 'Front door at night',
+      outcome: 'family_alerted',
+    });
+
+    const detail = await service.detailForFamily(familyId, 'inc-door');
+    expect(detail.label).toBe('Front door at night');
+    expect(detail.secondOpinion).toBeNull(); // no guardian, no VLM
+    expect(detail.narrative).toContain('Someone was at the front door in the night');
+    expect(detail.narrative).toContain('We texted and alerted everyone on your contact list.');
+    expect(detail.narrative).not.toContain('emergency');
+    expect(detail.narrative).not.toMatch(/[\u2014!]/);
+  });
+
+  it('labels fall incidents for the Timeline', async () => {
+    await repo.open(incident({ id: 'inc-fall', openedAt: '2026-07-05T10:00:00.000Z' }));
+    const [summary] = await service.listForFamily(familyId);
+    expect(summary!.label).toBe('Possible fall');
+  });
+
   it('rejects an unknown family', async () => {
     await expect(
       service.listForFamily('00000000-0000-4000-8000-000000000099'),
