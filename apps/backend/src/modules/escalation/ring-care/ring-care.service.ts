@@ -113,7 +113,6 @@ export class RingCareService {
 
   private async judge(payload: RingActivityPayload, kind: RingActivityKind): Promise<void> {
     try {
-      if (payload.placement !== 'front_door') return;
       if (await this.decisions.findByRingEvent(payload.ringEventId)) return; // redelivered
 
       const at = new Date(payload.occurredAt).toISOString();
@@ -124,6 +123,12 @@ export class RingCareService {
         incidentId: null,
         visitId: null,
       };
+
+      // Never silent: an event ignored for its camera's placement is on record as such.
+      if (payload.placement !== 'front_door') {
+        await this.record({ ...base, interpretation: null, outcome: 'not_front_door' });
+        return;
+      }
 
       const isPerson = kind === 'ding' || payload.subType === HUMAN_SUBTYPE;
       if (!isPerson) {

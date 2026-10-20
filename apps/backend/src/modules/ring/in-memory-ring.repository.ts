@@ -41,9 +41,13 @@ export class InMemoryRingRepository implements RingRepository {
     return camera;
   }
 
-  async ensureCamera(familyId: string, ringDeviceId: string): Promise<RingCamera> {
+  async ensureCamera(
+    familyId: string,
+    ringDeviceId: string,
+    placementIfNew: RingPlacement = 'other',
+  ): Promise<RingCamera> {
     const existing = this.byDevice(familyId, ringDeviceId);
-    return { ...(existing ?? this.create(familyId, ringDeviceId, {})) };
+    return { ...(existing ?? this.create(familyId, ringDeviceId, { placement: placementIfNew })) };
   }
 
   async upsertFromSync(familyId: string, device: SyncedDevice): Promise<RingCamera> {

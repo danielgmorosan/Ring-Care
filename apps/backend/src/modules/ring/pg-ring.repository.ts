@@ -85,15 +85,20 @@ export class PgRingRepository implements RingRepository {
     return rows[0] ? toCamera(rows[0]) : null;
   }
 
-  async ensureCamera(familyId: string, ringDeviceId: string): Promise<RingCamera> {
-    // The no-op DO UPDATE makes RETURNING yield the existing row on conflict.
+  async ensureCamera(
+    familyId: string,
+    ringDeviceId: string,
+    placementIfNew: RingPlacement = 'other',
+  ): Promise<RingCamera> {
+    // The no-op DO UPDATE makes RETURNING yield the existing row on conflict, so an
+    // existing camera keeps its placement.
     const { rows } = await this.pool.query<CameraRow>(
-      `INSERT INTO ring_cameras (family_id, ring_device_id)
-       VALUES ($1, $2)
+      `INSERT INTO ring_cameras (family_id, ring_device_id, placement)
+       VALUES ($1, $2, $3)
        ON CONFLICT (family_id, ring_device_id)
          DO UPDATE SET ring_device_id = EXCLUDED.ring_device_id
        RETURNING ${CAMERA_COLUMNS}`,
-      [familyId, ringDeviceId],
+      [familyId, ringDeviceId, placementIfNew],
     );
     return toCamera(rows[0]!);
   }

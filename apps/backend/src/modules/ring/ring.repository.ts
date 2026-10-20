@@ -34,8 +34,15 @@ export interface SyncedDevice {
 export interface RingRepository {
   listCameras(familyId: string): Promise<RingCamera[]>;
   findCamera(familyId: string, id: string): Promise<RingCamera | null>;
-  /** Returns the camera for this Ring device, creating an unnamed 'other' one if unknown. */
-  ensureCamera(familyId: string, ringDeviceId: string): Promise<RingCamera>;
+  /**
+   * Returns the camera for this Ring device, creating an unnamed one if unknown, with
+   * `placementIfNew` (default 'other'). An existing camera's placement is never changed.
+   */
+  ensureCamera(
+    familyId: string,
+    ringDeviceId: string,
+    placementIfNew?: RingPlacement,
+  ): Promise<RingCamera>;
   /** Insert or refresh name/online from a device sync; never overwrites a set placement. */
   upsertFromSync(familyId: string, device: SyncedDevice): Promise<RingCamera>;
   setPlacement(familyId: string, id: string, placement: RingPlacement): Promise<RingCamera | null>;

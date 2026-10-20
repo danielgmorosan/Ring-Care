@@ -139,8 +139,17 @@ arrival. Activity during a visit never opens an incident.
 
 ## 3. Ring camera: create it and set it to the front door
 
-Night door logic only looks at cameras placed at `front_door`. A camera first seen in a
-webhook starts as `other` with an empty name.
+**Do this step before Scene A.** Night door logic and visit arrivals only look at cameras
+placed at `front_door`. A camera first seen in a webhook starts unnamed, and its placement
+depends on that first event:
+
+- first event a doorbell press (`button_press`, as in `--scenario carer-arrival`): starts
+  as `front_door`, because only doorbells have buttons;
+- first event motion (`night-exit`, `daytime-motion`): starts as `other`.
+
+An event from a camera that is not on the front door is still recorded and judged, with
+the outcome `not_front_door` in `ring_care_decisions`, but it opens nothing. So if a
+night exit opened no incident, check the placement first.
 
 With a Playground token (`RING_ACCESS_TOKEN` in `.env`), sync the real devices instead:
 `curl -s -X POST $B/me/ring/cameras/sync -H "$AUTH"`. Doorbells come in as `front_door`.
@@ -155,7 +164,7 @@ pnpm --filter @obrigada/backend ring:sim --scenario daytime-motion
 # POST /ring/webhook -> 200 {"ok":true,"duplicate":false}
 ```
 
-Then set the placement:
+Then set the placement explicitly (required: this camera started as `other`):
 
 ```sh
 CAM=$(curl -s $B/me/ring/cameras -H "$AUTH" | json "[0]['id']")
@@ -163,7 +172,11 @@ curl -s -X PATCH $B/me/ring/cameras/$CAM -H "$AUTH" -H "$CT" -d '{"placement":"f
 ```
 
 Or in the app: Home, Open Ring, pick **Front door** on the camera. The placement picker
-offers Front door, Inside and Other.
+offers Front door, Inside and Other. Confirm it before filming:
+
+```sh
+curl -s $B/me/ring/cameras -H "$AUTH"   # "placement":"front_door"
+```
 
 Set `TZ` to the household's zone for every simulator run. The simulator turns "03:04"
 into an instant using the machine's clock zone.

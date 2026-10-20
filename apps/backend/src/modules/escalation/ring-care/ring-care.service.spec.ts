@@ -298,10 +298,20 @@ describe('RingCareService', () => {
       },
     );
 
-    it('ignores cameras that are not on the front door', async () => {
-      await service.onMotion(event({ placement: 'indoor' }));
-      await service.onButtonPressed(event({ placement: 'other' }));
+    it('ignores cameras that are not on the front door, on the record', async () => {
+      const indoor = event({ placement: 'indoor' });
+      const other = event({ placement: 'other' });
+      await service.onMotion(indoor);
+      await service.onButtonPressed(other);
       expect(started).toHaveLength(0);
+      expect(raised).toHaveLength(0);
+      for (const e of [indoor, other]) {
+        expect(await decisions.findByRingEvent(e.ringEventId)).toMatchObject({
+          outcome: 'not_front_door',
+          interpretation: null,
+          incidentId: null,
+        });
+      }
     });
 
     it('daytime front-door motion only lands on the timeline', async () => {

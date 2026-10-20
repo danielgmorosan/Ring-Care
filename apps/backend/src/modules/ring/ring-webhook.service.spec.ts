@@ -116,6 +116,29 @@ describe('RingWebhookService', () => {
     expect(emitted[0]!.event).toBe(InternalEvent.RingButtonPressed);
   });
 
+  it('a camera first seen through a doorbell press starts on the front door', async () => {
+    const { repo, emitted, deliver } = setup();
+    await deliver(fixture('button-press.flat'));
+
+    const [camera] = await repo.listCameras(FAMILY);
+    expect(camera!.placement).toBe('front_door');
+    expect(emitted[0]!.payload).toMatchObject({ placement: 'front_door' });
+  });
+
+  it('a doorbell press never overrides a placement the caregiver set', async () => {
+    const { repo, emitted, deliver } = setup();
+    const body = JSON.parse(fixture('button-press.flat').toString('utf8')) as {
+      device_id: string;
+    };
+    const camera = await repo.ensureCamera(FAMILY, body.device_id);
+    await repo.setPlacement(FAMILY, camera.id, 'indoor');
+
+    await deliver(fixture('button-press.flat'));
+
+    expect((await repo.findCamera(FAMILY, camera.id))!.placement).toBe('indoor');
+    expect(emitted[0]!.payload).toMatchObject({ placement: 'indoor' });
+  });
+
   it('carries the caregiver-set placement and labels simulator traffic', async () => {
     const { repo, emitted, deliver } = setup();
     const camera = await repo.ensureCamera(FAMILY, 'ring-dev-front-1');

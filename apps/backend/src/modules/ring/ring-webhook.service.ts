@@ -67,10 +67,16 @@ export class RingWebhookService {
     const source: RingEventSource = simulator ? 'simulator' : 'ring';
     const occurredAt = parsed.occurredAt ?? new Date().toISOString();
 
-    // Unknown event types are recorded but attach to no camera and drive nothing.
+    // Unknown event types are recorded but attach to no camera and drive nothing. A camera
+    // first seen through a button press is a doorbell (only doorbells have buttons), so it
+    // starts on the front door; the caregiver can change it. Others start as 'other'.
     const camera =
       parsed.kind !== 'other' && parsed.ringDeviceId
-        ? await this.repo.ensureCamera(familyId, parsed.ringDeviceId)
+        ? await this.repo.ensureCamera(
+            familyId,
+            parsed.ringDeviceId,
+            parsed.kind === 'ding' ? 'front_door' : 'other',
+          )
         : null;
 
     const { inserted, event } = await this.repo.recordEvent({
