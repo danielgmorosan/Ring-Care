@@ -102,6 +102,19 @@ export class InMemoryRingRepository implements RingRepository {
     return { inserted: true, event: { ...record } };
   }
 
+  async listActivityReceivedBetween(from: string, to: string): Promise<RingEventRecord[]> {
+    return this.events
+      .filter(
+        (e) =>
+          (e.kind === 'motion' || e.kind === 'ding') &&
+          e.ringCameraId !== null &&
+          e.receivedAt >= from &&
+          e.receivedAt <= to,
+      )
+      .sort((a, b) => a.receivedAt.localeCompare(b.receivedAt))
+      .map((e) => ({ ...e }));
+  }
+
   async listEvents(familyId: string, limit: number): Promise<RingEventRecord[]> {
     return this.events
       .filter((e) => e.familyId === familyId)

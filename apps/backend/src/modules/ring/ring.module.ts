@@ -12,6 +12,7 @@ import { PgRingRepository } from './pg-ring.repository';
 import { RingController } from './ring.controller';
 import { RING_REPOSITORY } from './ring.repository';
 import { RingService } from './ring.service';
+import { RingCareCatchUpService } from './ring-care-catch-up.service';
 import { RingWebhookController } from './ring-webhook.controller';
 import { RingWebhookService } from './ring-webhook.service';
 
@@ -41,7 +42,8 @@ export function createRingClient(config: AppConfig): RingClient {
  * the webhook answers 503.
  *
  * Emits InternalEvent.RingMotionDetected / RingButtonPressed (RingActivityPayload)
- * after an event is durably recorded; the care logic listens.
+ * after an event is durably recorded; the care logic listens. RingCareCatchUpService
+ * re-judges recorded events that a crash left without a decision.
  */
 @Module({
   // EscalationModule exports RingCareService, which interprets events for the activity feed.
@@ -50,6 +52,7 @@ export function createRingClient(config: AppConfig): RingClient {
   providers: [
     RingService,
     RingWebhookService,
+    RingCareCatchUpService,
     {
       provide: RING_REPOSITORY,
       inject: [AppConfig, PG_POOL],

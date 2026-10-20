@@ -53,6 +53,11 @@ export interface RingRepository {
   recordEvent(event: NewRingEvent): Promise<RecordResult>;
   /** Newest first. */
   listEvents(familyId: string, limit: number): Promise<RingEventRecord[]>;
+  /**
+   * Motion and doorbell events on a camera, received in [from, to] (our wall clock),
+   * oldest first, across families. The ring-care catch-up sweep re-judges these.
+   */
+  listActivityReceivedBetween(from: string, to: string): Promise<RingEventRecord[]>;
 }
 
 export const RING_REPOSITORY = Symbol('RING_REPOSITORY');

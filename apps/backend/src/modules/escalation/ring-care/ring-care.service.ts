@@ -100,7 +100,12 @@ export class RingCareService {
     return decision?.interpretation ?? null;
   }
 
-  /** Judge one event. Serialized per family; never throws. */
+  /** Whether this Ring event already has its decision on record (the catch-up sweep). */
+  async isJudged(ringEventId: string): Promise<boolean> {
+    return (await this.decisions.findByRingEvent(ringEventId)) !== null;
+  }
+
+  /** Judge one event. Serialized per family; never throws. Idempotent per event. */
   handle(payload: RingActivityPayload, kind: RingActivityKind): Promise<void> {
     const previous = this.queues.get(payload.familyId) ?? Promise.resolve();
     const next = previous.then(() => this.judge(payload, kind));
@@ -221,6 +226,25 @@ export class RingCareService {
     timezone: string,
     base: Pick<RingCareDecision, 'ringEventId' | 'familyId' | 'at' | 'incidentId' | 'visitId'>,
   ): Promise<void> {
+    // Crash-safe re-judging: if a previous run opened this event's incident but died
+    // before recording the decision, record it now instead of opening a second one.
+    const prior = (await this.incidents.listByFamily(payload.familyId)).find(
+      (i) => i.triggeringEventId === payload.ringEventId,
+    );
+    if (prior) {
+      this.logger.warn(
+        `Night door activity ${payload.ringEventId} already opened incident ${prior.id}; ` +
+          `recording the decision`,
+      );
+      await this.record({
+        ...base,
+        interpretation: 'night_door',
+        outcome: 'incident_opened',
+        incidentId: prior.id,
+      });
+      return;
+    }
+
     if (this.config.hasTemporal) {
       try {
         const contacts = await this.contacts.listByFamily(payload.familyId);

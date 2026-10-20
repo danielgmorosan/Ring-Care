@@ -175,4 +175,17 @@ export class PgRingRepository implements RingRepository {
     );
     return rows.map(toEvent);
   }
+
+  async listActivityReceivedBetween(from: string, to: string): Promise<RingEventRecord[]> {
+    const { rows } = await this.pool.query<EventRow>(
+      `SELECT ${EVENT_COLUMNS} FROM ring_events
+        WHERE received_at BETWEEN $1 AND $2
+          AND kind IN ('motion', 'ding')
+          AND ring_camera_id IS NOT NULL
+        ORDER BY received_at ASC
+        LIMIT 500`,
+      [from, to],
+    );
+    return rows.map(toEvent);
+  }
 }
