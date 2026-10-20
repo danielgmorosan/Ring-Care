@@ -138,6 +138,11 @@ export class PgRingRepository implements RingRepository {
     );
   }
 
+  async redactCameraNamesForFamily(familyId: string): Promise<void> {
+    // ring_cameras is editable configuration (not append-only): an UPDATE is allowed.
+    await this.pool.query(`UPDATE ring_cameras SET name = '' WHERE family_id = $1`, [familyId]);
+  }
+
   async setOnline(familyId: string, id: string, online: boolean): Promise<void> {
     await this.pool.query(`UPDATE ring_cameras SET online = $3 WHERE family_id = $1 AND id = $2`, [
       familyId,

@@ -84,6 +84,10 @@ export class InMemoryRingRepository implements RingRepository {
     if (online !== undefined) c.online = online;
   }
 
+  async redactCameraNamesForFamily(familyId: string): Promise<void> {
+    for (const c of this.cameras) if (c.familyId === familyId) c.name = '';
+  }
+
   async setOnline(familyId: string, id: string, online: boolean): Promise<void> {
     const c = this.cameras.find((x) => x.familyId === familyId && x.id === id);
     if (c) c.online = online;

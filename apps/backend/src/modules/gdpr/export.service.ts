@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { AuthUser } from '../auth/user.repository';
 import { ActivityService, type ActivityItem } from '../audit/activity.service';
 import { AppointmentsService } from '../care/appointments.service';
@@ -14,6 +14,16 @@ import type { Family } from '../families/family.entity';
 import { PushTokensService } from '../push/push-tokens.service';
 import type { PushToken } from '../push/push-token.entity';
 import type { EscalationContact } from '../escalation/temporal/types';
+import type { CareProposal } from '../bee/care-proposal.entity';
+import { CareProposalsService } from '../bee/care-proposals.service';
+import type { RingCamera, RingEventRecord } from '../ring/ring.entity';
+import { RING_REPOSITORY, type RingRepository } from '../ring/ring.repository';
+import type { ExpectedVisit } from '../visits/visit.entity';
+import { VisitArrivalsService, type VisitArrivalView } from '../visits/visit-arrivals.service';
+import { VisitsService } from '../visits/visits.service';
+
+/** Upper bound on Ring events in one export (labels and ids only, rule #1). */
+const RING_EVENTS_EXPORT_LIMIT = 100_000;
 
 /** Everything Obrigada holds for a family, for GDPR access/portability (Art. 15/20). */
 export interface FamilyDataExport {
@@ -27,6 +37,12 @@ export interface FamilyDataExport {
   incidents: IncidentDetail[];
   pushDevices: PushToken[];
   activity: ActivityItem[];
+  /** Bee care proposals, each with its decision (approved/rejected, per-item result). */
+  careProposals: CareProposal[];
+  expectedVisits: ExpectedVisit[];
+  visitArrivals: VisitArrivalView[];
+  ringCameras: RingCamera[];
+  ringEvents: RingEventRecord[];
 }
 
 /**
@@ -46,6 +62,10 @@ export class ExportService {
     private readonly incidents: IncidentsQueryService,
     private readonly pushTokens: PushTokensService,
     private readonly activity: ActivityService,
+    private readonly careProposals: CareProposalsService,
+    private readonly visits: VisitsService,
+    private readonly visitArrivals: VisitArrivalsService,
+    @Inject(RING_REPOSITORY) private readonly ring: RingRepository,
   ) {}
 
   async exportFamily(user: AuthUser): Promise<FamilyDataExport> {
@@ -59,6 +79,11 @@ export class ExportService {
       summaries,
       pushDevices,
       activity,
+      careProposals,
+      expectedVisits,
+      visitArrivals,
+      ringCameras,
+      ringEvents,
     ] = await Promise.all([
       this.families.findByIdOrFail(familyId),
       this.devices.findByFamily(familyId),
@@ -68,6 +93,11 @@ export class ExportService {
       this.incidents.listForFamily(familyId),
       this.pushTokens.listForFamily(familyId),
       this.activity.forFamily(familyId, 1000),
+      this.careProposals.list(familyId),
+      this.visits.list(familyId),
+      this.visitArrivals.listForFamily(familyId),
+      this.ring.listCameras(familyId),
+      this.ring.listEvents(familyId, RING_EVENTS_EXPORT_LIMIT),
     ]);
 
     // Expand each incident to its full step trail + narrative.
@@ -86,6 +116,11 @@ export class ExportService {
       incidents,
       pushDevices,
       activity,
+      careProposals,
+      expectedVisits,
+      visitArrivals,
+      ringCameras,
+      ringEvents,
     };
   }
 }

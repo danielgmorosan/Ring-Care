@@ -49,6 +49,8 @@ export interface RingRepository {
   /** Record activity on a camera: bumps last_event_at and optionally sets online. */
   touchCamera(familyId: string, id: string, at: string, online?: boolean): Promise<void>;
   setOnline(familyId: string, id: string, online: boolean): Promise<void>;
+  /** GDPR erasure (decision 0005): blank every camera name; rows stay (events reference them). */
+  redactCameraNamesForFamily(familyId: string): Promise<void>;
 
   recordEvent(event: NewRingEvent): Promise<RecordResult>;
   /** Newest first. */
