@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { LiveGrant } from '../api/types';
-import { color, space, text } from '../theme/tokens';
+import { color, font, space, text } from '../theme/tokens';
 
 /**
  * Web / default placeholder. Live video needs native WebRTC, so it runs on the mobile app;
@@ -24,6 +24,6 @@ const s = StyleSheet.create({
     gap: space[3],
     padding: space[6],
   },
-  title: { color: color.textInverse, fontSize: text.lg, fontWeight: '600' },
-  body: { color: color.white75, fontSize: text.md, textAlign: 'center' },
+  title: { ...font.semibold, color: color.textInverse, fontSize: text.xl },
+  body: { ...font.regular, color: color.white75, fontSize: text.md, textAlign: 'center' },
 });

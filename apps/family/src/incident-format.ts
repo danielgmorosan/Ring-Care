@@ -1,29 +1,35 @@
 import type { IncidentOutcome, IncidentStep } from './api/types';
+import type { IconName } from './components/icon-paths';
 
 export type StepTone = 'well' | 'attention' | 'incident';
 
-/** Why an incident opened, in human words, with a glyph and a source note. Unknown reasons
+/** Why an incident opened, in human words, with a line icon and a source note. Unknown reasons
  * still render (humanised) so a newer backend never breaks the timeline. */
 export interface ReasonInfo {
   label: string;
-  glyph: string;
+  icon: IconName;
   tone: StepTone;
   /** Where the signal came from, e.g. "From Ring at the front door". */
   source: string | null;
 }
 
 const REASONS: Record<string, ReasonInfo> = {
-  'fall.suspected': { label: 'Possible fall', glyph: '!', tone: 'incident', source: null },
-  'fall.confirmed': { label: 'Fall', glyph: '!', tone: 'incident', source: null },
+  'fall.suspected': {
+    label: 'Possible fall',
+    icon: 'alert-triangle',
+    tone: 'incident',
+    source: null,
+  },
+  'fall.confirmed': { label: 'Fall', icon: 'alert-triangle', tone: 'incident', source: null },
   'door.night_activity': {
     label: 'Front door at night',
-    glyph: '☾',
+    icon: 'moon',
     tone: 'attention',
     source: 'Seen by Ring at the front door',
   },
   'visit.no_show': {
     label: 'Expected visit missed',
-    glyph: '◷',
+    icon: 'hourglass',
     tone: 'attention',
     source: 'No arrival at the front door',
   },
@@ -35,7 +41,7 @@ export function reasonInfo(reason: string): ReasonInfo {
   const words = reason.replace(/[._]/g, ' ').trim();
   return {
     label: words.length > 0 ? words.charAt(0).toUpperCase() + words.slice(1) : 'Incident',
-    glyph: '•',
+    icon: 'circle-dot',
     tone: 'attention',
     source: null,
   };

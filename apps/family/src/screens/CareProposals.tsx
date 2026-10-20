@@ -3,18 +3,29 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useApproveProposal, useCareProposals, useRejectProposal } from '../api/hooks';
 import type { ApproveResult, CareProposal, ProposalItem, ProposalItemKind } from '../api/types';
 import { useAuth } from '../auth-state';
-import { Body, Button, Caption, Card, Checkbox, Chip, H2, IconBadge } from '../components/ui';
+import {
+  Body,
+  Button,
+  Caption,
+  Card,
+  Checkbox,
+  Chip,
+  Icon,
+  IconBadge,
+  SectionHeader,
+  type IconName,
+} from '../components/ui';
 import { stepTime } from '../incident-format';
-import { color, space, text } from '../theme/tokens';
+import { color, font, radius, space } from '../theme/tokens';
 
-type Tone = 'neutral' | 'well' | 'attention' | 'incident' | 'accent';
+type Tone = 'neutral' | 'well' | 'attention' | 'incident' | 'accent' | 'info';
 
-const KIND: Record<ProposalItemKind, { label: string; glyph: string; tone: Tone }> = {
-  medication_change: { label: 'Medication change', glyph: '℞', tone: 'attention' },
-  new_medication: { label: 'New medication', glyph: '+', tone: 'accent' },
-  appointment: { label: 'Appointment', glyph: '◷', tone: 'neutral' },
-  todo: { label: 'To do', glyph: '✓', tone: 'well' },
-  note: { label: 'Note', glyph: '✎', tone: 'neutral' },
+const KIND: Record<ProposalItemKind, { label: string; icon: IconName; tone: Tone }> = {
+  medication_change: { label: 'Medication change', icon: 'pill', tone: 'attention' },
+  new_medication: { label: 'New medication', icon: 'plus', tone: 'info' },
+  appointment: { label: 'Appointment', icon: 'calendar', tone: 'info' },
+  todo: { label: 'To do', icon: 'list-checks', tone: 'well' },
+  note: { label: 'Note', icon: 'sticky-note', tone: 'neutral' },
 };
 
 /** "Sofia" from sofia.m@example.com, for "From Sofia's Bee". Null when it doesn't look like
@@ -60,13 +71,11 @@ export function CareProposals() {
 
   return (
     <View style={{ gap: space[3] }}>
-      <View style={{ gap: space[1] }}>
-        <Caption>FROM YOUR VOICE NOTES</Caption>
-        <View style={st.row}>
-          <H2>To review</H2>
-          {pending.length > 0 ? <Chip tone="accent">{`${pending.length} new`}</Chip> : null}
-        </View>
-      </View>
+      <SectionHeader
+        icon="mic"
+        label="From your voice notes"
+        right={pending.length > 0 ? <Chip tone="accent">{`${pending.length} new`}</Chip> : null}
+      />
 
       {outcomes.map((o) => (
         <OutcomeCard key={o.proposal.id} outcome={o} onDone={() => dismiss(o.proposal.id)} />
@@ -158,30 +167,36 @@ function ProposalCard({
   }
 
   return (
-    <Card style={{ gap: space[4] }}>
+    <Card style={st.proposal}>
       <View style={st.row}>
-        <IconBadge glyph="◎" tone="accent" />
-        <View style={{ flex: 1 }}>
-          <Body>{`From ${owner}, ${whenLabel(proposal.createdAt)}`}</Body>
-          <Caption>Tick what you want to keep.</Caption>
+        <View style={st.beeBadge}>
+          <Icon name="radio" size={20} color={color.textInverse} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={st.from}>{`From ${owner}`}</Text>
+          <Caption>{`${whenLabel(proposal.createdAt)} · Tick what you want to keep.`}</Caption>
         </View>
       </View>
 
-      {proposal.summary ? <Body muted>{proposal.summary}</Body> : null}
+      {proposal.summary ? (
+        <View style={st.quote}>
+          <Text style={st.quoteText}>{proposal.summary}</Text>
+        </View>
+      ) : null}
 
-      <View style={{ gap: space[3] }}>
+      <View style={st.items}>
         {proposal.items.map((item) => {
           const kind = KIND[item.kind];
           const checked = selected.has(item.id);
           return (
             <View key={item.id} style={[st.item, !checked && st.itemOff]}>
-              <Checkbox checked={checked} onToggle={() => toggle(item.id)} label={item.title} />
-              <IconBadge glyph={kind.glyph} tone={kind.tone} size={32} />
+              <IconBadge icon={kind.icon} tone={kind.tone} size={40} />
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={st.kind}>{kind.label}</Text>
-                <Body>{item.title}</Body>
+                <Text style={st.kind}>{kind.label.toUpperCase()}</Text>
+                <Body strong>{item.title}</Body>
                 {item.detail ? <Body muted>{item.detail}</Body> : null}
               </View>
+              <Checkbox checked={checked} onToggle={() => toggle(item.id)} label={item.title} />
             </View>
           );
         })}
@@ -239,14 +254,19 @@ function OutcomeCard({ outcome, onDone }: { outcome: Outcome; onDone: () => void
   return (
     <Card style={[{ gap: space[3] }, st.success]}>
       <View style={st.row}>
-        <IconBadge glyph="✓" tone="well" />
+        <IconBadge icon="check" tone="well" />
         <View style={{ flex: 1 }}>
-          <Body>Added to the care plan</Body>
+          <Body strong>Added to the care plan</Body>
         </View>
       </View>
       <View style={{ gap: space[1] }}>
         {lines.map((line, i) => (
-          <Body key={`${line}-${i}`} muted>{`• ${line}`}</Body>
+          <View key={`${line}-${i}`} style={st.line}>
+            <Icon name="check" size={16} color={color.success700} strokeWidth={2.5} />
+            <View style={{ flex: 1 }}>
+              <Body muted>{line}</Body>
+            </View>
+          </View>
         ))}
       </View>
       {todos > 0 ? (
@@ -261,8 +281,41 @@ function OutcomeCard({ outcome, onDone }: { outcome: Outcome; onDone: () => void
 
 const st = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  item: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
-  itemOff: { opacity: 0.55 },
-  kind: { fontSize: text.xs, fontWeight: '600', color: color.textTertiary, letterSpacing: 0.3 },
-  success: { backgroundColor: color.success100, borderColor: 'transparent' },
+  proposal: { gap: space[4], borderRadius: radius.xl },
+  beeBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: color.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  from: { ...font.semibold, fontSize: 17, color: color.textPrimary },
+  quote: {
+    borderLeftWidth: 3,
+    borderLeftColor: color.neutral200,
+    paddingLeft: space[3],
+    paddingVertical: 2,
+  },
+  quoteText: { ...font.regular, fontSize: 15, lineHeight: 22, color: color.textSecondary },
+  items: {
+    borderRadius: radius.md,
+    backgroundColor: color.bgCanvas,
+    borderWidth: 1,
+    borderColor: color.border,
+    overflow: 'hidden',
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space[3],
+    padding: space[4],
+    borderTopWidth: 1,
+    borderTopColor: color.border,
+    marginTop: -1,
+  },
+  itemOff: { opacity: 0.5 },
+  kind: { ...font.semibold, fontSize: 11, color: color.textTertiary, letterSpacing: 1.1 },
+  line: { flexDirection: 'row', alignItems: 'flex-start', gap: space[2] },
+  success: { backgroundColor: color.success100, borderColor: '#CDEBD0' },
 });

@@ -1,30 +1,66 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useIncidents, useVisitArrivals } from '../api/hooks';
 import type { IncidentSummary, VisitArrival } from '../api/types';
-import { Body, Button, Card, Caption, Chip, H1, IconBadge, Screen } from '../components/ui';
-import { space } from '../theme/tokens';
-import { outcomeLabel, reasonInfo, relativeTime } from '../incident-format';
+import {
+  Body,
+  Button,
+  Card,
+  Caption,
+  Chip,
+  Icon,
+  IconBadge,
+  PageHeader,
+  Screen,
+} from '../components/ui';
+import { color, font, radius, space, text } from '../theme/tokens';
+import { outcomeLabel, reasonInfo, relativeTime, stepTime } from '../incident-format';
+
+/** The left rail of the timeline: the clock time (or the date, for older entries) and a dot. */
+function Rail({ at, last }: { at: string; last: boolean }) {
+  const d = new Date(at);
+  const today = d.toDateString() === new Date().toDateString();
+  const label = today
+    ? (stepTime(at) ?? '')
+    : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return (
+    <View style={st.railCol}>
+      <Text style={st.railTime}>{label}</Text>
+      <View style={st.railTrack}>
+        <View style={st.railDot} />
+        {last ? null : <View style={st.railLine} />}
+      </View>
+    </View>
+  );
+}
 import { IncidentDetailScreen } from './IncidentDetailScreen';
 
 function IncidentCard({ incident, onPress }: { incident: IncidentSummary; onPress: () => void }) {
   const outcome = outcomeLabel(incident.outcome);
   const reason = reasonInfo(incident.reason);
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={reason.label}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={reason.label}
+      style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}
+    >
       <Card style={{ gap: space[3] }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-          <IconBadge glyph={reason.glyph} tone={reason.tone} />
-          <View style={{ flex: 1 }}>
-            <Body>{reason.label}</Body>
+        <View style={st.cardHead}>
+          <IconBadge icon={reason.icon} tone={reason.tone} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={st.title}>{reason.label}</Text>
             <Caption>
               {`${relativeTime(incident.openedAt)} · ${incident.stepCount} step${
                 incident.stepCount === 1 ? '' : 's'
               }`}
             </Caption>
           </View>
-          <Chip tone={outcome.tone}>{outcome.label}</Chip>
+          <Icon name="chevron-right" size={20} color={color.textTertiary} />
         </View>
+        <Chip tone={outcome.tone} dot>
+          {outcome.label}
+        </Chip>
       </Card>
     </Pressable>
   );
@@ -33,15 +69,17 @@ function IncidentCard({ incident, onPress }: { incident: IncidentSummary; onPres
 /** An expected visitor arrived. Informational: nothing to open, nothing to act on. */
 function ArrivalCard({ arrival }: { arrival: VisitArrival }) {
   return (
-    <Card style={{ gap: space[3] }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
-        <IconBadge glyph="✓" tone="well" />
-        <View style={{ flex: 1 }}>
-          <Body>{arrival.text}</Body>
+    <Card style={{ gap: space[3], flex: 1 }}>
+      <View style={st.cardHead}>
+        <IconBadge icon="door-open" tone="well" />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={st.title}>{arrival.text}</Text>
           <Caption>{`${relativeTime(arrival.arrivedAt)} · Seen by Ring at the front door`}</Caption>
         </View>
-        <Chip tone="well">Arrived</Chip>
       </View>
+      <Chip tone="well" dot>
+        Arrived
+      </Chip>
     </Card>
   );
 }
@@ -83,10 +121,7 @@ export function TimelineScreen() {
   return (
     <Screen>
       <View style={{ padding: space[6], gap: space[5] }}>
-        <View style={{ gap: space[1] }}>
-          <Caption>EVERY STEP, IN HUMAN WORDS</Caption>
-          <H1>Timeline</H1>
-        </View>
+        <PageHeader title="Timeline" subtitle="Every step, in human words" />
 
         {incidents.isLoading ? (
           <Card>
@@ -113,21 +148,55 @@ export function TimelineScreen() {
             </Body>
           </Card>
         ) : (
-          <View style={{ gap: space[3] }}>
-            {list.map((entry) =>
-              entry.kind === 'incident' ? (
-                <IncidentCard
-                  key={`incident-${entry.incident.id}`}
-                  incident={entry.incident}
-                  onPress={() => setSelectedId(entry.incident.id)}
-                />
-              ) : (
-                <ArrivalCard key={`arrival-${entry.arrival.id}`} arrival={entry.arrival} />
-              ),
-            )}
+          <View>
+            {list.map((entry, i) => (
+              <View
+                key={
+                  entry.kind === 'incident'
+                    ? `incident-${entry.incident.id}`
+                    : `arrival-${entry.arrival.id}`
+                }
+                style={st.entry}
+              >
+                <Rail at={entry.at} last={i === list.length - 1} />
+                {entry.kind === 'incident' ? (
+                  <IncidentCard
+                    incident={entry.incident}
+                    onPress={() => setSelectedId(entry.incident.id)}
+                  />
+                ) : (
+                  <ArrivalCard arrival={entry.arrival} />
+                )}
+              </View>
+            ))}
           </View>
         )}
       </View>
     </Screen>
   );
 }
+
+const st = StyleSheet.create({
+  entry: { flexDirection: 'row', gap: space[3], paddingBottom: space[3] },
+  railCol: { width: 64, flexDirection: 'row', gap: space[2] },
+  railTime: {
+    ...font.medium,
+    flex: 1,
+    textAlign: 'right',
+    paddingTop: 20,
+    fontSize: text.sm,
+    color: color.textTertiary,
+    fontVariant: ['tabular-nums'],
+  },
+  railTrack: { width: 10, alignItems: 'center', paddingTop: 25 },
+  railDot: { width: 9, height: 9, borderRadius: radius.pill, backgroundColor: color.neutral200 },
+  railLine: {
+    flex: 1,
+    width: 2,
+    marginTop: 4,
+    marginBottom: -space[3] - 25,
+    backgroundColor: color.border,
+  },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  title: { ...font.semibold, fontSize: 17, lineHeight: 22, color: color.textPrimary },
+});
