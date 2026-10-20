@@ -129,6 +129,22 @@ events. Bedrock writes words for people. It never decides whether anyone is call
 
 You need Node 22 or newer, pnpm 10 (`corepack enable`), and Docker.
 
+The fastest path, the same in PowerShell and bash:
+
+```sh
+pnpm install
+pnpm demo:env       # apps/backend/.env with the demo values (never overwrites)
+pnpm demo:up        # checks, then Postgres, Redis and Temporal in Docker, migrations
+pnpm backend:dev    # in its own terminal
+pnpm demo:seed      # the demo household; restart the backend when it asks, run it again
+pnpm demo:scene night-exit
+pnpm demo:check     # what is configured and what is missing
+```
+
+On Windows, or for the live run with real calls, follow
+[docs/hackathon/windows-quickstart.md](docs/hackathon/windows-quickstart.md). The manual
+steps below are what those commands do.
+
 ```sh
 pnpm install
 
@@ -166,8 +182,9 @@ Scenarios: `night-exit`, `carer-arrival`, `carer-no-show`, `daytime-motion`. Opt
 `--url`, `--secret`, `--camera`, `--at <ISO time|now|now-night>`. `--help` explains each.
 Running it without `--scenario` prints the usage.
 
-Tests: `pnpm test` (unit), `pnpm --filter @obrigada/backend test:temporal` (crash and
-resume of the escalation workflow).
+Tests: `pnpm test` (unit, including the demo tooling's `pnpm demo:test`),
+`pnpm --filter @obrigada/backend test:temporal` (crash and resume of the escalation
+workflow).
 
 The full demo, step by step, is in [docs/hackathon/demo-runbook.md](docs/hackathon/demo-runbook.md).
 Production deployment is in [docs/deploy-to-a-vps.md](docs/deploy-to-a-vps.md).
