@@ -179,9 +179,15 @@ The guardian's live link is mutual-TLS MQTT, as
 `DEVICE_CA_*` lines switched back on in `apps/backend/.env`, `docker compose up -d emqx`,
 and port **8883** reachable from the phone (allow it in Windows Firewall). Set
 `DEVICE_MQTT_URL=mqtts://<LAN-IP>:8883` too: provisioning hands that address to the phone,
-and the default (`MQTT_URL`, localhost) is not reachable from it. **(verify)** The dev
-broker certificate names `localhost` and `emqx` only, so the phone may refuse a LAN IP.
-If the status pill stays on Connecting, film the fall with Scene B of the runbook instead.
+and the default (`MQTT_URL`, localhost) is not reachable from it. Generate the broker
+certificate with your LAN address in it, or the phone refuses the connection:
+
+```bash
+# Git Bash, repo root
+BROKER_IPS="192.168.1.42" scripts/gen-dev-certs.sh backend
+```
+
+Then `docker compose restart emqx`. If the status pill stays on Connecting, film the fall with Scene B of the runbook instead.
 
 If a firewall prompt was dismissed, allow the ports by hand in an admin PowerShell:
 

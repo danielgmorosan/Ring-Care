@@ -49,6 +49,8 @@ issue_cert() {
 # list the public host they use. Pass it in: DOMAIN=api.yourdomain.com bash scripts/gen-dev-certs.sh
 BROKER_SAN="DNS:localhost, DNS:emqx, IP:127.0.0.1"
 if [ -n "${DOMAIN:-}" ]; then BROKER_SAN="$BROKER_SAN, DNS:$DOMAIN"; fi
+# LAN addresses a guardian phone on the same Wi-Fi will use, e.g. BROKER_IPS="192.168.1.23".
+for ip in ${BROKER_IPS:-}; do BROKER_SAN="$BROKER_SAN, IP:$ip"; done
 echo "==> Broker server certificate (SAN: $BROKER_SAN)"
 SAN_EXT="$(mktemp)"
 cat > "$SAN_EXT" <<EOF
