@@ -1,9 +1,26 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useAcknowledgeIncident, useIncident, useResolveIncident } from '../api/hooks';
 import type { IncidentDetail, IncidentStep, SecondOpinion } from '../api/types';
-import { Body, Button, Card, Caption, Chip, H1, Screen } from '../components/ui';
+import {
+  BackLink,
+  Body,
+  Button,
+  Card,
+  Caption,
+  Chip,
+  H1,
+  IconBadge,
+  Screen,
+} from '../components/ui';
 import { color, radius, space, text } from '../theme/tokens';
-import { outcomeLabel, relativeTime, stepLabel, stepTime, type StepTone } from '../incident-format';
+import {
+  outcomeLabel,
+  reasonInfo,
+  relativeTime,
+  stepLabel,
+  stepTime,
+  type StepTone,
+} from '../incident-format';
 
 /**
  * Caregiver actions on an active incident (decision 0008). "I'm handling this" holds
@@ -42,8 +59,8 @@ function IncidentActions({ id, incident }: { id: string; incident: IncidentDetai
     <Card style={{ gap: space[3] }}>
       <Caption>ON YOUR WAY?</Caption>
       <Body muted>
-        Tap if you&apos;re taking care of this. We&apos;ll pause the calls — then check back with
-        you shortly, and resume if we don&apos;t hear an all-clear.
+        Tap if you&apos;re taking care of this. We&apos;ll pause the calls, then check back with you
+        shortly. If we don&apos;t hear an all-clear, we carry on.
       </Body>
       <Button
         label="I'm handling this"
@@ -123,17 +140,22 @@ function StepRow({ step }: { step: IncidentStep }) {
 export function IncidentDetailScreen({ id, onBack }: { id: string; onBack: () => void }) {
   const incident = useIncident(id);
   const outcome = incident.data ? outcomeLabel(incident.data.outcome) : null;
+  const reason = incident.data ? reasonInfo(incident.data.reason) : null;
 
   return (
     <Screen>
       <View style={{ padding: space[6], gap: space[5] }}>
-        <Pressable onPress={onBack} hitSlop={10} style={{ alignSelf: 'flex-start' }}>
-          <Text style={st.back}>‹ Timeline</Text>
-        </Pressable>
+        <BackLink label="Timeline" onPress={onBack} />
 
         <View style={{ gap: space[2] }}>
           <Caption>WHAT HAPPENED</Caption>
-          <H1>{incident.data?.reason ?? 'Incident'}</H1>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+            {reason ? <IconBadge glyph={reason.glyph} tone={reason.tone} size={44} /> : null}
+            <View style={{ flex: 1 }}>
+              <H1>{reason?.label ?? 'Incident'}</H1>
+            </View>
+          </View>
+          {reason?.source ? <Body muted>{reason.source}</Body> : null}
           {incident.data ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
               {outcome ? <Chip tone={outcome.tone}>{outcome.label}</Chip> : null}
@@ -160,8 +182,14 @@ export function IncidentDetailScreen({ id, onBack }: { id: string; onBack: () =>
             <Body muted>Loading the steps we took.</Body>
           </Card>
         ) : incident.isError ? (
-          <Card>
-            <Body muted>We could not load this incident. Pull back and try again.</Body>
+          <Card style={{ gap: space[3] }}>
+            <Body muted>We couldn&apos;t load this incident just now.</Body>
+            <Button
+              label="Try again"
+              variant="secondary"
+              onPress={() => void incident.refetch()}
+              loading={incident.isFetching}
+            />
           </Card>
         ) : (
           <Card style={{ gap: space[4] }}>
@@ -179,7 +207,6 @@ export function IncidentDetailScreen({ id, onBack }: { id: string; onBack: () =>
 }
 
 const st = StyleSheet.create({
-  back: { color: color.action, fontSize: text.md, fontWeight: '600' },
   summary: { gap: space[2], backgroundColor: color.lilac100, borderColor: 'transparent' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
   circle: {

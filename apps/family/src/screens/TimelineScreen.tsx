@@ -2,19 +2,21 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useIncidents } from '../api/hooks';
 import type { IncidentSummary } from '../api/types';
-import { Body, Card, Caption, Chip, H1, Screen } from '../components/ui';
+import { Body, Button, Card, Caption, Chip, H1, IconBadge, Screen } from '../components/ui';
 import { space } from '../theme/tokens';
-import { outcomeLabel, relativeTime } from '../incident-format';
+import { outcomeLabel, reasonInfo, relativeTime } from '../incident-format';
 import { IncidentDetailScreen } from './IncidentDetailScreen';
 
 function IncidentCard({ incident, onPress }: { incident: IncidentSummary; onPress: () => void }) {
   const outcome = outcomeLabel(incident.outcome);
+  const reason = reasonInfo(incident.reason);
   return (
-    <Pressable onPress={onPress}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={reason.label}>
       <Card style={{ gap: space[3] }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+          <IconBadge glyph={reason.glyph} tone={reason.tone} />
           <View style={{ flex: 1 }}>
-            <Body>{incident.reason}</Body>
+            <Body>{reason.label}</Body>
             <Caption>
               {`${relativeTime(incident.openedAt)} · ${incident.stepCount} step${
                 incident.stepCount === 1 ? '' : 's'
@@ -54,6 +56,17 @@ export function TimelineScreen() {
         {incidents.isLoading ? (
           <Card>
             <Body muted>Loading your timeline.</Body>
+          </Card>
+        ) : incidents.isError ? (
+          <Card style={{ gap: space[3] }}>
+            <Body>We couldn&apos;t load the timeline just now.</Body>
+            <Body muted>Your record is safe. Try again in a moment.</Body>
+            <Button
+              label="Try again"
+              variant="secondary"
+              onPress={() => void incidents.refetch()}
+              loading={incidents.isFetching}
+            />
           </Card>
         ) : list.length === 0 ? (
           <Card style={{ gap: space[3] }}>

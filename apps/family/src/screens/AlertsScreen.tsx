@@ -148,7 +148,19 @@ export function AlertsScreen() {
         </Card>
 
         {alerts.isLoading ? (
-          <Body muted>Loading…</Body>
+          <Card>
+            <Body muted>Loading alerts.</Body>
+          </Card>
+        ) : alerts.isError ? (
+          <Card style={{ gap: space[3] }}>
+            <Body muted>We couldn&apos;t load alerts just now.</Body>
+            <Button
+              label="Try again"
+              variant="secondary"
+              onPress={() => void alerts.refetch()}
+              loading={alerts.isFetching}
+            />
+          </Card>
         ) : list.length === 0 ? (
           <Card>
             <Body muted>
@@ -159,7 +171,10 @@ export function AlertsScreen() {
         ) : (
           <View style={{ gap: space[3] }}>
             {list.map((alert) => {
-              const kind = KIND[alert.kind];
+              const kind = KIND[alert.kind as AlertKind] ?? {
+                label: alert.kind.replace(/[._]/g, ' '),
+                tone: 'attention' as const,
+              };
               return (
                 <Card key={alert.id}>
                   <View style={s.head}>
