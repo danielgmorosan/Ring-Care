@@ -12,7 +12,7 @@ import {
 interface IncidentRow extends QueryResultRow {
   id: string;
   family_id: string;
-  device_id: string;
+  device_id: string | null;
   triggering_event_id: string | null;
   reason: string;
   opened_at: Date;

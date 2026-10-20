@@ -5,7 +5,9 @@ import {
   CAREGIVER_ACK_SIGNAL,
   CHECKIN_SIGNAL,
   CHECKIN_WAIT_SECONDS,
+  DEFAULT_ESCALATION_RULES,
   RESOLVE_SIGNAL,
+  escalationRulesFor,
   shouldSkipForQuietHours,
   type EscalationActivities,
   type EscalationInput,
@@ -20,6 +22,10 @@ import {
  * outputs may arrive as the check-in signal, but only these rules decide whether
  * help is summoned. Temporal makes it durable: a crash mid-escalation resumes
  * exactly where it left off.
+ *
+ * One ladder, reason-specific rules (escalationRulesFor): a fall runs the voice check-in
+ * gate and ends at emergency services; a family-only reason (Ring night door activity,
+ * decision 0011) skips the check-in and never reaches the emergency step.
  */
 
 const acts = proxyActivities<EscalationActivities>({
@@ -60,29 +66,40 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   ): Promise<void> =>
     acts.recordStep({ incidentId: input.incidentId, seq: seq++, kind, contactId, detail });
 
+  const rules = escalationRulesFor(input.reason);
+
   await step('incident_opened', null, {
     reason: input.reason,
     confirmedFall: input.confirmedFall,
+    // Only non-default rule sets are spelled out, so the fall trail is unchanged.
+    ...(rules === DEFAULT_ESCALATION_RULES
+      ? {}
+      : { voiceCheckin: rules.voiceCheckin, emergencyServices: rules.emergencyServices }),
   });
 
   // Voice check-in gate — the single biggest false-alarm killer. Wait a bounded
   // time for a result; no response is treated as silence, which escalates.
-  if (checkin === 'pending') {
-    await condition(() => checkin !== 'pending', `${CHECKIN_WAIT_SECONDS}s`);
-    if (checkin === 'pending') checkin = 'silence';
-  }
-  await step('voice_checkin_result', null, { result: checkin });
+  // Falls only: a family-only reason has no one to ask "are you okay?" and goes straight on.
+  if (rules.voiceCheckin) {
+    if (checkin === 'pending') {
+      await condition(() => checkin !== 'pending', `${CHECKIN_WAIT_SECONDS}s`);
+      if (checkin === 'pending') checkin = 'silence';
+    }
+    await step('voice_checkin_result', null, { result: checkin });
 
-  if (checkin === 'i_am_fine') {
-    await step('stood_down', null, { reason: 'voice_checkin_ok' });
-    return { outcome: 'stood_down', acknowledgedByContactId: null, steps: seq };
+    if (checkin === 'i_am_fine') {
+      await step('stood_down', null, { reason: 'voice_checkin_ok' });
+      return { outcome: 'stood_down', acknowledgedByContactId: null, steps: seq };
+    }
   }
 
   // Distress or silence → this is real. Alarm the caregivers' own devices first:
   // a critical push is the primary, immediate way to get attention, ahead of the
   // phone-call ladder. Sent only now (not at incident open) so the check-in still
   // gates false alarms.
-  const deviceMessage = `Obrigada needs you: a possible ${input.reason.replace(/[._]/g, ' ')} at home.`;
+  const deviceMessage =
+    input.messages?.device ??
+    `Obrigada needs you: a possible ${input.reason.replace(/[._]/g, ' ')} at home.`;
   for (const token of input.pushDevices) {
     await acts.pushDeviceAlert({ incidentId: input.incidentId, token, message: deviceMessage });
     await step('push_sent', null, { device: true });
@@ -136,8 +153,10 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   }
 
   // Nobody reachable (or an acknowledgement lapsed) → SMS + critical push to the whole chain,
-  // then emergency.
-  const message = `Obrigada needs you: a possible ${input.reason.replace(/[._]/g, ' ')} at home has gone unanswered.`;
+  // then emergency (when the rule set allows it).
+  const message =
+    input.messages?.unanswered ??
+    `Obrigada needs you: a possible ${input.reason.replace(/[._]/g, ' ')} at home has gone unanswered.`;
   for (const contact of input.contacts) {
     if (contact.phone) {
       await acts.sendSms({ incidentId: input.incidentId, contact, message });
@@ -147,6 +166,13 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
       await acts.pushCriticalAlert({ incidentId: input.incidentId, contact, message });
       await step('push_sent', contact.id, {});
     }
+  }
+
+  // Family-only rule set (decision 0011): everyone on the chain now has it by text and push.
+  // Emergency services are never dispatched for this reason; the ladder ends here.
+  if (!rules.emergencyServices) {
+    await step('family_alerted', null, { emergencyServices: false });
+    return { outcome: 'family_alerted', acknowledgedByContactId: null, steps: seq };
   }
 
   await acts.notifyEmergency({ incidentId: input.incidentId, summary: input.reason });

@@ -21,6 +21,7 @@ const workflowsPath = require.resolve('../src/modules/escalation/temporal/workfl
 class TestNotifications implements NotificationPort {
   readonly calls: string[] = [];
   readonly deviceAlerts: string[] = [];
+  readonly emergencies: string[] = [];
   readonly answerFor = new Set<string>();
   async placeCall(input: { contact: EscalationContact }): Promise<{ answered: boolean }> {
     this.calls.push(input.contact.id);
@@ -31,7 +32,9 @@ class TestNotifications implements NotificationPort {
   async pushDeviceAlert(input: { token: string }): Promise<void> {
     this.deviceAlerts.push(input.token);
   }
-  async notifyEmergency(): Promise<void> {}
+  async notifyEmergency(input: { summary: string }): Promise<void> {
+    this.emergencies.push(input.summary);
+  }
 }
 
 const contact = (
@@ -309,5 +312,113 @@ describe('escalationWorkflow (Temporal test env)', () => {
     const kinds = await incidents.listStepKinds(input.incidentId);
     expect(kinds.filter((k) => k === 'incident_opened')).toHaveLength(1);
     expect(kinds).toContain('emergency_notified');
+  }, 60_000);
+  // --- door.night_activity: the family-only ladder (Ring, decision 0011) ---
+
+  const doorInput = (over: Partial<EscalationInput> & { incidentId: string }): EscalationInput =>
+    makeInput({
+      deviceId: null,
+      reason: 'door.night_activity',
+      initialCheckin: 'pending',
+      messages: {
+        device: "Someone was at the front door at 3:04. We're calling Sofia now.",
+        unanswered:
+          "Someone was at the front door at 3:04. We haven't reached anyone by phone yet. Please check on home.",
+      },
+      ...over,
+    });
+
+  it('door: Sofia does not answer, Miguel does; no check-in gate', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const notifications = new TestNotifications();
+    notifications.answerFor.add('miguel');
+    const input = doorInput({
+      incidentId: 'door-ack',
+      contacts: [contact('sofia', 0), contact('miguel', 1)],
+    });
+
+    const result = await run(input, notifications, incidents);
+
+    expect(result).toMatchObject({ outcome: 'acknowledged', acknowledgedByContactId: 'miguel' });
+    expect(notifications.calls).toEqual(['sofia', 'miguel']);
+    expect(await incidents.listStepKinds(input.incidentId)).not.toContain('voice_checkin_result');
+  });
+
+  it('door: nobody answers; the family is texted and 112 is never called', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const notifications = new TestNotifications();
+    const input = doorInput({
+      incidentId: 'door-family-only',
+      contacts: [contact('sofia', 0), contact('miguel', 1)],
+    });
+
+    const result = await run(input, notifications, incidents);
+
+    expect(result.outcome).toBe('family_alerted');
+    expect(notifications.emergencies).toEqual([]);
+    const kinds = await incidents.listStepKinds(input.incidentId);
+    expect(kinds.filter((k) => k === 'sms_sent')).toHaveLength(2);
+    expect(kinds.at(-1)).toBe('family_alerted');
+    expect(kinds).not.toContain('emergency_notified');
+  });
+
+  it('door: the worker is killed mid-flow and a fresh worker resumes the incident', async () => {
+    // A real crash: worker 1 runs until the incident is parked on the caregiver's
+    // all-clear window, then shuts down. Worker 2 has no cache, replays the history from
+    // Temporal and carries on: the acknowledgement lapses and the family is re-alerted.
+    const incidents = new InMemoryIncidentRepository(); // the durable store (Postgres)
+    const notifications = new TestNotifications();
+    const input = doorInput({
+      incidentId: 'door-crash',
+      contacts: [contact('sofia', 0), contact('miguel', 1)],
+    });
+    const taskQueue = 'tq-door-crash';
+    const handle = await env.client.workflow.start(escalationWorkflow, {
+      taskQueue,
+      workflowId: 'wf-door-crash',
+      args: [input],
+    });
+    await handle.signal(caregiverAckSignal, 'user-sofia');
+
+    const parked = async (): Promise<void> => {
+      for (let i = 0; i < 200; i++) {
+        if ((await incidents.listStepKinds(input.incidentId)).includes('caregiver_acknowledged')) {
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      throw new Error('workflow never reached the acknowledgement window');
+    };
+    const worker1 = await Worker.create({
+      connection: env.nativeConnection,
+      taskQueue,
+      workflowsPath,
+      activities: createEscalationActivities({ incidents, notifications }),
+    });
+    await worker1.runUntil(parked()); // ...and the process dies here.
+
+    const worker2 = await Worker.create({
+      connection: env.nativeConnection,
+      taskQueue,
+      workflowsPath,
+      activities: createEscalationActivities({ incidents, notifications }),
+    });
+    const result = await worker2.runUntil(handle.result());
+
+    expect(result.outcome).toBe('family_alerted');
+    const kinds = await incidents.listStepKinds(input.incidentId);
+    expect(kinds.filter((k) => k === 'incident_opened')).toHaveLength(1);
+    expect(kinds).toEqual([
+      'incident_opened',
+      'caregiver_acknowledged',
+      'acknowledgement_lapsed',
+      'sms_sent',
+      'sms_sent',
+      'family_alerted',
+    ]);
+    expect(notifications.emergencies).toEqual([]);
+
+    // And the full history replays cleanly on yet another fresh worker.
+    await Worker.runReplayHistory({ workflowsPath }, await handle.fetchHistory());
   }, 60_000);
 });

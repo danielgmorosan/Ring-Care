@@ -2,16 +2,24 @@ import type { RecordStepInput } from './temporal/types';
 
 /**
  * Step kinds that mark an incident as resolved: the elder said they were fine, a
- * contact answered, or emergency services were notified. An incident with none of
- * these is still active. (Mirrors the outcome derivation in IncidentsQueryService.)
+ * contact answered, emergency services were notified, or a family-only ladder (no
+ * emergency step, e.g. door.night_activity) reached the whole chain. An incident with
+ * none of these is still active. (Mirrors the outcome derivation in IncidentsQueryService.)
  */
-export const TERMINAL_STEP_KINDS = ['stood_down', 'call_answered', 'emergency_notified'] as const;
+export const TERMINAL_STEP_KINDS = [
+  'stood_down',
+  'call_answered',
+  'emergency_notified',
+  'family_alerted',
+] as const;
 
 /** The immutable opening record of an incident. Lifecycle lives in append-only steps. */
 export interface Incident {
   id: string;
   familyId: string;
-  deviceId: string;
+  /** The guardian behind it, or null for a family-level sensor (a Ring camera, 0011). */
+  deviceId: string | null;
+  /** The triggering event: an event_stream id, or a ring_events id for Ring incidents. */
   triggeringEventId: string | null;
   reason: string;
   openedAt: string;

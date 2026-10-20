@@ -12,7 +12,12 @@ import { PushTokensService } from '../push/push-tokens.service';
 import { CONTACT_REPOSITORY, type ContactRepository } from './contact.repository';
 import { INCIDENT_REPOSITORY, type IncidentRepository } from './incident.repository';
 import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
-import type { EscalationInput, EscalationResult, VoiceCheckinResult } from './temporal/types';
+import type {
+  EscalationInput,
+  EscalationMessages,
+  EscalationResult,
+  VoiceCheckinResult,
+} from './temporal/types';
 import {
   ackSignal,
   caregiverAckSignal,
@@ -23,12 +28,15 @@ import {
 
 export interface StartEscalationParams {
   familyId: string;
-  deviceId: string;
+  /** The guardian behind the incident, or null for a family-level sensor (Ring, 0011). */
+  deviceId: string | null;
   reason: string;
   triggeringEventId?: string | null;
   confirmedFall?: boolean;
   initialCheckin?: VoiceCheckinResult;
   ackWindowSeconds?: number;
+  /** Deterministic family-facing wording; omitted for falls (generic texts). */
+  messages?: EscalationMessages;
 }
 
 /** Default ring time per contact ("call the daughter, wait 45s, call the son"). */
@@ -84,6 +92,8 @@ export class EscalationService {
       pushDevices: (await this.pushTokens.listForFamily(params.familyId)).map((t) => t.token),
       ackWindowSeconds: params.ackWindowSeconds ?? DEFAULT_ACK_WINDOW_SECONDS,
       initialCheckin: params.initialCheckin ?? 'pending',
+      // Only set when provided, so a fall's workflow input is exactly what it always was.
+      ...(params.messages ? { messages: params.messages } : {}),
     };
 
     await client.workflow.start(escalationWorkflow, {
