@@ -56,6 +56,11 @@ import { WANDER_WATCH_REPOSITORY } from './wander-watch.repository';
 import { WanderWatchService } from './wander-watch.service';
 import { ZoneAlertEvaluatorService } from './zone-alert-evaluator.service';
 import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
+import { InMemoryRingCareDecisionRepository } from './ring-care/in-memory-ring-care-decision.repository';
+import { PgRingCareDecisionRepository } from './ring-care/pg-ring-care-decision.repository';
+import { RING_CARE_DECISION_REPOSITORY } from './ring-care/ring-care-decision.repository';
+import { RingCareService } from './ring-care/ring-care.service';
+import { VisitNoShowSweepService } from './ring-care/visit-no-show-sweep.service';
 
 /**
  * Escalation: the deterministic safety core. Temporal workflows run the ladder
@@ -179,6 +184,17 @@ import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
           ? new PgContactRepository(pool)
           : new InMemoryContactRepository(),
     },
+    // Ring care logic (decision 0011): night door ladder, visit arrivals and no-shows.
+    RingCareService,
+    VisitNoShowSweepService,
+    {
+      provide: RING_CARE_DECISION_REPOSITORY,
+      inject: [AppConfig, PG_POOL],
+      useFactory: (config: AppConfig, pool: Pool | null) =>
+        config.hasDatabase && pool
+          ? new PgRingCareDecisionRepository(pool)
+          : new InMemoryRingCareDecisionRepository(),
+    },
     {
       provide: TEMPORAL_CLIENT,
       inject: [AppConfig],
@@ -195,6 +211,7 @@ import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
     IncidentsQueryService,
     ContactsService,
     AlertsService,
+    RingCareService,
   ],
 })
 export class EscalationModule {}
