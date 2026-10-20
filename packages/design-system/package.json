@@ -2,7 +2,7 @@
   "name": "@obrigada/design-system",
   "version": "0.0.0",
   "private": true,
-  "description": "Design tokens and component primitives inspired by Lovi reference screens",
+  "description": "Design tokens and component primitives in the NestHome visual language",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

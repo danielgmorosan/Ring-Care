@@ -35,7 +35,8 @@ export const components = {
       md: { minHeight: 48, fontSize: typography.size.md, paddingHorizontal: layout.spacing[5] },
       sm: { minHeight: 36, fontSize: typography.size.sm, paddingHorizontal: layout.spacing[4] }
     },
-    radius: pill,
+    // NestHome rounded-2xl actions, not full pills.
+    radius: layout.radius.md,
     variants: {
       primary: {
         fill: gradients.primaryCta,
@@ -145,13 +146,21 @@ export const components = {
     }
   },
 
+  // NestHome card: white, 20 radius, hairline border, a whisper of shadow.
   card: {
     variants: {
       elevated: {
-        radius: layout.radius.xl,
+        radius: layout.radius.lg,
         background: colors.neutral[0],
+        borderColor: colors.neutral[75],
         padding: layout.spacing[5],
         shadow: layout.shadow.softCard
+      },
+      dark: {
+        radius: layout.radius.xl,
+        background: colors.neutral[900],
+        padding: layout.spacing[5],
+        shadow: layout.shadow.raised
       },
       inset: {
         radius: layout.radius.lg,
@@ -410,6 +419,34 @@ export const components = {
     background: colors.neutral[0],
     iconColor: colors.brand.violet[500],
     shadow: '0 8px 28px -6px rgba(83, 104, 255, 0.35)'
+  },
+
+  // Small line icon + uppercase tracked label + optional "View all >" link.
+  sectionHeader: {
+    iconSize: 16,
+    fontSize: typography.size.xs,
+    tracking: 1.4,
+    color: '#6F7682'
+  },
+
+  // Line icons over labels; the active tab sits on a soft grey pill that springs between tabs.
+  tabBar: {
+    iconSize: 22,
+    labelSize: typography.size.xs,
+    itemMinHeight: 56,
+    activeFill: colors.neutral[50],
+    activeColor: colors.neutral[900],
+    idleColor: '#6F7682',
+    spring: { stiffness: 400, damping: 30 }
+  },
+
+  // The incident step trail: 44pt tinted icon circles on a 2px rail, title, clock time.
+  escalationLadder: {
+    circle: 44,
+    railWidth: 2,
+    railColor: colors.neutral[100],
+    titleSize: 17,
+    liveCard: { background: colors.neutral[900], radius: layout.radius.xl, titleSize: 26 }
   },
 
   motion: {

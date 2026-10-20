@@ -8,13 +8,19 @@ export type GradientStop = {
 export type GradientToken = readonly GradientStop[];
 
 export const gradients = {
+  // Primary actions are solid ink now; kept as a two-stop token for callers that expect one.
   primaryCta: [
-    { color: colors.brand.blue[300], location: 0 },
-    { color: colors.brand.blue[500], location: 0.52 },
-    { color: colors.brand.blue[700], location: 1 }
+    { color: '#2B2B2B', location: 0 },
+    { color: colors.brand.ink, location: 1 }
+  ],
+  // NestHome's cover fade: deep blue rising from the bottom of a photo.
+  coverFade: [
+    { color: 'rgba(19,16,87,0)', location: 0.35 },
+    { color: 'rgba(19,16,87,0.55)', location: 0.7 },
+    { color: 'rgba(2,30,241,0.85)', location: 1 }
   ],
   heroAura: [
-    { color: colors.brand.lilac[100], location: 0 },
+    { color: '#EEF8EF', location: 0 },
     { color: colors.neutral[0], location: 1 }
   ],
   frostedTop: [
