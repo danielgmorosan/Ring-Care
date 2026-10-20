@@ -1,0 +1,6 @@
+{
+  "event_id": "evt_01JADEVICEOFFLINE01",
+  "event_type": "device_offline",
+  "device_id": "ring-dev-front-1",
+  "timestamp": 1792540800
+}

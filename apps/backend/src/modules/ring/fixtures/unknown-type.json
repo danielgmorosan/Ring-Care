@@ -1,0 +1,6 @@
+{
+  "event_id": "evt_01JAUNKNOWNTYPE0001",
+  "event_type": "battery_low",
+  "device_id": "ring-dev-front-1",
+  "timestamp": "2026-10-21T10:00:00Z"
+}

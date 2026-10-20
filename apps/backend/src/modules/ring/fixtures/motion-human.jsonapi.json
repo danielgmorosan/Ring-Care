@@ -1,0 +1,14 @@
+{
+  "data": {
+    "id": "evt_01JAMOTIONHUMAN0001",
+    "type": "motion_detected",
+    "attributes": {
+      "sub_type": "human",
+      "timestamp": "2026-10-21T02:04:00.000Z",
+      "snapshot_url": "https://example.invalid/never-fetched.jpg"
+    },
+    "relationships": {
+      "device": { "data": { "id": "ring-dev-front-1", "type": "devices" } }
+    }
+  }
+}

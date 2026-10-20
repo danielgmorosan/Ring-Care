@@ -41,7 +41,9 @@ async function bootstrap(): Promise<void> {
   // Read the log format from the env directly (before AppConfig exists) so even
   // bootstrap logs are structured. Buffer early logs so they flush through it.
   const useJsonLogs = process.env.LOG_FORMAT === 'json';
-  const app = await NestFactory.create(AppModule, { bufferLogs: useJsonLogs });
+  // rawBody keeps the exact request bytes beside the parsed JSON, so signed webhooks
+  // (Ring: HMAC over the raw body) can be verified. Parsing is otherwise unchanged.
+  const app = await NestFactory.create(AppModule, { bufferLogs: useJsonLogs, rawBody: true });
   if (useJsonLogs) app.useLogger(new JsonLogger());
 
   // Give every request a correlation id (echoed in an X-Request-Id header and

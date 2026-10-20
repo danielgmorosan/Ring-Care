@@ -1,0 +1,14 @@
+{
+  "data": [
+    {
+      "id": "ring-dev-front-1",
+      "type": "devices",
+      "attributes": { "name": "Front Door", "status": "online", "kind": "doorbell_v4" }
+    },
+    {
+      "id": "ring-dev-hall-2",
+      "type": "devices",
+      "attributes": { "name": "Hallway", "status": "offline", "kind": "stickup_cam" }
+    }
+  ]
+}

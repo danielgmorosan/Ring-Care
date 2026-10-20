@@ -1,0 +1,5 @@
+{
+  "type": "motion_detected",
+  "device_id": "ring-dev-garden-9",
+  "attributes": { "sub_type": "vehicle" }
+}

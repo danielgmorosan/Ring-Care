@@ -1,0 +1,8 @@
+{
+  "data": {
+    "id": "evt_01JADEVICEONLINE001",
+    "type": "events",
+    "attributes": { "event_type": "device_online", "created_at": "2026-10-21T09:00:00Z" },
+    "relationships": { "device": { "data": { "id": "ring-dev-front-1", "type": "devices" } } }
+  }
+}
