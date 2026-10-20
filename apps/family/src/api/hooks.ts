@@ -27,7 +27,21 @@ import {
   doseListSchema,
   zoneListSchema,
   zoneSchema,
+  approveResultSchema,
+  careProposalListSchema,
+  ringActivityListSchema,
+  ringCameraListSchema,
+  ringLiveSessionSchema,
+  ringStatusSchema,
   type ActivityItem,
+  type ApproveResult,
+  type CareProposal,
+  type ProposalStatus,
+  type RingActivity,
+  type RingCamera,
+  type RingLiveSession,
+  type RingPlacement,
+  type RingStatus,
   type Alert,
   type CreatePersonBody,
   type Person,
@@ -154,6 +168,9 @@ export function useIncidents() {
   return useQuery({
     queryKey: ['incidents'],
     queryFn: (): Promise<IncidentSummary[]> => api('/me/incidents', { schema: incidentListSchema }),
+    // A new incident (or one resolving) should appear without a manual refresh.
+    refetchInterval: 10000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -183,6 +200,9 @@ export function useIncident(id: string | null) {
     enabled: id !== null,
     queryFn: (): Promise<IncidentDetail> =>
       api(`/me/incidents/${id}`, { schema: incidentDetailSchema }),
+    // While the ladder is running, follow it step by step; stop once it has resolved.
+    refetchInterval: (query) => (query.state.data?.outcome === 'active' ? 3000 : false),
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -422,5 +442,135 @@ export function useDeleteVisit() {
   return useMutation({
     mutationFn: (id: string): Promise<void> => api(`/me/visits/${id}`, { method: 'DELETE' }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['visits'] }),
+  });
+}
+
+/** Ring (decision 0011): link status, linked cameras, and whether webhooks are live. */
+export function useRingStatus() {
+  return useQuery({
+    queryKey: ['ring', 'status'],
+    queryFn: (): Promise<RingStatus> => api('/me/ring/status', { schema: ringStatusSchema }),
+  });
+}
+
+export function useRingCameras() {
+  return useQuery({
+    queryKey: ['ring', 'cameras'],
+    queryFn: (): Promise<RingCamera[]> => api('/me/ring/cameras', { schema: ringCameraListSchema }),
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
+  });
+}
+
+/** Pull the linked Ring account's devices and upsert them as cameras. */
+export function useSyncRingCameras() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (): Promise<void> => api('/me/ring/cameras/sync', { method: 'POST' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['ring'] }),
+  });
+}
+
+/** Where a camera sits. Night door alerts and visit arrivals read front-door cameras only. */
+export function useSetRingPlacement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, placement }: { id: string; placement: RingPlacement }): Promise<void> =>
+      api(`/me/ring/cameras/${id}`, { method: 'PATCH', body: { placement } }),
+    onMutate: async ({ id, placement }) => {
+      // Optimistic: the picker should move the moment it is tapped.
+      await qc.cancelQueries({ queryKey: ['ring', 'cameras'] });
+      const previous = qc.getQueryData<RingCamera[]>(['ring', 'cameras']);
+      qc.setQueryData<RingCamera[]>(['ring', 'cameras'], (list) =>
+        list?.map((c) => (c.id === id ? { ...c, placement } : c)),
+      );
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) qc.setQueryData(['ring', 'cameras'], context.previous);
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ['ring'] }),
+  });
+}
+
+/** Recent Ring motion and doorbell events, with how the care rules read them. Polls so a
+ * simulated or real event appears on its own. */
+export function useRingActivity(limit = 50) {
+  return useQuery({
+    queryKey: ['ring', 'activity', limit],
+    queryFn: (): Promise<RingActivity[]> =>
+      api(`/me/ring/activity?limit=${limit}`, { schema: ringActivityListSchema }),
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
+  });
+}
+
+/** Open a Ring live view: send our WHEP offer, get Ring's answer. The backend relays
+ * signalling only (never media) and audit-logs every open (rule #7). Plain functions as
+ * well as hooks, because the live view ties the session to a component's lifetime. */
+export function startRingLive(cameraId: string, sdpOffer: string): Promise<RingLiveSession> {
+  return api(`/me/ring/cameras/${cameraId}/live`, {
+    method: 'POST',
+    body: { sdpOffer },
+    schema: ringLiveSessionSchema,
+  });
+}
+
+export function stopRingLive(cameraId: string, sessionId: string): Promise<void> {
+  return api(`/me/ring/cameras/${cameraId}/live/${sessionId}`, { method: 'DELETE' });
+}
+
+export function useStartRingLive() {
+  return useMutation({
+    mutationFn: ({ cameraId, sdpOffer }: { cameraId: string; sdpOffer: string }) =>
+      startRingLive(cameraId, sdpOffer),
+  });
+}
+
+export function useStopRingLive() {
+  return useMutation({
+    mutationFn: ({ cameraId, sessionId }: { cameraId: string; sessionId: string }) =>
+      stopRingLive(cameraId, sessionId),
+  });
+}
+
+/** Care proposals extracted from the caregiver's Bee voice notes (decision 0012). */
+export function useCareProposals(status: ProposalStatus = 'pending') {
+  return useQuery({
+    queryKey: ['care', 'proposals', status],
+    queryFn: (): Promise<CareProposal[]> =>
+      api(`/me/care/proposals?status=${status}`, { schema: careProposalListSchema }),
+    refetchInterval: 10000,
+    refetchIntervalInBackground: false,
+  });
+}
+
+/** Approve some or all items of a proposal. Approved items land in the care plan and as
+ * Bee reminders on the caregiver's wrist. */
+export function useApproveProposal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, itemIds }: { id: string; itemIds?: string[] }): Promise<ApproveResult> =>
+      api(`/me/care/proposals/${id}/approve`, {
+        method: 'POST',
+        body: itemIds ? { itemIds } : {},
+        schema: approveResultSchema,
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['care'] });
+      void qc.invalidateQueries({ queryKey: ['medications'] });
+      void qc.invalidateQueries({ queryKey: ['appointments'] });
+      void qc.invalidateQueries({ queryKey: ['activity'] });
+    },
+  });
+}
+
+/** Set a proposal aside. Nothing in the care plan changes. */
+export function useRejectProposal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string): Promise<void> =>
+      api(`/me/care/proposals/${id}/reject`, { method: 'POST' }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['care', 'proposals'] }),
   });
 }
