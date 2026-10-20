@@ -290,7 +290,8 @@ export const alertSchema = z.object({
   id: z.string(),
   familyId: z.string(),
   deviceId: z.string().nullable(),
-  kind: alertKindSchema,
+  // Known kinds get their own label; an unknown kind from a newer backend still renders.
+  kind: alertKindSchema.or(z.string()),
   message: z.string(),
   ref: z.string(),
   at: z.string(),
@@ -359,3 +360,92 @@ export interface CreateVisitBody {
   endsAt: string;
   notes?: string;
 }
+
+/** Ring (decision 0011). Metadata only: labels, ids and times. Ring video stays in the
+ * family's Ring account; Obrigada never downloads or stores it (rule #1). */
+export const ringModeSchema = z.enum(['oauth', 'playground', 'off']);
+export type RingMode = z.infer<typeof ringModeSchema>;
+
+export const ringPlacementSchema = z.enum(['front_door', 'indoor', 'other']);
+export type RingPlacement = z.infer<typeof ringPlacementSchema>;
+
+export const ringCameraSchema = z.object({
+  id: z.string(),
+  ringDeviceId: z.string(),
+  name: z.string(),
+  placement: ringPlacementSchema,
+  online: z.boolean(),
+  lastEventAt: z.string().nullable(),
+});
+export type RingCamera = z.infer<typeof ringCameraSchema>;
+export const ringCameraListSchema = z.array(ringCameraSchema);
+
+export const ringStatusSchema = z.object({
+  mode: ringModeSchema,
+  webhooks: z.boolean(),
+  cameras: ringCameraListSchema,
+});
+export type RingStatus = z.infer<typeof ringStatusSchema>;
+
+export const ringActivitySchema = z.object({
+  id: z.string(),
+  cameraId: z.string(),
+  cameraName: z.string(),
+  placement: ringPlacementSchema,
+  kind: z.enum(['motion', 'ding', 'online', 'offline']),
+  // Ring's Smart Alert label, e.g. "human". Left as a string so new labels still render.
+  subType: z.string().nullable(),
+  occurredAt: z.string(),
+  source: z.enum(['ring', 'simulator']),
+  // How the care rules read this event, if at all. One input among the rules (rule #3).
+  interpretation: z.enum(['night_door', 'visit_arrival']).nullable(),
+});
+export type RingActivity = z.infer<typeof ringActivitySchema>;
+export const ringActivityListSchema = z.array(ringActivitySchema);
+
+/** A Ring live view session: the backend relays WHEP signalling only, never media. */
+export const ringLiveSessionSchema = z.object({
+  sessionId: z.string(),
+  sdpAnswer: z.string(),
+});
+export type RingLiveSession = z.infer<typeof ringLiveSessionSchema>;
+
+/** Care proposals from the caregiver's Bee voice notes (decision 0012). Suggestions only:
+ * nothing changes the care plan until the caregiver approves it. */
+export const proposalItemKindSchema = z.enum([
+  'medication_change',
+  'new_medication',
+  'appointment',
+  'todo',
+  'note',
+]);
+export type ProposalItemKind = z.infer<typeof proposalItemKindSchema>;
+
+export const proposalItemSchema = z.object({
+  id: z.string(),
+  kind: proposalItemKindSchema,
+  title: z.string(),
+  detail: z.string().nullable().optional(),
+  data: z.unknown().optional(),
+});
+export type ProposalItem = z.infer<typeof proposalItemSchema>;
+
+export const proposalStatusSchema = z.enum(['pending', 'approved', 'rejected']);
+export type ProposalStatus = z.infer<typeof proposalStatusSchema>;
+
+export const careProposalSchema = z.object({
+  id: z.string(),
+  source: z.literal('bee'),
+  createdAt: z.string(),
+  summary: z.string().nullable().optional(),
+  status: proposalStatusSchema,
+  items: z.array(proposalItemSchema),
+});
+export type CareProposal = z.infer<typeof careProposalSchema>;
+export const careProposalListSchema = z.array(careProposalSchema);
+
+export const approveResultSchema = z.object({
+  applied: z.array(z.string()),
+  todosCreated: z.number(),
+});
+export type ApproveResult = z.infer<typeof approveResultSchema>;

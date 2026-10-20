@@ -2,6 +2,57 @@ import type { IncidentOutcome, IncidentStep } from './api/types';
 
 export type StepTone = 'well' | 'attention' | 'incident';
 
+/** Why an incident opened, in human words, with a glyph and a source note. Unknown reasons
+ * still render (humanised) so a newer backend never breaks the timeline. */
+export interface ReasonInfo {
+  label: string;
+  glyph: string;
+  tone: StepTone;
+  /** Where the signal came from, e.g. "From Ring at the front door". */
+  source: string | null;
+}
+
+const REASONS: Record<string, ReasonInfo> = {
+  'fall.suspected': { label: 'Possible fall', glyph: '!', tone: 'incident', source: null },
+  'fall.confirmed': { label: 'Fall', glyph: '!', tone: 'incident', source: null },
+  'door.night_activity': {
+    label: 'Front door at night',
+    glyph: '☾',
+    tone: 'attention',
+    source: 'Seen by Ring at the front door',
+  },
+  'visit.no_show': {
+    label: "Visit didn't happen",
+    glyph: '◷',
+    tone: 'attention',
+    source: 'No arrival at the front door',
+  },
+};
+
+export function reasonInfo(reason: string): ReasonInfo {
+  const known = REASONS[reason];
+  if (known) return known;
+  const words = reason.replace(/[._]/g, ' ').trim();
+  return {
+    label: words.length > 0 ? words.charAt(0).toUpperCase() + words.slice(1) : 'Incident',
+    glyph: '•',
+    tone: 'attention',
+    source: null,
+  };
+}
+
+/** The opening step of the ladder, phrased for the kind of incident. */
+function openedTitle(reason: string | null): string {
+  switch (reason) {
+    case 'door.night_activity':
+      return 'Someone was at the front door at night';
+    case 'visit.no_show':
+      return "The expected visitor hasn't arrived";
+    default:
+      return 'We noticed something';
+  }
+}
+
 /** How an incident resolved, in a warm chip label + tone. */
 export function outcomeLabel(outcome: IncidentOutcome): { label: string; tone: StepTone } {
   switch (outcome) {
@@ -30,12 +81,15 @@ export function stepLabel(step: IncidentStep): {
 } {
   const who = step.contactName ?? 'the next contact';
   switch (step.kind) {
-    case 'incident_opened':
+    case 'incident_opened': {
+      const reason = detailString(step.detail, 'reason');
+      const info = reason ? reasonInfo(reason) : null;
       return {
-        title: 'We noticed something',
-        subtitle: detailString(step.detail, 'reason'),
-        tone: 'incident',
+        title: openedTitle(reason),
+        subtitle: info ? (info.source ?? info.label) : null,
+        tone: info?.tone === 'attention' ? 'attention' : 'incident',
       };
+    }
     case 'voice_checkin_result': {
       const result = detailString(step.detail, 'result');
       if (result === 'i_am_fine')
@@ -60,8 +114,33 @@ export function stepLabel(step: IncidentStep): {
       return { title: `We waited before waking ${who}`, subtitle: 'Quiet hours', tone: 'well' };
     case 'emergency_notified':
       return { title: 'We called emergency services', subtitle: null, tone: 'incident' };
-    case 'stood_down':
-      return { title: 'Stood down. All is well.', subtitle: null, tone: 'well' };
+    case 'caregiver_acknowledged': {
+      const by = detailString(step.detail, 'byName') ?? step.contactName;
+      return {
+        title: by ? `${by} is handling this` : 'Family is handling this',
+        subtitle: 'Calls paused',
+        tone: 'well',
+      };
+    }
+    case 'acknowledgement_lapsed':
+      return {
+        title: 'No all-clear yet, so we carried on',
+        subtitle: 'Calls resumed',
+        tone: 'attention',
+      };
+    case 'stood_down': {
+      const why = detailString(step.detail, 'reason');
+      return {
+        title: 'Stood down. All is well.',
+        subtitle:
+          why === 'voice_checkin_ok'
+            ? 'They said they were fine'
+            : why === 'caregiver_all_clear'
+              ? 'Family confirmed all clear'
+              : null,
+        tone: 'well',
+      };
+    }
     default:
       return { title: step.kind.replace(/_/g, ' '), subtitle: null, tone: 'attention' };
   }

@@ -16,6 +16,7 @@ import type { Appointment, Medication } from '../api/types';
 import { Body, Button, Card, Caption, Chip, Field, H1, H2, Screen } from '../components/ui';
 import { relativeTime } from '../incident-format';
 import { color, space, text } from '../theme/tokens';
+import { CareProposals } from './CareProposals';
 
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -224,6 +225,8 @@ export function CareScreen() {
           <H1>Care</H1>
         </View>
 
+        <CareProposals />
+
         <Card
           style={{ gap: space[3], backgroundColor: color.lilac100, borderColor: 'transparent' }}
         >
@@ -248,6 +251,21 @@ export function CareScreen() {
 
         <View style={{ gap: space[3] }}>
           <H2>Medications</H2>
+          {medications.isLoading ? (
+            <Card>
+              <Body muted>Loading medications.</Body>
+            </Card>
+          ) : medications.isError ? (
+            <Card style={{ gap: space[3] }}>
+              <Body muted>We couldn&apos;t load medications just now.</Body>
+              <Button
+                label="Try again"
+                variant="secondary"
+                onPress={() => void medications.refetch()}
+                loading={medications.isFetching}
+              />
+            </Card>
+          ) : null}
           {(medications.data ?? []).map((m) => (
             <MedicationCard
               key={m.id}
@@ -316,7 +334,7 @@ export function CareScreen() {
             <Caption>{editingApptId ? 'EDIT APPOINTMENT' : 'ADD AN APPOINTMENT'}</Caption>
             <Field
               label="What"
-              placeholder="Dr. Almeida — cardiology"
+              placeholder="Dr. Almeida, cardiology"
               value={title}
               onChangeText={setTitle}
             />

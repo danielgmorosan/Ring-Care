@@ -10,6 +10,8 @@ import {
   useIssueClaimCode,
   useRegisterDevice,
   useRenameZone,
+  useRingActivity,
+  useRingStatus,
   useUpdateFamily,
   useWipeDevice,
   useZones,
@@ -19,6 +21,7 @@ import { useAuth } from '../auth-state';
 import { Body, Button, Card, Caption, Chip, Dot, Field, H1, H2, Screen } from '../components/ui';
 import { relativeTime } from '../incident-format';
 import { LiveScreen } from './LiveScreen';
+import { ringModeInfo, RingScreen } from './RingScreen';
 import { color, space, text } from '../theme/tokens';
 
 /** The Today home. Status, the guardians, and registering the first one. */
@@ -32,6 +35,7 @@ export function HomeScreen() {
   const [deviceName, setDeviceName] = useState('');
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<string | null>(null);
+  const [showRing, setShowRing] = useState(false);
 
   async function askObrigada() {
     if (question.trim().length === 0) return;
@@ -47,6 +51,10 @@ export function HomeScreen() {
     if (deviceName.trim().length === 0) return;
     await registerDevice.mutateAsync(deviceName.trim());
     setDeviceName('');
+  }
+
+  if (showRing) {
+    return <RingScreen onBack={() => setShowRing(false)} />;
   }
 
   return (
@@ -104,6 +112,8 @@ export function HomeScreen() {
           </View>
         )}
 
+        <RingCard onOpen={() => setShowRing(true)} />
+
         <ZonesCard />
 
         <Card style={{ gap: space[4] }}>
@@ -147,6 +157,39 @@ export function HomeScreen() {
         <Button label="Sign out" variant="ghost" onPress={() => void logout()} />
       </View>
     </Screen>
+  );
+}
+
+/** Ring at a glance: link status, cameras, the latest door event. Opens the Ring screen. */
+function RingCard({ onOpen }: { onOpen: () => void }) {
+  const status = useRingStatus();
+  const activity = useRingActivity(5);
+  const mode = status.data?.mode ?? 'off';
+  const info = ringModeInfo(mode);
+  const cameras = status.data?.cameras ?? [];
+  const latest = activity.data?.[0];
+
+  let line: string;
+  if (status.isLoading) line = 'Checking your Ring link.';
+  else if (status.isError) line = "We couldn't reach Ring just now.";
+  else if (mode === 'off') line = 'Add your Ring doorbell to watch the front door too.';
+  else if (cameras.length === 0) line = 'Linked. Sync to bring in your cameras.';
+  else
+    line = `${cameras.length} camera${cameras.length === 1 ? '' : 's'}${
+      latest ? ` · Last activity ${relativeTime(latest.occurredAt)}` : ''
+    }`;
+
+  return (
+    <Card style={{ gap: space[3] }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[3] }}>
+        <View style={{ flex: 1, gap: space[1] }}>
+          <Caption>RING</Caption>
+          <Body>{line}</Body>
+        </View>
+        {status.data ? <Chip tone={info.tone}>{info.label}</Chip> : null}
+      </View>
+      <Button label="Open Ring" variant="secondary" onPress={onOpen} />
+    </Card>
   );
 }
 
