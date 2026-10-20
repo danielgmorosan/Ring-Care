@@ -53,3 +53,16 @@ export function minutesSinceMidnightInZone(instant: string | Date, tz: string): 
   const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
   return hour * 60 + minute;
 }
+
+/**
+ * The local wall-clock time of an instant in the given timezone, as the family reads it
+ * in an alert: "3:04", "9:00", "15:30" (24-hour, no leading zero on the hour).
+ */
+export function clockTimeInZone(instant: string | Date, tz: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz,
+    hour: 'numeric',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(instant));
+}

@@ -44,6 +44,10 @@ function reasonPhrase(reason: string): string {
       return 'Someone entered an area marked off limits';
     case 'wandering':
       return 'We noticed movement toward the door at an unusual time';
+    case 'door.night_activity':
+      return 'Someone was at the front door in the night';
+    case 'visit.no_show':
+      return 'An expected visitor did not arrive';
     default:
       return `We opened an incident (${reason})`;
   }
@@ -88,6 +92,9 @@ function eventSentences(steps: NarrationStep[]): string[] {
       case 'emergency_notified':
         out.push('We called emergency services.');
         break;
+      case 'family_alerted':
+        out.push('We texted and alerted everyone on your contact list.');
+        break;
       // incident_opened, call_placed, push_sent, stood_down are covered by the
       // opening line and the outcome line; no separate sentence needed.
       default:
@@ -105,6 +112,8 @@ function outcomeSentence(outcome: string): string {
       return 'A family member has it from here.';
     case 'emergency_notified':
       return 'Emergency services are on the way.';
+    case 'family_alerted':
+      return 'Nobody has picked up yet. Please check in on home.';
     case 'active':
     default:
       return 'We are still working through it and will keep you posted.';
@@ -135,17 +144,17 @@ function guardianSentence(total: number, online: number): string {
 export function buildDailySummary(request: DailySummaryRequest): string {
   const { incidents } = request;
   const parts: string[] = [];
+  const missedVisits = request.visits?.missed ?? 0;
 
   if (incidents.length === 0) {
-    parts.push('A calm day.');
+    parts.push(missedVisits === 0 ? 'A calm day.' : 'A mostly calm day.');
+    parts.push(...visitSentences(request));
     parts.push(guardianSentence(request.guardiansTotal, request.guardiansOnline));
-    parts.push('Nothing needed your attention.');
+    if (missedVisits === 0) parts.push('Nothing needed your attention.');
     return parts.join(' ');
   }
 
-  const resolved = incidents.every(
-    (i) => i.outcome !== 'active' && i.outcome !== 'emergency_notified',
-  );
+  const resolved = incidents.every((i) => isSettled(i.outcome));
   const count = incidents.length;
   parts.push(
     count === 1
@@ -160,8 +169,41 @@ export function buildDailySummary(request: DailySummaryRequest): string {
   parts.push(
     resolved ? 'Everything is settled now.' : 'We are still on it and will keep you posted.',
   );
+  parts.push(...visitSentences(request));
   parts.push(guardianSentence(request.guardiansTotal, request.guardiansOnline));
   return parts.join(' ');
+}
+
+/** Expected visits, as counts (decision 0011): who arrived, and who did not. */
+function visitSentences(request: DailySummaryRequest): string[] {
+  const visits = request.visits;
+  if (!visits || visits.expected === 0) return [];
+  const out: string[] = [];
+  if (visits.arrived > 0) {
+    out.push(
+      visits.arrived === 1
+        ? visits.expected === 1
+          ? 'Your expected visitor arrived.'
+          : 'One expected visitor arrived.'
+        : `${capitalize(numberWord(visits.arrived))} expected visitors arrived.`,
+    );
+  }
+  if (visits.missed > 0) {
+    out.push(
+      visits.missed === 1
+        ? 'One expected visitor did not arrive.'
+        : `${capitalize(numberWord(visits.missed))} expected visitors did not arrive.`,
+    );
+  }
+  return out;
+}
+
+/**
+ * Whether an outcome means someone has it in hand. A family-only ladder that reached
+ * everyone by text (family_alerted) is not settled: nobody has confirmed yet.
+ */
+function isSettled(outcome: string): boolean {
+  return outcome !== 'active' && outcome !== 'emergency_notified' && outcome !== 'family_alerted';
 }
 
 function numberWord(n: number): string {
@@ -188,7 +230,7 @@ export function buildAnswer(request: QuestionRequest): string {
         : `${capitalize(numberWord(count))} moments needed attention recently.`,
     );
     const latest = incidents[incidents.length - 1]!;
-    const resolved = latest.outcome !== 'active' && latest.outcome !== 'emergency_notified';
+    const resolved = isSettled(latest.outcome);
     parts.push(
       `The most recent was ${reasonPhrase(latest.reason).toLowerCase()}, and ${
         resolved ? 'it is settled' : 'we are still on it'

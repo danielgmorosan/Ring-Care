@@ -30,8 +30,9 @@ export type VoiceCheckinResult = 'i_am_fine' | 'distress' | 'silence' | 'pending
 export interface EscalationInput {
   incidentId: string;
   familyId: string;
-  deviceId: string;
-  /** Why we're escalating, e.g. "fall.suspected". */
+  /** The guardian behind the incident, or null for a family-level sensor (a Ring camera). */
+  deviceId: string | null;
+  /** Why we're escalating, e.g. "fall.suspected". Selects the rule set (escalationRulesFor). */
   reason: string;
   /** Whether detection confirmed a fall — governs quiet-hours override. */
   confirmedFall: boolean;
@@ -43,6 +44,60 @@ export interface EscalationInput {
   ackWindowSeconds: number;
   /** Voice check-in result if already known, else 'pending'. */
   initialCheckin: VoiceCheckinResult;
+  /**
+   * Optional family-facing wording, built deterministically outside the workflow (never by
+   * an LLM). Absent for falls, which keep the original generic texts.
+   */
+  messages?: EscalationMessages;
+}
+
+export interface EscalationMessages {
+  /** The critical push to the caregivers' devices when the ladder starts. */
+  device?: string;
+  /** The SMS and push to the whole chain when nobody handled it. */
+  unanswered?: string;
+}
+
+/**
+ * The reason-specific rule set the deterministic workflow runs. Derived from the reason
+ * inside the workflow (a pure lookup), so a caller can never start, say, a door incident
+ * that dials emergency services.
+ */
+export interface EscalationRules {
+  /** Wait for the elder's on-device voice check-in before alerting anyone (falls). */
+  voiceCheckin: boolean;
+  /** Notify emergency services (112) when nobody handled the incident. */
+  emergencyServices: boolean;
+}
+
+/** The fall ladder: voice check-in gate, family calls, then emergency services. */
+export const DEFAULT_ESCALATION_RULES: Readonly<EscalationRules> = Object.freeze({
+  voiceCheckin: true,
+  emergencyServices: true,
+});
+
+/** Ring front-door activity inside the household's night window (decision 0011). */
+export const NIGHT_DOOR_REASON = 'door.night_activity';
+
+/**
+ * Family and trusted contacts only. There is no fall to check in about, so no voice gate;
+ * and the Ring program forbids us from dispatching emergency services (decision 0011), so
+ * the ladder ends once everyone on the chain has been reached by text and push.
+ */
+export const FAMILY_ONLY_ESCALATION_RULES: Readonly<EscalationRules> = Object.freeze({
+  voiceCheckin: false,
+  emergencyServices: false,
+});
+
+const RULES_BY_REASON: Readonly<Record<string, Readonly<EscalationRules>>> = Object.freeze({
+  [NIGHT_DOOR_REASON]: FAMILY_ONLY_ESCALATION_RULES,
+});
+
+/** The rule set for an incident reason; anything unlisted runs the full fall ladder. */
+export function escalationRulesFor(reason: string): Readonly<EscalationRules> {
+  return Object.prototype.hasOwnProperty.call(RULES_BY_REASON, reason)
+    ? RULES_BY_REASON[reason]!
+    : DEFAULT_ESCALATION_RULES;
 }
 
 export type IncidentStepKind =
@@ -59,6 +114,8 @@ export type IncidentStepKind =
   | 'caregiver_acknowledged'
   // The caregiver's acknowledgement lapsed without an all-clear; escalation resumed (0008).
   | 'acknowledgement_lapsed'
+  // A family-only ladder (no emergency step) reached everyone on the chain and ended.
+  | 'family_alerted'
   | 'stood_down';
 
 export interface RecordStepInput {
@@ -106,7 +163,12 @@ export interface EscalationActivities {
   notifyEmergency(input: NotifyEmergencyInput): Promise<void>;
 }
 
-export type EscalationOutcome = 'stood_down' | 'acknowledged' | 'emergency_notified';
+export type EscalationOutcome =
+  | 'stood_down'
+  | 'acknowledged'
+  | 'emergency_notified'
+  // A family-only ladder (e.g. door.night_activity) texted and pushed the whole chain.
+  | 'family_alerted';
 
 export interface EscalationResult {
   outcome: EscalationOutcome;

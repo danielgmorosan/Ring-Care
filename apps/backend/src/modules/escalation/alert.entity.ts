@@ -30,6 +30,9 @@ export const ALERT_KINDS = [
   'door_unusual_hour',
   'wander',
   'missed_dose',
+  // Ring care logic (decision 0011). Named after the contract's reasons.
+  'door.night_activity',
+  'visit.no_show',
 ] as const;
 
 export type AlertKind = (typeof ALERT_KINDS)[number];

@@ -1,5 +1,8 @@
 import {
   CHECKIN_WAIT_SECONDS,
+  DEFAULT_ESCALATION_RULES,
+  NIGHT_DOOR_REASON,
+  escalationRulesFor,
   shouldSkipForQuietHours,
   withinWindow,
   type EscalationContact,
@@ -64,5 +67,30 @@ describe('latency budget', () => {
     // The check-in gate must leave headroom under the 30s budget from detection to
     // the first family phone ringing.
     expect(CHECKIN_WAIT_SECONDS).toBeLessThan(30);
+  });
+});
+
+describe('escalationRulesFor', () => {
+  it('runs the full fall ladder for falls and anything unlisted', () => {
+    for (const reason of ['fall.suspected', 'fall.confirmed', 'canary.fall', 'unknown']) {
+      expect(escalationRulesFor(reason)).toBe(DEFAULT_ESCALATION_RULES);
+    }
+    expect(DEFAULT_ESCALATION_RULES).toEqual({ voiceCheckin: true, emergencyServices: true });
+  });
+
+  it('runs door.night_activity family-only: no check-in gate, never emergency services (0011)', () => {
+    expect(escalationRulesFor(NIGHT_DOOR_REASON)).toEqual({
+      voiceCheckin: false,
+      emergencyServices: false,
+    });
+  });
+
+  it('is not fooled by prototype keys', () => {
+    expect(escalationRulesFor('constructor')).toBe(DEFAULT_ESCALATION_RULES);
+  });
+
+  it('rule sets are frozen so nothing can switch 112 back on at runtime', () => {
+    expect(Object.isFrozen(escalationRulesFor(NIGHT_DOOR_REASON))).toBe(true);
+    expect(Object.isFrozen(DEFAULT_ESCALATION_RULES)).toBe(true);
   });
 });

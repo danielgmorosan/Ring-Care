@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DevicesService } from '../devices/devices.service';
 import { FamiliesService } from '../families/families.service';
 import { dayInZone } from '../families/timezone';
+import { VisitArrivalsService } from '../visits/visit-arrivals.service';
 import { IncidentsQueryService } from './incidents-query.service';
 import { NarrationService } from './narration/narration.service';
 
@@ -13,6 +14,10 @@ export interface DailySummary {
   incidentCount: number;
   guardiansTotal: number;
   guardiansOnline: number;
+  /** Expected visits that started today (Ring arrivals, decision 0011). */
+  visitsExpected: number;
+  visitsArrived: number;
+  visitsMissed: number;
 }
 
 /**
@@ -30,14 +35,16 @@ export class DailySummaryService {
     private readonly devices: DevicesService,
     private readonly narration: NarrationService,
     private readonly families: FamiliesService,
+    private readonly visitArrivals: VisitArrivalsService,
   ) {}
 
   async forFamily(familyId: string, date?: string): Promise<DailySummary> {
     const { timezone } = await this.families.findByIdOrFail(familyId);
     const day = date ?? dayInZone(new Date(), timezone);
-    const [allIncidents, devices] = await Promise.all([
+    const [allIncidents, devices, visits] = await Promise.all([
       this.incidents.listForFamily(familyId),
       this.devices.findByFamily(familyId),
+      this.visitArrivals.dayCounts(familyId, day, timezone, Date.now()),
     ]);
 
     const dayIncidents = allIncidents.filter((i) => dayInZone(i.openedAt, timezone) === day);
@@ -53,6 +60,8 @@ export class DailySummaryService {
       })),
       guardiansTotal,
       guardiansOnline,
+      // Counts only, never visitor labels (they can be names).
+      ...(visits.expected > 0 ? { visits } : {}),
     });
 
     return {
@@ -61,6 +70,9 @@ export class DailySummaryService {
       incidentCount: dayIncidents.length,
       guardiansTotal,
       guardiansOnline,
+      visitsExpected: visits.expected,
+      visitsArrived: visits.arrived,
+      visitsMissed: visits.missed,
     };
   }
 }
