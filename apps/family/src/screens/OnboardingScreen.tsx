@@ -10,8 +10,8 @@ import {
   useUpdateFamily,
 } from '../api/hooks';
 import type { CheckinLanguage, HouseholdRole } from '../api/types';
-import { Body, Button, Caption, Card, Field, H1, H2 } from '../components/ui';
-import { color, gradient, radius, space, text } from '../theme/tokens';
+import { Body, Button, Caption, Card, Field, H1, H2, Icon } from '../components/ui';
+import { color, font, gradient, radius, space, text } from '../theme/tokens';
 
 /**
  * First-run setup for a new caregiver. Walks through the essentials in order and makes
@@ -602,7 +602,11 @@ function RecapRow({ ok, label }: { ok: boolean; label: string }) {
   return (
     <View style={s.recapRow}>
       <View style={[s.check, ok ? s.checkOn : s.checkOff]}>
-        <Text style={s.checkMark}>{ok ? '✓' : '·'}</Text>
+        {ok ? (
+          <Icon name="check" size={14} color={color.success700} strokeWidth={3} />
+        ) : (
+          <Text style={s.checkMark}>·</Text>
+        )}
       </View>
       <Text style={s.recapLabel}>{label}</Text>
     </View>
@@ -617,10 +621,10 @@ const s = StyleSheet.create({
   welcome: { flex: 1, padding: space[6], justifyContent: 'space-between' },
   welcomeBody: { flex: 1, justifyContent: 'center', gap: space[4] },
   welcomeCta: { paddingBottom: space[4] },
-  brand: { fontSize: text.xs, letterSpacing: 2, fontWeight: '700', color: color.textSecondary },
+  brand: { fontSize: text.xs, letterSpacing: 2, ...font.bold, color: color.textSecondary },
   welcomeTitle: {
     fontSize: 32,
-    fontWeight: '700',
+    ...font.bold,
     letterSpacing: -0.5,
     color: color.textPrimary,
     lineHeight: 38,
@@ -645,10 +649,10 @@ const s = StyleSheet.create({
     backgroundColor: color.bgSurface,
   },
   back: { paddingVertical: space[3], paddingRight: space[2] },
-  backText: { fontSize: text.md, fontWeight: '600', color: color.textSecondary },
+  backText: { fontSize: text.md, ...font.semibold, color: color.textSecondary },
   footerCta: { flex: 1 },
 
-  fieldLabel: { fontSize: text.md, fontWeight: '600', color: color.textPrimary },
+  fieldLabel: { fontSize: text.md, ...font.semibold, color: color.textPrimary },
 
   // Select card (language).
   selectCard: {
@@ -662,8 +666,8 @@ const s = StyleSheet.create({
     backgroundColor: color.bgSurface,
   },
   selectCardOn: { borderColor: color.action, backgroundColor: color.lilac100 },
-  selectTitle: { fontSize: text.lg, fontWeight: '600', color: color.textPrimary },
-  selectSub: { fontSize: text.sm, color: color.textSecondary, marginTop: 2 },
+  selectTitle: { fontSize: text.lg, ...font.semibold, color: color.textPrimary },
+  selectSub: { ...font.regular, fontSize: text.sm, color: color.textSecondary, marginTop: 2 },
   radio: {
     width: 24,
     height: 24,
@@ -687,7 +691,7 @@ const s = StyleSheet.create({
     backgroundColor: color.bgSurface,
   },
   pillOn: { borderColor: color.action, backgroundColor: color.lilac100 },
-  pillText: { fontSize: text.sm, fontWeight: '600', color: color.textSecondary },
+  pillText: { fontSize: text.sm, ...font.semibold, color: color.textSecondary },
   pillTextOn: { color: color.action },
 
   // List rows (contacts / people).
@@ -708,16 +712,16 @@ const s = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 26,
     fontSize: text.sm,
-    fontWeight: '700',
+    ...font.bold,
     color: color.action,
     backgroundColor: color.lilac100,
     overflow: 'hidden',
   },
-  listTitle: { fontSize: text.md, fontWeight: '600', color: color.textPrimary },
-  listSub: { fontSize: text.sm, color: color.textSecondary },
+  listTitle: { fontSize: text.md, ...font.semibold, color: color.textPrimary },
+  listSub: { ...font.regular, fontSize: text.sm, color: color.textSecondary },
 
   // Pairing code.
-  code: { fontSize: 40, fontWeight: '700', letterSpacing: 8, color: color.textPrimary },
+  code: { fontSize: 40, ...font.bold, letterSpacing: 8, color: color.textPrimary },
 
   // Recap.
   recapRow: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
@@ -730,6 +734,6 @@ const s = StyleSheet.create({
   },
   checkOn: { backgroundColor: color.success100 },
   checkOff: { backgroundColor: color.bgSunken },
-  checkMark: { fontSize: text.sm, fontWeight: '700', color: color.success700 },
-  recapLabel: { fontSize: text.md, color: color.textPrimary, flex: 1 },
+  checkMark: { fontSize: text.sm, ...font.bold, color: color.success700 },
+  recapLabel: { ...font.regular, fontSize: text.md, color: color.textPrimary, flex: 1 },
 });

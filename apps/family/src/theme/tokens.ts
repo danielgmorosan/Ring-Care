@@ -1,75 +1,101 @@
+import { Platform } from 'react-native';
+
 /**
- * Obrigada design tokens for React Native, ported from the design system
- * (design/design-system.html · the ds-* vocabulary). Light mode. Keep in sync
- * with tokens.css in packages/design-system.
+ * Obrigada design tokens for React Native. Light mode.
+ *
+ * Visual language: the NestHome prototype (clean, monochrome, Apple-like). Ink on a near-white
+ * canvas, white cards with a whisper of shadow, soft tinted status colours, black pill
+ * actions, Lucide line icons and Inter type. Keep in sync with packages/design-system.
+ *
+ * Key names are stable across the redesign so screens keep compiling; values changed.
  */
 
 export const color = {
-  blue300: '#7da3ff',
-  blue400: '#6485ff',
-  blue500: '#5368ff',
-  blue600: '#4755f2',
-  blue700: '#3c43d8',
-  violet300: '#bba8ff',
-  violet500: '#8d6bff',
-  lilac100: '#f4efff',
-  lilac200: '#e6daff',
-  pink500: '#ff8ebc',
-  mint500: '#4ddc84',
-  lime500: '#a3c561',
-  success: '#88c057',
+  // Ink scale (NestHome text/background ramp).
+  ink: '#1A1A1A',
+  ink80: '#2B2B2B',
+  ink90: '#111111',
 
-  neutral0: '#ffffff',
-  neutral25: '#f8f8fa',
-  neutral50: '#f3f3f6',
-  neutral75: '#ececf1',
-  neutral100: '#e4e4ea',
-  neutral200: '#d0d0d9',
-  neutral300: '#b4b4c0',
-  neutral500: '#8f8f99',
-  neutral700: '#5d5d67',
-  neutral900: '#1d1d23',
-  neutral950: '#0b0b10',
+  // Legacy brand names, remapped onto the monochrome look.
+  blue300: '#6E86FF',
+  blue400: '#3A55F5',
+  blue500: '#1A1A1A',
+  blue600: '#111111',
+  blue700: '#000000',
+  violet300: '#C7C9D1',
+  violet500: '#6B7280',
+  lilac100: '#F5F5F5',
+  lilac200: '#EBEBEB',
+  pink500: '#1A1A1A',
+  mint500: '#34C759',
+  lime500: '#4CAF50',
+  success: '#34C759',
 
-  // Alpha ink for dark / camera surfaces (v0.5).
+  // Deep blue from NestHome's cover gradient (welcome hero only).
+  night500: '#021EF1',
+  night900: '#131057',
+
+  neutral0: '#FFFFFF',
+  neutral25: '#FAFAFA',
+  neutral50: '#F5F5F5',
+  neutral75: '#F0F0F0',
+  neutral100: '#E5E7EB',
+  neutral200: '#D1D5DB',
+  neutral300: '#9CA3AF',
+  neutral500: '#6B7280',
+  neutral700: '#4B5563',
+  neutral900: '#1A1A1A',
+  neutral950: '#0A0A0A',
+
+  // Alpha ink for dark / camera surfaces.
   white90: 'rgba(255,255,255,0.9)',
   white75: 'rgba(255,255,255,0.75)',
   white55: 'rgba(255,255,255,0.55)',
-  white20: 'rgba(255,255,255,0.2)',
-  black60: 'rgba(0,0,0,0.6)',
+  white20: 'rgba(255,255,255,0.14)',
+  white10: 'rgba(255,255,255,0.08)',
+  black60: 'rgba(0,0,0,0.55)',
   black35: 'rgba(0,0,0,0.35)',
   black15: 'rgba(0,0,0,0.15)',
 
-  // Safety states (PROPOSED extensions — see design system tokens table)
-  attention500: '#e8a33c',
-  attention700: '#a8721a',
-  attention100: '#fdf1dc',
-  incident500: '#f0564d',
-  incident700: '#c03a32',
-  incident100: '#fde5e3',
-  success100: '#ebf4e0',
-  success700: '#5f8f38',
+  // Status pairs (NestHome status.* palette; fg darkened where needed for AA on the tint).
+  info100: '#E3F2FD',
+  info700: '#1565C0',
+  attention500: '#F57C00',
+  attention700: '#B34700',
+  attention100: '#FFF3E0',
+  incident500: '#E53935',
+  incident700: '#C62828',
+  incident100: '#FFEBEE',
+  success100: '#E8F5E9',
+  success700: '#2E7D32',
 
   // Semantic
-  bgCanvas: '#f8f8fa',
-  bgSurface: '#ffffff',
-  bgSunken: '#f3f3f6',
-  textPrimary: '#1d1d23',
-  textSecondary: '#5d5d67',
-  textTertiary: '#8f8f99',
-  textInverse: '#ffffff',
-  border: '#e4e4ea',
-  borderStrong: '#d0d0d9',
-  action: '#5368ff',
+  bgCanvas: '#FAFAFA',
+  bgSurface: '#FFFFFF',
+  bgSunken: '#F5F5F5',
+  bgDark: '#1A1A1A',
+  textPrimary: '#1A1A1A',
+  textSecondary: '#6B7280',
+  // NestHome uses #9CA3AF for meta text; nudged darker so small text keeps 4.5:1 on white.
+  textTertiary: '#6F7682',
+  textInverse: '#FFFFFF',
+  border: '#F0F0F0',
+  borderStrong: '#E5E7EB',
+  action: '#1A1A1A',
 } as const;
 
 export const gradient = {
   // [start, ...stops] as color arrays for expo-linear-gradient
-  cta: ['#7da3ff', '#5368ff', '#3c43d8'] as const,
-  morning: ['#fff6d6', '#e8f0ff', '#f8f8fa'] as const,
-  evening: ['#ede8ff', '#f5e8ff', '#f8f8fa'] as const,
-  verify: ['#e6daff', '#d4e4ff'] as const,
-  camera: ['#3a3028', '#2a221c'] as const,
+  cta: ['#2B2B2B', '#1A1A1A'] as const,
+  morning: ['#FFFFFF', '#FAFAFA'] as const,
+  evening: ['#F5F5F5', '#FAFAFA'] as const,
+  verify: ['#F5F5F5', '#EBEBEB'] as const,
+  camera: ['#1F1F1F', '#0A0A0A'] as const,
+  // The NestHome cover fade: deep blue rising from the bottom of a photo.
+  cover: ['rgba(19,16,87,0)', 'rgba(19,16,87,0.55)', 'rgba(2,30,241,0.85)'] as const,
+  // A soft status wash behind the home hero.
+  well: ['#EEF8EF', '#FFFFFF'] as const,
+  alert: ['#FFEFEF', '#FFFFFF'] as const,
 } as const;
 
 /** The guardian's four border-glow states (idle uses none). Per the Figma motion spec. */
@@ -79,11 +105,12 @@ export const glow = {
   speaking: '#ffb37f',
 } as const;
 
-/** Motion tokens (v0.5). Durations in ms; ease-out as a cubic-bezier control array. */
+/** Motion tokens. Durations in ms; NestHome's iOS-style deceleration curve. */
 export const motion = {
   durationFast: 180,
   durationNormal: 260,
-  easeOut: [0.16, 1, 0.3, 1] as const,
+  durationSlide: 450,
+  easeOut: [0.32, 0.72, 0, 1] as const,
 } as const;
 
 export const space = {
@@ -101,7 +128,7 @@ export const space = {
 export const radius = {
   sm: 12,
   md: 16,
-  lg: 22,
+  lg: 20,
   xl: 28,
   phone: 40,
   pill: 999,
@@ -111,34 +138,60 @@ export const text = {
   xs: 12,
   sm: 14,
   md: 16,
-  lg: 20,
-  xl: 28,
+  lg: 18,
+  xl: 22,
+  xxl: 34,
+} as const;
+
+/**
+ * Inter, one face per weight (the closest Google font to NestHome's SF Pro). Use these
+ * instead of fontWeight so Android and web pick the right file.
+ */
+// On web the face name is a CSS family list, so a font that fails to load falls back to the
+// system sans (SF Pro on Apple devices, which is what NestHome itself uses).
+const WEB_FALLBACK = ', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+const face = (name: string) => ({
+  fontFamily: Platform.OS === 'web' ? `${name}${WEB_FALLBACK}` : name,
+});
+
+export const font = {
+  regular: face('Inter_400Regular'),
+  medium: face('Inter_500Medium'),
+  semibold: face('Inter_600SemiBold'),
+  bold: face('Inter_700Bold'),
 } as const;
 
 export const shadow = {
+  // NestHome shadow-card: 0 2px 12px rgba(0,0,0,.04), 0 1px 3px rgba(0,0,0,.06).
   card: {
-    shadowColor: '#1d1d23',
+    shadowColor: '#000000',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  // shadow-card-hover / raised surfaces.
+  raised: {
+    shadowColor: '#000000',
     shadowOpacity: 0.08,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
   cta: {
-    shadowColor: '#5368ff',
-    shadowOpacity: 0.42,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 6,
+    shadowColor: '#000000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  // The assistant orb's soft blue lift (v0.5).
   orb: {
-    shadowColor: '#5368ff',
-    shadowOpacity: 0.25,
-    shadowRadius: 40,
-    shadowOffset: { width: 0, height: 16 },
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 12 },
     elevation: 8,
   },
-  // The device-frame drop used on dark stages (v0.5).
   phone: {
     shadowColor: '#000000',
     shadowOpacity: 0.6,

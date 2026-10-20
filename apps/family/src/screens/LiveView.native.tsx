@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { LiveGrant } from '../api/types';
-import { color, space, text } from '../theme/tokens';
+import { color, font, space, text } from '../theme/tokens';
 
 /**
  * The live camera view (F2.5) — native only. LiveKit's native module is loaded lazily so that
@@ -57,6 +57,6 @@ function RemoteCamera({ lk }: { lk: any }) {
 
 const s = StyleSheet.create({
   box: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[6] },
-  waiting: { color: color.white75, fontSize: text.md, textAlign: 'center' },
+  waiting: { ...font.regular, color: color.white75, fontSize: text.md, textAlign: 'center' },
   fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });

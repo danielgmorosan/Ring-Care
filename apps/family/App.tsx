@@ -1,4 +1,10 @@
 import './src/livekit-setup'; // registers native WebRTC globals for live view (no-op on web)
+// Per-weight imports so only these four faces land in the bundle.
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
+import { useFonts } from 'expo-font';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
@@ -21,8 +27,15 @@ const queryClient = new QueryClient({
 function Root() {
   const { status, onboarded } = useAuth();
   const [tab, setTab] = useState<TabKey>('home');
+  // Inter ships in the bundle; if it ever fails to load we fall back to the system font.
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
 
-  if (status === 'loading') {
+  if (status === 'loading' || (!fontsLoaded && !fontError)) {
     return (
       <View style={[s.shell, s.center]}>
         <ActivityIndicator color={color.action} />

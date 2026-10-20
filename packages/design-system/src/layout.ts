@@ -14,7 +14,7 @@ export const layout = {
   radius: {
     sm: 12,
     md: 16,
-    lg: 22,
+    lg: 20,
     xl: 28,
     pill: 999
   },
@@ -29,19 +29,27 @@ export const layout = {
     aura: 42
   },
   shadow: {
+    // NestHome shadow-soft / shadow-card / shadow-card-hover.
     cta: {
-      color: 'rgba(83,104,255,0.42)',
+      color: 'rgba(0,0,0,0.12)',
       x: 0,
-      y: 8,
-      blur: 24,
-      spread: -4
+      y: 4,
+      blur: 12,
+      spread: 0
     },
     softCard: {
-      color: 'rgba(29,29,35,0.08)',
+      color: 'rgba(0,0,0,0.05)',
       x: 0,
-      y: 8,
-      blur: 24,
-      spread: -10
+      y: 2,
+      blur: 12,
+      spread: 0
+    },
+    raised: {
+      color: 'rgba(0,0,0,0.08)',
+      x: 0,
+      y: 4,
+      blur: 20,
+      spread: 0
     }
   }
 } as const;

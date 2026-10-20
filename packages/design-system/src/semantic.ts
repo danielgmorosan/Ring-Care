@@ -5,21 +5,22 @@ export const semantic = {
   text: {
     primary: colors.neutral[900],
     secondary: colors.neutral[500],
-    tertiary: colors.neutral[300],
+    // NestHome uses #9CA3AF; nudged darker so small text keeps 4.5:1 on white.
+    tertiary: '#6F7682',
     inverse: colors.neutral[0],
     onDark: colors.alpha.white90
   },
   surface: {
-    page: colors.neutral[0],
-    section: colors.neutral[25],
+    page: colors.neutral[25],
+    section: colors.neutral[50],
     card: colors.neutral[0],
     frosted: colors.alpha.white75,
     overlayDark: colors.alpha.black60
   },
   border: {
     subtle: colors.neutral[75],
-    default: colors.neutral[100],
-    strong: colors.neutral[200]
+    default: colors.neutral[75],
+    strong: colors.neutral[100]
   },
   action: {
     primaryFill: gradients.primaryCta,
@@ -30,9 +31,10 @@ export const semantic = {
     disabledText: colors.neutral[300]
   },
   feedback: {
-    success: colors.accent.mint500,
-    warning: colors.accent.amber500,
-    danger: colors.accent.coral500
+    success: colors.status.normal,
+    warning: colors.status.warning,
+    danger: colors.status.alert,
+    info: colors.status.attention
   }
 } as const;
 

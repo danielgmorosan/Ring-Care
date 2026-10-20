@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   useRingActivity,
   useRingCameras,
@@ -15,15 +15,18 @@ import {
   Caption,
   Card,
   Chip,
-  Dot,
-  H1,
-  H2,
+  Divider,
+  Icon,
   IconBadge,
+  PageHeader,
+  Pulse,
   Screen,
+  SectionHeader,
   Segmented,
+  type IconName,
 } from '../components/ui';
 import { relativeTime, stepTime } from '../incident-format';
-import { color, space, text } from '../theme/tokens';
+import { color, font, radius, space, text } from '../theme/tokens';
 import { RingLiveScreen } from './RingLiveScreen';
 
 const PLACEMENTS: { value: RingPlacement; label: string }[] = [
@@ -32,7 +35,7 @@ const PLACEMENTS: { value: RingPlacement; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-type Tone = 'neutral' | 'well' | 'attention' | 'incident' | 'accent';
+type Tone = 'neutral' | 'well' | 'attention' | 'incident' | 'accent' | 'info';
 
 /** How the Ring link reads, in a chip and a sentence. */
 export function ringModeInfo(mode: RingMode): { label: string; tone: Tone; body: string } {
@@ -79,17 +82,17 @@ function subTypeLabel(subType: string | null): string | null {
   }
 }
 
-function activityLook(a: RingActivity): { title: string; glyph: string; tone: Tone } {
+function activityLook(a: RingActivity): { title: string; icon: IconName; tone: Tone } {
   switch (a.kind) {
     case 'ding':
-      return { title: `Doorbell at ${a.cameraName}`, glyph: '◉', tone: 'accent' };
+      return { title: `Doorbell at ${a.cameraName}`, icon: 'bell-ring', tone: 'info' };
     case 'online':
-      return { title: `${a.cameraName} came online`, glyph: '✓', tone: 'well' };
+      return { title: `${a.cameraName} came online`, icon: 'wifi', tone: 'well' };
     case 'offline':
-      return { title: `${a.cameraName} went offline`, glyph: '–', tone: 'attention' };
+      return { title: `${a.cameraName} went offline`, icon: 'wifi', tone: 'attention' };
     case 'motion':
     default:
-      return { title: `Motion at ${a.cameraName}`, glyph: '≋', tone: 'neutral' };
+      return { title: `Motion at ${a.cameraName}`, icon: 'footprints', tone: 'neutral' };
   }
 }
 
@@ -119,10 +122,23 @@ export function RingScreen({ onBack }: { onBack: () => void }) {
       <View style={{ padding: space[6], gap: space[5] }}>
         <BackLink label="Home" onPress={onBack} />
 
-        <View style={{ gap: space[1] }}>
-          <Caption>AT THE DOOR</Caption>
-          <H1>Ring</H1>
-        </View>
+        <PageHeader
+          title="Ring"
+          subtitle="At the front door"
+          right={
+            status.data ? (
+              <View style={st.headerStatus}>
+                <View
+                  style={[
+                    st.headerDot,
+                    { backgroundColor: mode === 'off' ? color.neutral300 : color.success },
+                  ]}
+                />
+                <Text style={st.headerStatusText}>{modeInfo.label}</Text>
+              </View>
+            ) : null
+          }
+        />
 
         {status.isLoading ? (
           <Card>
@@ -142,9 +158,9 @@ export function RingScreen({ onBack }: { onBack: () => void }) {
         ) : (
           <Card style={{ gap: space[3] }}>
             <View style={st.row}>
-              <IconBadge glyph="⌂" tone={mode === 'off' ? 'neutral' : 'accent'} />
-              <View style={{ flex: 1 }}>
-                <Body>Ring account</Body>
+              <IconBadge icon="shield-check" tone={mode === 'off' ? 'neutral' : 'well'} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={st.name}>Ring account</Text>
                 <Caption>
                   {mode === 'off'
                     ? 'Off'
@@ -153,7 +169,6 @@ export function RingScreen({ onBack }: { onBack: () => void }) {
                       : 'Live events not set up yet'}
                 </Caption>
               </View>
-              <Chip tone={modeInfo.tone}>{modeInfo.label}</Chip>
             </View>
             <Body muted>{modeInfo.body}</Body>
             {mode !== 'off' ? (
@@ -173,7 +188,7 @@ export function RingScreen({ onBack }: { onBack: () => void }) {
         )}
 
         <View style={{ gap: space[3] }}>
-          <H2>Cameras</H2>
+          <SectionHeader icon="video" label="Cameras" />
           {cameras.isLoading && list.length === 0 ? (
             <Card>
               <Body muted>Loading your cameras.</Body>
@@ -196,7 +211,7 @@ export function RingScreen({ onBack }: { onBack: () => void }) {
         </View>
 
         <View style={{ gap: space[3] }}>
-          <H2>Recent activity</H2>
+          <SectionHeader icon="activity" label="Recent activity" />
           {activity.isLoading ? (
             <Card>
               <Body muted>Loading recent activity.</Body>
@@ -218,9 +233,12 @@ export function RingScreen({ onBack }: { onBack: () => void }) {
               </Body>
             </Card>
           ) : (
-            <Card style={{ gap: space[4] }}>
-              {events.map((a) => (
-                <ActivityRow key={a.id} activity={a} />
+            <Card style={{ paddingVertical: space[2] }}>
+              {events.map((a, i) => (
+                <View key={a.id}>
+                  {i > 0 ? <Divider /> : null}
+                  <ActivityRow activity={a} />
+                </View>
               ))}
             </Card>
           )}
@@ -236,24 +254,48 @@ export function RingScreen({ onBack }: { onBack: () => void }) {
 function CameraCard({ camera, onWatch }: { camera: RingCamera; onWatch: () => void }) {
   const setPlacement = useSetRingPlacement();
   return (
-    <Card style={{ gap: space[4] }}>
-      <View style={st.row}>
-        <Dot tone={camera.online ? 'well' : 'attention'} />
-        <View style={{ flex: 1 }}>
-          <Body>{camera.name}</Body>
-          <Caption>
-            {camera.lastEventAt
-              ? `Last activity ${relativeTime(camera.lastEventAt)}`
-              : 'No activity yet'}
-          </Caption>
+    <Card style={{ gap: space[4], padding: space[3], borderRadius: radius.xl }}>
+      <Pressable
+        onPress={onWatch}
+        style={({ pressed }) => [st.stage, pressed && { opacity: 0.92 }]}
+        accessibilityRole="button"
+        accessibilityLabel={`See ${camera.name} live`}
+      >
+        <View style={st.stageTop}>
+          <View style={st.stageTag}>
+            <View style={st.stageDotWrap}>
+              {camera.online ? <Pulse color={color.success} size={8} /> : null}
+              <View
+                style={[
+                  st.stageDot,
+                  { backgroundColor: camera.online ? color.success : color.neutral300 },
+                ]}
+              />
+            </View>
+            <Text style={st.stageTagText}>{camera.online ? 'ONLINE' : 'OFFLINE'}</Text>
+          </View>
         </View>
-        <Chip tone={camera.online ? 'well' : 'attention'}>
-          {camera.online ? 'online' : 'offline'}
-        </Chip>
-      </View>
+        <View style={st.stageCenter}>
+          <View style={st.stagePlay}>
+            <Icon name="video" size={26} color={color.textInverse} />
+          </View>
+          <Text style={st.stageHint}>Tap to see live</Text>
+        </View>
+        <View style={st.stageBottom}>
+          <View style={{ flex: 1 }}>
+            <Text style={st.stageName}>{camera.name}</Text>
+            <Text style={st.stageMeta}>
+              {camera.lastEventAt
+                ? `Last activity ${relativeTime(camera.lastEventAt)}`
+                : 'No activity yet'}
+            </Text>
+          </View>
+          <Icon name="arrow-up-right" size={20} color={color.white75} />
+        </View>
+      </Pressable>
 
-      <View style={{ gap: space[2] }}>
-        <Caption>WHERE IT IS</Caption>
+      <View style={{ gap: space[2], paddingHorizontal: space[2] }}>
+        <SectionHeader label="Where it is" />
         <Segmented
           options={PLACEMENTS}
           value={camera.placement}
@@ -264,10 +306,12 @@ function CameraCard({ camera, onWatch }: { camera: RingCamera; onWatch: () => vo
         ) : null}
       </View>
 
-      <Button label="See live" variant="secondary" onPress={onWatch} />
-      {!camera.online ? (
-        <Caption>This camera looks offline, so live view may not answer.</Caption>
-      ) : null}
+      <View style={{ paddingHorizontal: space[2], paddingBottom: space[2], gap: space[2] }}>
+        <Button label="See live" icon="video" onPress={onWatch} />
+        {!camera.online ? (
+          <Caption>This camera looks offline, so live view may not answer.</Caption>
+        ) : null}
+      </View>
     </Card>
   );
 }
@@ -279,9 +323,9 @@ function ActivityRow({ activity }: { activity: RingActivity }) {
   const time = stepTime(activity.occurredAt);
   return (
     <View style={st.row}>
-      <IconBadge glyph={look.glyph} tone={look.tone} />
+      <IconBadge icon={look.icon} tone={look.tone} />
       <View style={{ flex: 1, gap: space[1] }}>
-        <Body>{look.title}</Body>
+        <Text style={st.name}>{look.title}</Text>
         <View style={st.meta}>
           {label ? <Text style={st.metaText}>{`Smart Alert: ${label}`}</Text> : null}
           <Text style={st.metaText}>{relativeTime(activity.occurredAt)}</Text>
@@ -299,9 +343,49 @@ function ActivityRow({ activity }: { activity: RingActivity }) {
 }
 
 const st = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3] },
+  name: { ...font.semibold, fontSize: 16, lineHeight: 21, color: color.textPrimary },
+  headerStatus: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
+  headerDot: { width: 8, height: 8, borderRadius: 4 },
+  headerStatusText: { ...font.medium, fontSize: 15, color: color.textTertiary },
+  stage: {
+    height: 220,
+    borderRadius: radius.lg,
+    backgroundColor: color.bgDark,
+    padding: space[4],
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  stageTop: { flexDirection: 'row' },
+  stageTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: color.white20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+  },
+  stageDotWrap: { width: 8, height: 8, alignItems: 'center', justifyContent: 'center' },
+  stageDot: { width: 8, height: 8, borderRadius: 4 },
+  stageTagText: { ...font.semibold, fontSize: 11, letterSpacing: 1.4, color: color.textInverse },
+  stageCenter: { alignItems: 'center', gap: space[2] },
+  stagePlay: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: color.white20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stageHint: { ...font.medium, fontSize: 13, color: color.white55 },
+  stageBottom: { flexDirection: 'row', alignItems: 'flex-end', gap: space[3] },
+  stageName: { ...font.semibold, fontSize: 18, color: color.textInverse },
+  stageMeta: { ...font.regular, fontSize: 13, color: color.white75 },
   meta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space[2] },
-  metaText: { fontSize: text.xs, color: color.textTertiary },
+  metaText: { ...font.regular, fontSize: 13, color: color.textTertiary },
   simBadge: {
     borderWidth: 1,
     borderColor: color.borderStrong,
@@ -309,6 +393,11 @@ const st = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
-  simText: { fontSize: 11, fontWeight: '600', color: color.textSecondary },
-  time: { fontSize: text.sm, color: color.textTertiary, fontVariant: ['tabular-nums'] },
+  simText: { ...font.semibold, fontSize: 11, color: color.textSecondary },
+  time: {
+    ...font.medium,
+    fontSize: text.sm,
+    color: color.textTertiary,
+    fontVariant: ['tabular-nums'],
+  },
 });
