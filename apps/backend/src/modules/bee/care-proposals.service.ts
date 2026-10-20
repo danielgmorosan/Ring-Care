@@ -24,7 +24,7 @@ import type {
   StoredCareProposal,
 } from './care-proposal.entity';
 import { CARE_PROPOSAL_REPOSITORY, type CareProposalRepository } from './care-proposal.repository';
-import { addDays, humanDate, zonedTimeToUtc } from './extraction/calendar';
+import { addDays, humanDate, localDate, zonedTimeToUtc } from './extraction/calendar';
 
 /** Placeholder wall-clock time for an appointment whose note gave no time. */
 const APPOINTMENT_DEFAULT_TIME = '09:00';
@@ -32,12 +32,16 @@ const APPOINTMENT_DEFAULT_TIME = '09:00';
 const APPOINTMENT_REMINDER_TIME = '18:00';
 /** Local time of a todo's alarm when only a due date was given. */
 const TODO_DEFAULT_TIME = '09:00';
+/** Local time of the reminder on the morning a scheduled medication change starts. */
+const MEDICATION_CHANGE_ALARM_TIME = '08:00';
 
 /** Optional clock override (tests). */
 export const BEE_CLOCK = Symbol('BEE_CLOCK');
 
 export interface ApproveResult {
   applied: string[];
+  /** Medication changes that start on a future date: noted, with a Bee todo for the day. */
+  scheduled: string[];
   todosCreated: number;
 }
 
@@ -95,6 +99,7 @@ export class CareProposalsService {
 
       const result: DecisionResult = {
         applied: results.filter((r) => r.status === 'applied').map((r) => r.itemId),
+        scheduled: results.filter((r) => r.status === 'scheduled').map((r) => r.itemId),
         todosCreated: results.filter((r) => r.beeTodoId).length,
         items: results,
       };
@@ -106,7 +111,7 @@ export class CareProposalsService {
         result,
       });
       this.logger.log(
-        `Care proposal ${proposal.id} approved: ${result.applied.length}/${selected.length} applied, ${result.todosCreated} Bee todo(s)`,
+        `Care proposal ${proposal.id} approved: ${result.applied.length}/${selected.length} applied, ${result.scheduled?.length ?? 0} scheduled, ${result.todosCreated} Bee todo(s)`,
       );
       return answerFrom(decision);
     });
@@ -127,7 +132,7 @@ export class CareProposalsService {
             decision: 'rejected',
             itemIds: [],
             decidedBy: userId,
-            result: { applied: [], todosCreated: 0, items: [] },
+            result: { applied: [], scheduled: [], todosCreated: 0, items: [] },
           })
         ).decision;
       return toView(proposal, decision);
@@ -159,7 +164,7 @@ export class CareProposalsService {
       switch (item.kind) {
         case 'medication_change':
         case 'new_medication':
-          return { ...base, ...(await this.applyMedication(familyId, item.data)) };
+          return { ...base, ...(await this.applyMedication(familyId, tz, item.data)) };
         case 'appointment': {
           const d = item.data;
           const at = zonedTimeToUtc(d.date, d.time ?? APPOINTMENT_DEFAULT_TIME, tz);
@@ -197,10 +202,16 @@ export class CareProposalsService {
 
   private async applyMedication(
     familyId: string,
+    tz: string,
     d: MedicationData,
-  ): Promise<Pick<ItemResult, 'status' | 'medicationId' | 'message'>> {
+  ): Promise<MedicationOutcome> {
     const current = await this.medications.list(familyId);
     const match = findMedication(current, d.medicationName);
+    // "From Monday": a change that starts later is not applied now (the elder keeps the
+    // current dose until then). Today, a past date, or no date: apply immediately.
+    if (d.startDate && d.startDate > localDate(this.now(), tz)) {
+      return this.scheduleMedication(familyId, tz, d, d.startDate, match);
+    }
     const startNote = d.startDate ? `From ${humanDate(d.startDate)}: ${describeDose(d)}.` : null;
     if (match) {
       const notes = startNote ? appendNote(match.notes, startNote) : undefined;
@@ -221,6 +232,46 @@ export class CareProposalsService {
       status: 'applied',
       medicationId: created.id,
       message: 'Added to the medication list.',
+    };
+  }
+
+  /**
+   * A medication change that starts on `startDate`: the dose and times stay as they are,
+   * the medication gets a dated note, and the caregiver's Bee gets a todo with an alarm on
+   * the morning of the start date. A new medication is listed with the note but no dose
+   * times, so no dose reminder fires before it starts.
+   */
+  private async scheduleMedication(
+    familyId: string,
+    tz: string,
+    d: MedicationData,
+    startDate: string,
+    match: Medication | null,
+  ): Promise<MedicationOutcome> {
+    const when = humanDate(startDate);
+    const note = `From ${when}: ${describeDose(d)}.`;
+    let medicationId: string;
+    if (match) {
+      const notes = appendNote(match.notes, note);
+      medicationId =
+        notes === match.notes
+          ? match.id // already noted (a retried approval)
+          : (await this.medications.update(familyId, match.id, { notes })).id;
+    } else {
+      const created = await this.medications.create(familyId, {
+        name: d.medicationName,
+        times: [],
+        notes: appendNote(null, `${note} Added from a Bee note.`),
+      });
+      medicationId = created.id;
+    }
+    const alarmAt = zonedTimeToUtc(startDate, MEDICATION_CHANGE_ALARM_TIME, tz);
+    const todo = await this.createTodo(scheduledChangeTodo(d, match !== null), alarmAt);
+    return {
+      status: 'scheduled',
+      medicationId,
+      message: `Scheduled for ${when}. The current plan stays until then.`,
+      ...todo,
     };
   }
 
@@ -256,6 +307,22 @@ export class CareProposalsService {
   }
 }
 
+type MedicationOutcome = Pick<
+  ItemResult,
+  'status' | 'medicationId' | 'message' | 'beeTodoId' | 'beeTodoError'
+>;
+
+/** "Donepezil changes to 5 mg at 20:00 today", read on the morning of the start date. */
+function scheduledChangeTodo(d: MedicationData, existing: boolean): string {
+  const dose = [d.dose, d.times.length ? `at ${d.times.join(', ')}` : null]
+    .filter(Boolean)
+    .join(' ');
+  if (!existing) return `${d.medicationName} starts today${dose ? `: ${dose}` : ''}`;
+  return dose
+    ? `${d.medicationName} changes to ${dose} today`
+    : `${d.medicationName} changes today. Check the care plan.`;
+}
+
 function selectItems(proposal: StoredCareProposal, itemIds?: string[]): ProposalItem[] {
   if (itemIds === undefined) return proposal.items;
   const wanted = new Set(itemIds);
@@ -271,7 +338,11 @@ function answerFrom(decision: CareProposalDecision): ApproveResult {
   if (decision.decision === 'rejected') {
     throw new ConflictException('This proposal was already rejected.');
   }
-  return { applied: decision.result.applied, todosCreated: decision.result.todosCreated };
+  return {
+    applied: decision.result.applied,
+    scheduled: decision.result.scheduled ?? [],
+    todosCreated: decision.result.todosCreated,
+  };
 }
 
 function toView(p: StoredCareProposal, d: CareProposalDecision | null): CareProposal {
@@ -306,6 +377,7 @@ function describeDose(d: MedicationData): string {
 }
 
 function appendNote(existing: string | null, line: string): string {
+  if (existing?.includes(line)) return existing; // a retried approval never doubles a note
   const combined = existing ? `${existing} ${line}` : line;
   return combined.length > 500 ? combined.slice(combined.length - 500) : combined;
 }

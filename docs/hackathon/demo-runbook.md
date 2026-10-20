@@ -330,7 +330,11 @@ curl -s "$B/me/care/proposals?status=pending" -H "$AUTH"
 In the app: Care tab, the proposals inbox. Three items: a medication change (Donepezil to
 5 mg at 20:00 from the next Monday), an appointment (blood test in two weeks) and a to-do
 (pick up the prescription). Approve all, or pick some. Approval creates Bee todos with
-alarms; the mock logs `Mock Bee todo: "..."`. The activity feed says "Approved care changes
+alarms; the mock logs `Mock Bee todo: "..."`. The dose change starts next Monday, so it is
+**scheduled, not applied**: Donepezil stays at 10 mg at 08:00 today, gets the note "From
+Monday ...: 5 mg at 20:00.", and Bee gets a todo "Donepezil changes to 5 mg at 20:00
+today" with an alarm at 08:00 that Monday. A change dated today (or undated) applies at
+once. The activity feed says "Approved care changes
 from a Bee note."
 
 Each conversation id makes one proposal. Use `demo-2`, `demo-3` for retakes.

@@ -77,13 +77,19 @@ describe('CareProposalsService', () => {
     expect(await service.list(otherFamilyId)).toEqual([]);
   });
 
-  it('approves everything: updates the medication, books the appointment, creates Bee todos', async () => {
+  it('approves everything: schedules the dose change, books the appointment, creates Bee todos', async () => {
     const p = await seedProposal();
+    const [medItem, apptItem, todoItem] = p.items;
     const result = await service.approve(familyId, 'user-1', p.id);
-    expect(result).toEqual({ applied: p.items.map((i) => i.id), todosCreated: 2 });
+    expect(result).toEqual({
+      applied: [apptItem!.id, todoItem!.id],
+      scheduled: [medItem!.id],
+      todosCreated: 3,
+    });
 
+    // "From Monday": today (Tuesday 20 October) Mom keeps her current dose.
     const [med] = await medications.list(familyId);
-    expect(med).toMatchObject({ name: 'Donepezil', dosage: '5 mg', times: ['20:00'] });
+    expect(med).toMatchObject({ name: 'Donepezil', dosage: '10 mg', times: ['08:00'] });
     expect(med!.notes).toBe('From Monday 26 October: 5 mg at 20:00.');
 
     const [appt] = await appointments.list(familyId);
@@ -92,24 +98,34 @@ describe('CareProposalsService', () => {
     expect(appt!.notes).toContain('No time was given');
 
     expect(bee.todos).toEqual([
+      // The morning the change starts, 08:00 Lisbon on Monday 26 October (UTC+0 after DST).
+      {
+        id: 'todo-1',
+        text: 'Donepezil changes to 5 mg at 20:00 today',
+        alarmAt: '2026-10-26T08:00:00.000Z',
+      },
       // The appointment reminder, the evening before at 18:00 Lisbon.
-      { id: 'todo-1', text: 'Tomorrow: Blood test', alarmAt: '2026-11-02T18:00:00.000Z' },
-      { id: 'todo-2', text: 'Pick up the new prescription', alarmAt: null },
+      { id: 'todo-2', text: 'Tomorrow: Blood test', alarmAt: '2026-11-02T18:00:00.000Z' },
+      { id: 'todo-3', text: 'Pick up the new prescription', alarmAt: null },
     ]);
 
     const [view] = await service.list(familyId, 'approved');
     expect(view!.decision?.result.items.map((i) => i.status)).toEqual([
-      'applied',
+      'scheduled',
       'applied',
       'applied',
     ]);
+    expect(view!.decision?.result.items[0]).toMatchObject({
+      medicationId: med!.id,
+      beeTodoId: 'todo-1',
+    });
   });
 
   it('applies only the chosen items', async () => {
     const p = await seedProposal();
     const todoItem = p.items.find((i) => i.kind === 'todo')!;
     const result = await service.approve(familyId, 'user-1', p.id, [todoItem.id]);
-    expect(result).toEqual({ applied: [todoItem.id], todosCreated: 1 });
+    expect(result).toEqual({ applied: [todoItem.id], scheduled: [], todosCreated: 1 });
     expect((await medications.list(familyId))[0]).toMatchObject({
       dosage: '10 mg',
       times: ['08:00'],
@@ -127,7 +143,7 @@ describe('CareProposalsService', () => {
     expect(second).toEqual(first);
     const third = await service.approve(familyId, 'user-1', p.id, [p.items[0]!.id]);
     expect(third).toEqual(first);
-    expect(bee.todos).toHaveLength(2);
+    expect(bee.todos).toHaveLength(3);
     expect(await appointments.list(familyId)).toHaveLength(1);
   });
 
@@ -170,9 +186,10 @@ describe('CareProposalsService', () => {
     const p = await seedProposal();
     const result = await service.approve(familyId, 'user-1', p.id);
     const [medItem, apptItem, todoItem] = p.items;
-    expect(result).toEqual({ applied: [medItem!.id, apptItem!.id], todosCreated: 0 });
+    expect(result).toEqual({ applied: [apptItem!.id], scheduled: [medItem!.id], todosCreated: 0 });
     const [view] = await service.list(familyId);
     const items = view!.decision!.result.items;
+    expect(items[0]).toMatchObject({ status: 'scheduled', beeTodoError: 'Bee unavailable' });
     expect(items[1]).toMatchObject({ status: 'applied', beeTodoError: 'Bee unavailable' });
     expect(items[2]).toMatchObject({ itemId: todoItem!.id, status: 'failed' });
   });
@@ -184,9 +201,81 @@ describe('CareProposalsService', () => {
     );
     expect(p.items.map((i) => i.kind)).toEqual(['new_medication', 'note']);
     const result = await service.approve(familyId, 'user-1', p.id);
-    expect(result).toEqual({ applied: [p.items[0]!.id], todosCreated: 0 });
+    expect(result).toEqual({ applied: [p.items[0]!.id], scheduled: [], todosCreated: 0 });
     const names = (await medications.list(familyId)).map((m) => m.name);
     expect(names).toEqual(['Donepezil', 'Memantine']);
+  });
+
+  describe('a dose change with a start date', () => {
+    async function medicationItem(startDate: string | null, name = 'Donepezil') {
+      const item: ProposalItem = {
+        id: '00000000-0000-4000-8000-0000000000a1',
+        kind: name === 'Donepezil' ? 'medication_change' : 'new_medication',
+        title: `${name} to 5 mg at 20:00`,
+        detail: '',
+        data: { medicationName: name, dose: '5 mg', times: ['20:00'], startDate },
+      };
+      const { proposal } = await repo.createIfAbsent({
+        familyId,
+        source: 'bee',
+        sourceRef: `conv-start-${startDate ?? 'none'}-${name}`,
+        summary: 'From your note',
+        items: [item],
+        extractedBy: 'rules:v1',
+      });
+      return proposal;
+    }
+
+    it.each([
+      ['today', '2026-10-20'],
+      ['a past date', '2026-10-12'],
+      ['no date', null],
+    ])('applies immediately when the start date is %s', async (_label, startDate) => {
+      const p = await medicationItem(startDate);
+      const result = await service.approve(familyId, 'user-1', p.id);
+      expect(result).toEqual({ applied: [p.items[0]!.id], scheduled: [], todosCreated: 0 });
+      expect((await medications.list(familyId))[0]).toMatchObject({
+        dosage: '5 mg',
+        times: ['20:00'],
+      });
+      expect(bee.todos).toEqual([]);
+    });
+
+    it('uses the family timezone for "today"', async () => {
+      // 23:30Z on 20 October is already 21 October in Tokyo: a start on the 21st is today.
+      const tokyo = await families.create({ name: 'Tokyo family', timezone: 'Asia/Tokyo' });
+      familyId = tokyo.id;
+      await medications.create(familyId, { name: 'Donepezil', dosage: '10 mg', times: ['08:00'] });
+      service = new CareProposalsService(
+        repo,
+        bee,
+        families,
+        medications,
+        appointments,
+        () => new Date('2026-10-20T23:30:00.000Z'),
+      );
+      const p = await medicationItem('2026-10-21');
+      await service.approve(familyId, 'user-1', p.id);
+      expect((await medications.list(familyId))[0]!.dosage).toBe('5 mg');
+    });
+
+    it('a new medication starting later is listed with its note but no dose times yet', async () => {
+      const p = await medicationItem('2026-10-26', 'Memantine');
+      const result = await service.approve(familyId, 'user-1', p.id);
+      expect(result.scheduled).toEqual([p.items[0]!.id]);
+      const memantine = (await medications.list(familyId)).find((m) => m.name === 'Memantine');
+      expect(memantine).toMatchObject({ dosage: null, times: [] });
+      expect(memantine!.notes).toBe(
+        'From Monday 26 October: 5 mg at 20:00. Added from a Bee note.',
+      );
+      expect(bee.todos).toEqual([
+        {
+          id: 'todo-1',
+          text: 'Memantine starts today: 5 mg at 20:00',
+          alarmAt: '2026-10-26T08:00:00.000Z',
+        },
+      ]);
+    });
   });
 
   it('sets a todo alarm from its due date and drops alarms in the past', async () => {

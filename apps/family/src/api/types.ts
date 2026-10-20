@@ -449,6 +449,8 @@ export const careProposalListSchema = z.array(careProposalSchema);
 
 export const approveResultSchema = z.object({
   applied: z.array(z.string()),
+  /** Changes that start on a later date: noted now, with a reminder for that day. */
+  scheduled: z.array(z.string()).optional(),
   todosCreated: z.number(),
 });
 export type ApproveResult = z.infer<typeof approveResultSchema>;

@@ -224,10 +224,15 @@ function OutcomeCard({ outcome, onDone }: { outcome: Outcome; onDone: () => void
 
   const items = outcome.approvedItems ?? [];
   const applied = outcome.result?.applied ?? [];
-  // The backend reports applied items; show their titles when the ids match ours.
+  const scheduled = outcome.result?.scheduled ?? [];
+  const titleOf = (id: string) => outcome.proposal.items.find((i) => i.id === id)?.title ?? id;
+  // The backend reports applied and scheduled items; show their titles when the ids match.
   const lines =
-    applied.length > 0
-      ? applied.map((a) => outcome.proposal.items.find((i) => i.id === a)?.title ?? a)
+    applied.length + scheduled.length > 0
+      ? [
+          ...applied.map(titleOf),
+          ...scheduled.map((id) => `${titleOf(id)}. Scheduled: nothing changes until then.`),
+        ]
       : items.map((i) => i.title);
   const todos = outcome.result?.todosCreated ?? 0;
 

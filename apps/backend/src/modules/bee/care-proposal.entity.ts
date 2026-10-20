@@ -85,7 +85,11 @@ export type ProposalStatus = 'pending' | 'approved' | 'rejected';
 export interface ItemResult {
   itemId: string;
   kind: ProposalItemKind;
-  status: 'applied' | 'noted' | 'skipped' | 'failed';
+  /**
+   * 'scheduled': a medication change that starts on a future date. The care plan is left
+   * as it is; a dated note and a Bee todo on the start date carry the change.
+   */
+  status: 'applied' | 'scheduled' | 'noted' | 'skipped' | 'failed';
   /** The care-module record touched, when there is one. */
   medicationId?: string;
   appointmentId?: string;
@@ -97,6 +101,8 @@ export interface ItemResult {
 
 export interface DecisionResult {
   applied: string[];
+  /** Items whose change starts on a future date (status 'scheduled'). Additive. */
+  scheduled?: string[];
   todosCreated: number;
   items: ItemResult[];
 }
