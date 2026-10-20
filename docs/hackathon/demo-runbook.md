@@ -108,9 +108,8 @@ Two facts from the code that matter on camera:
 - `wakeForConfirmedFallOnly` must be `true` for a contact with quiet hours, or the night
   door ladder skips her. The night door rule set treats itself like a confirmed fall for
   quiet hours, and the quiet-hours check honours that flag only.
-- Quiet-hours times are compared with the current UTC clock, not the household clock
-  (`shouldSkipForQuietHours` in `escalation/temporal/types.ts`). Lisbon is UTC+1 until
-  25 October 2026 and UTC+0 after. **(verify)** that this is intended.
+- Quiet-hours times are household-local: they are compared with the family's timezone
+  (`Europe/Lisbon` from signup), so "22:00 to 07:00" means Lisbon time.
 
 ### The elder's voice check-in language
 
