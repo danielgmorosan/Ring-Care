@@ -10,6 +10,7 @@ import {
   readEnvText,
   run,
 } from './lib/common.mjs';
+import { callProviderOf } from './lib/call-provider.mjs';
 import { isFictional } from './lib/phone.mjs';
 import { planCamera } from './lib/plan.mjs';
 import { hostPort, pgPing, temporalPing } from './lib/probes.mjs';
@@ -78,12 +79,35 @@ run(async () => {
     );
   }
 
-  log.step('Calls (Twilio)');
-  const twilio = env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM_NUMBER;
-  if (twilio) log.ok(`Twilio configured, calling from ${env.TWILIO_FROM_NUMBER}`);
-  else {
-    liveGaps.push('Twilio credentials in apps/backend/.env');
-    log.warn('Twilio not configured: the mock logs each call and text; no phone rings.');
+  log.step('Calls');
+  const calls = callProviderOf(env);
+  const twilio = Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM_NUMBER);
+  for (const p of calls.problems) bad(p);
+  if (calls.provider === 'connect') {
+    log.ok(
+      `Amazon Connect in ${calls.region}, calling from ${env.CONNECT_SOURCE_PHONE_NUMBER}. ` +
+        'Press 1 comes back through the flow: no tunnel needed.',
+    );
+    log.info(
+      {
+        aws: `SMS: AWS End User Messaging from ${env.CONNECT_SMS_ORIGINATION}`,
+        twilio: 'SMS: through Twilio (Connect sends none)',
+        none: 'SMS: skipped (Connect sends none; set CONNECT_SMS_ORIGINATION or Twilio). Push carries it.',
+      }[calls.sms],
+    );
+    if (twilio) log.info('Twilio is configured too: it places the call if Connect cannot.');
+    if (!process.env.AWS_PROFILE && !process.env.AWS_ACCESS_KEY_ID) {
+      log.warn('No AWS_PROFILE or AWS_ACCESS_KEY_ID in this shell; the backend shell needs them.');
+    }
+    log.info(
+      'Frankfurt calls only UK, IE, FR, IT and US by default. Portugal or Romania need an ' +
+        'allowlist case first (docs/hackathon/amazon-connect.md, step 3).',
+    );
+  } else if (calls.provider === 'twilio') {
+    log.ok(`Twilio configured, calling from ${env.TWILIO_FROM_NUMBER}`);
+  } else {
+    liveGaps.push('a call provider (Amazon Connect or Twilio) in apps/backend/.env');
+    log.warn('No call provider configured: the mock logs each call and text; no phone rings.');
   }
   if (env.PUBLIC_BASE_URL) {
     log.info(`PUBLIC_BASE_URL=${env.PUBLIC_BASE_URL}`);
@@ -95,7 +119,7 @@ run(async () => {
     if (live) log.ok('Reachable through the tunnel from this PC (Twilio needs it from outside).');
     else bad('Not reachable. Is cloudflared/ngrok still running with that exact host?');
     log.info('A new tunnel host means: update PUBLIC_BASE_URL and restart the backend.');
-  } else if (twilio) {
+  } else if (calls.provider === 'twilio') {
     log.warn('PUBLIC_BASE_URL unset: calls are one-way, no press 1. See windows-quickstart.md.');
   }
 
@@ -144,9 +168,10 @@ run(async () => {
   );
   if (contacts.body.length >= 3) log.ok(`Contacts: ${names.join(', ')}`);
   else bad(`Only ${contacts.body.length} contacts. Run pnpm demo:seed`);
-  if (twilio && contacts.body.some((c) => !c.phone || isFictional(c.phone))) {
+  if (calls.provider !== 'mock' && contacts.body.some((c) => !c.phone || isFictional(c.phone))) {
     bad(
-      'Twilio is on but a contact has no real phone. pnpm demo:seed --sofia +351... --miguel ... --rosa ...',
+      `${calls.provider === 'connect' ? 'Amazon Connect' : 'Twilio'} is on but a contact has no real phone. ` +
+        'pnpm demo:seed --sofia +351... --miguel ... --rosa ...',
     );
   }
   const now = Date.now();
