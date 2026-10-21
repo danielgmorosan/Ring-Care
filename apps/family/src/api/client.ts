@@ -37,7 +37,7 @@ interface RequestOptions<T> {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
   /** zod schema to validate and type the JSON response. Omit for 204/no-body. */
-  schema?: z.ZodType<T>;
+  schema?: z.ZodType<T, z.ZodTypeDef, unknown>;
 }
 
 export async function api<T = void>(path: string, options: RequestOptions<T> = {}): Promise<T> {

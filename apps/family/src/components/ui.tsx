@@ -422,6 +422,57 @@ export function Segmented<T extends string>({
   );
 }
 
+/** A pill-shaped choice in a wrapping row, for short option lists (relationships, roles). */
+export function SelectPill({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      style={[s.pill, selected && s.pillOn]}
+    >
+      <Text style={[s.pillText, selected && s.pillTextOn]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** A labelled, wrapping row of SelectPills: pick one. */
+export function PillGroup<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  value: T | null;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <View style={{ gap: space[2] }}>
+      <Text style={s.fieldLabel}>{label}</Text>
+      <View style={s.pillRow} accessibilityRole="radiogroup" accessibilityLabel={label}>
+        {options.map((o) => (
+          <SelectPill
+            key={o.value}
+            label={o.label}
+            selected={value === o.value}
+            onPress={() => onChange(o.value)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 /** The back control at the top of a sub-screen: a chevron and the parent's name. */
 export function BackLink({ label, onPress }: { label: string; onPress: () => void }) {
   return (
@@ -592,6 +643,18 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: color.ink, borderColor: color.ink },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  pill: {
+    paddingVertical: 8,
+    paddingHorizontal: space[4],
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: color.border,
+    backgroundColor: color.bgSurface,
+  },
+  pillOn: { borderColor: color.action, backgroundColor: color.lilac100 },
+  pillText: { fontSize: text.sm, ...font.semibold, color: color.textSecondary },
+  pillTextOn: { color: color.action },
   segmented: {
     flexDirection: 'row',
     backgroundColor: color.bgSunken,

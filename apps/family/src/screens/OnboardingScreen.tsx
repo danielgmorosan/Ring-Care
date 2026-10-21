@@ -9,8 +9,20 @@ import {
   useRegisterDevice,
   useUpdateFamily,
 } from '../api/hooks';
-import type { CheckinLanguage, HouseholdRole } from '../api/types';
-import { Body, Button, Caption, Card, Field, H1, H2, Icon } from '../components/ui';
+import type { CheckinLanguage, ElderRelation, HouseholdRole } from '../api/types';
+import {
+  Body,
+  Button,
+  Caption,
+  Card,
+  Field,
+  H1,
+  H2,
+  Icon,
+  PillGroup,
+  SelectPill,
+} from '../components/ui';
+import { cleanElderName, ELDER_NAME_MAX_LENGTH, ELDER_RELATIONS } from '../elder';
 import { color, font, gradient, radius, space, text } from '../theme/tokens';
 
 /**
@@ -58,6 +70,8 @@ export function OnboardingScreen() {
   const detectedTz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const [timezone, setTimezone] = useState(detectedTz);
   const [language, setLanguage] = useState<CheckinLanguage | null>(null);
+  const [elderName, setElderName] = useState('');
+  const [elderRelation, setElderRelation] = useState<ElderRelation | null>(null);
 
   // Who we call, and who lives here (persisted on add; mirrored locally for display).
   const [contacts, setContacts] = useState<{ name: string; role: string }[]>([]);
@@ -96,6 +110,9 @@ export function OnboardingScreen() {
       await updateFamily.mutateAsync({
         timezone: timezone.trim() || detectedTz,
         checkinLanguage: language,
+        // Optional. Sent only when given, so going Back and Continue never wipes it.
+        ...(cleanElderName(elderName) ? { elderName: cleanElderName(elderName) } : {}),
+        ...(elderRelation ? { elderRelation } : {}),
       });
       goNext();
     });
@@ -147,6 +164,10 @@ export function OnboardingScreen() {
       <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
         {step === 'household' ? (
           <HouseholdStep
+            elderName={elderName}
+            onElderName={setElderName}
+            elderRelation={elderRelation}
+            onElderRelation={setElderRelation}
             timezone={timezone}
             onTimezone={setTimezone}
             language={language}
@@ -257,11 +278,19 @@ function StepHeader({ title, children }: { title: string; children: ReactNode })
 }
 
 function HouseholdStep({
+  elderName,
+  onElderName,
+  elderRelation,
+  onElderRelation,
   timezone,
   onTimezone,
   language,
   onLanguage,
 }: {
+  elderName: string;
+  onElderName: (v: string) => void;
+  elderRelation: ElderRelation | null;
+  onElderRelation: (v: ElderRelation) => void;
   timezone: string;
   onTimezone: (v: string) => void;
   language: CheckinLanguage | null;
@@ -272,6 +301,24 @@ function HouseholdStep({
       <StepHeader title="Your household">
         A couple of basics so the day lines up and Obrigada speaks the right language.
       </StepHeader>
+
+      <Card style={{ gap: space[5] }}>
+        <Field
+          label="Who we look after"
+          placeholder="Maria"
+          value={elderName}
+          onChangeText={onElderName}
+          autoCapitalize="words"
+          maxLength={ELDER_NAME_MAX_LENGTH}
+          hint="Optional. We only use it in this app. Our AI summaries never see it."
+        />
+        <PillGroup
+          label="They are your"
+          options={ELDER_RELATIONS}
+          value={elderRelation}
+          onChange={onElderRelation}
+        />
+      </Card>
 
       <Card style={{ gap: space[5] }}>
         <Field
@@ -570,22 +617,6 @@ function SelectCard({
   );
 }
 
-function SelectPill({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={[s.pill, selected && s.pillOn]}>
-      <Text style={[s.pillText, selected && s.pillTextOn]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function ListRow({ index, title, sub }: { index?: number; title: string; sub: string }) {
   return (
     <View style={s.listRow}>
@@ -682,17 +713,6 @@ const s = StyleSheet.create({
 
   // Role pills.
   roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
-  pill: {
-    paddingVertical: 8,
-    paddingHorizontal: space[4],
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: color.border,
-    backgroundColor: color.bgSurface,
-  },
-  pillOn: { borderColor: color.action, backgroundColor: color.lilac100 },
-  pillText: { fontSize: text.sm, ...font.semibold, color: color.textSecondary },
-  pillTextOn: { color: color.action },
 
   // List rows (contacts / people).
   listRow: {
