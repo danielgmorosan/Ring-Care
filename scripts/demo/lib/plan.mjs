@@ -36,6 +36,30 @@ function sameQuietHours(a, b) {
   );
 }
 
+export const ELDER_RELATIONS = ['mother', 'father', 'grandmother', 'grandfather', 'other'];
+
+/**
+ * Household settings: timezone and the elder's display name and relation. Returns the
+ * PATCH /me/family body for what differs (empty when nothing does). The name stays in the
+ * family app; narration and Q&A only ever see roles.
+ */
+export function planFamily(family, desired) {
+  const patch = {};
+  if (desired.timezone !== undefined && family.timezone !== desired.timezone) {
+    patch.timezone = desired.timezone;
+  }
+  if (desired.elderName !== undefined && (family.elderName ?? null) !== desired.elderName) {
+    patch.elderName = desired.elderName;
+  }
+  if (
+    desired.elderRelation !== undefined &&
+    (family.elderRelation ?? null) !== desired.elderRelation
+  ) {
+    patch.elderRelation = desired.elderRelation;
+  }
+  return patch;
+}
+
 /** Contacts are matched by name. Changed fields are patched; nothing is deleted. */
 export function planContacts(existing, desired) {
   return desired.map((want) => {
