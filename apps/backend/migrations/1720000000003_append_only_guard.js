@@ -1,5 +1,5 @@
 /**
- * The append-only guarantee (CLAUDE.md rule #2), enforced at the database level.
+ * The append-only guarantee (CONTRIBUTING.md rule #2), enforced at the database level.
  *
  * `raise_append_only()` is a trigger function that aborts any UPDATE, DELETE, or
  * TRUNCATE. It fires for every role including the table owner and superusers — a
@@ -19,7 +19,7 @@ exports.up = (pgm) => {
   pgm.sql(`
     CREATE OR REPLACE FUNCTION raise_append_only() RETURNS trigger AS $$
     BEGIN
-      RAISE EXCEPTION 'Table % is append-only; % is not permitted (CLAUDE.md rule #2)',
+      RAISE EXCEPTION 'Table % is append-only; % is not permitted (CONTRIBUTING.md rule #2)',
         TG_TABLE_NAME, TG_OP
         USING ERRCODE = 'restrict_violation';
     END;

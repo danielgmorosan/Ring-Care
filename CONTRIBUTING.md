@@ -1,6 +1,6 @@
-# CLAUDE.md — Obrigada
+# Contributing to Obrigada
 
-This file gives Claude Code the context it needs to work on this codebase. Read it fully before making changes.
+Read this fully before making changes. It holds the project's non-negotiable rules, stack and conventions.
 
 ## What this project is
 

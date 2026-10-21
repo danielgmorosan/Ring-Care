@@ -4,7 +4,7 @@ Status: accepted · Date: 2026-07-06 · Feature: F0.2
 
 ## Context
 
-CLAUDE.md rule #2: the events/incidents tables are append-only — no UPDATE, no
+CONTRIBUTING.md rule #2: the events/incidents tables are append-only — no UPDATE, no
 DELETE, ever. This is the audit trail for families, hospitals, and regulators, so
 it must not be enforceable only in application code, where a bug or a compromised
 service credential could rewrite history.

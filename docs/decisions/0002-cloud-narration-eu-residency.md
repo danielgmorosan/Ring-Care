@@ -6,7 +6,7 @@ Status: **draft — needs founder sign-off before the Claude adapter is enabled*
 
 F3.2 turns the structured incident trail into a warm, human-words summary for the
 family ("Your father fell in the kitchen at 3:12. He answered the voice check, and
-your daughter reached him by phone. He is okay."). The tech-stack in CLAUDE.md
+your daughter reached him by phone. He is okay."). The tech-stack in CONTRIBUTING.md
 chooses the Claude API for this ("incident narration ... operating on structured
 event logs only; text in, text out; never imagery/audio").
 

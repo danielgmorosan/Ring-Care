@@ -1,7 +1,7 @@
 /**
  * MQTT topic contracts shared between the guardian device app and the backend.
  *
- * The device link is MQTT over TLS 1.3 with per-device certificates (CLAUDE.md).
+ * The device link is MQTT over TLS 1.3 with per-device certificates (CONTRIBUTING.md).
  * Topics are namespaced per device so broker ACLs can restrict each device's
  * certificate to only its own subtree — one compromised phone can never publish
  * to or read another device's topics (blast-radius containment).

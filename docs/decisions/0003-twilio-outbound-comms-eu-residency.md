@@ -5,7 +5,7 @@ Status: **proposed — needs founder sign-off before the Twilio adapter is enabl
 ## Context
 
 Escalation ends by reaching a human: "call the daughter, wait 45 seconds, call the
-son, then emergency." The tech stack in CLAUDE.md chooses Twilio Programmable Voice
+son, then emergency." The tech stack in CONTRIBUTING.md chooses Twilio Programmable Voice
 and SMS for this. Until now the escalation ladder ran end-to-end against a
 `MockNotificationAdapter` that places no real calls — the workflow is exercised, but
 no one is actually dialed. This decision covers turning on real outbound comms.

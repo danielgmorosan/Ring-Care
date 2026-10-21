@@ -1,7 +1,7 @@
 /**
  * The elder-facing voice check-in language. This is a per-household SAFETY setting, not
  * localization: when the guardian asks "Are you okay?" after a suspected fall, it must
- * speak in the language the elder actually understands (CLAUDE.md). It is set per home and
+ * speak in the language the elder actually understands (CONTRIBUTING.md). It is set per home and
  * independent of the caregiver's app language.
  *
  * English ships first; European Portuguese (PT-PT, never Brazilian) is the fast-follow.

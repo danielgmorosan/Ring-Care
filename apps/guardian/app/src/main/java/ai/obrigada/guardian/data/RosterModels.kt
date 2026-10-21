@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 /**
  * One household roster entry as the backend serves it to the guardian (F2.2). Labels only —
  * the caregiver already typed the title in the family app; the face itself is captured and
- * kept on this phone (CLAUDE.md rules #1/#4). `id` is the roster person id, kept so the
+ * kept on this phone (CONTRIBUTING.md rules #1/#4). `id` is the roster person id, kept so the
  * on-device gallery can line up with the family's roster.
  */
 @Serializable

@@ -50,7 +50,7 @@ later steps and feeds events into the same link.
   events, ack, and return to pairing. For decommissioning a lost or retired phone. The face
   embeddings are erased from the device; nothing about them was ever in the cloud (rule #4).
 
-Privacy (CLAUDE.md rule #1): the frame is read in memory and discarded; only the skeleton
+Privacy (CONTRIBUTING.md rule #1): the frame is read in memory and discarded; only the skeleton
 (keypoints, confidences, timestamps) leaves — never pixels, never audio. The voice check-in
 recognizes speech on-device and emits only the result label, never the recording. Face
 recognition emits only person.known / person.unknown labels; the face vector stays on-device.

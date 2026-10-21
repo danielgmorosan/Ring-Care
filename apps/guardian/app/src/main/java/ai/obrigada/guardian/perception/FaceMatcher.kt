@@ -26,7 +26,7 @@ data class FaceMatch(val id: String, val name: String, val similarity: Float)
  * Pure face matching (F2.2). Compares a probe embedding to the enrolled household by cosine
  * similarity and returns the best match above a threshold, or null (a stranger). No IO, no
  * model — so the decision boundary is unit-tested. Recognition itself runs on-device and the
- * embeddings never leave the phone (CLAUDE.md rule #4).
+ * embeddings never leave the phone (CONTRIBUTING.md rule #4).
  */
 object FaceMatcher {
 

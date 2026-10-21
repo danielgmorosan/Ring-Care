@@ -1,7 +1,7 @@
 package ai.obrigada.guardian.perception
 
 /**
- * Adaptive frame-rate policy (CLAUDE.md: "every on-device model needs a CPU fallback path
+ * Adaptive frame-rate policy (CONTRIBUTING.md: "every on-device model needs a CPU fallback path
  * and adaptive frame rates"). The guardian runs on old donated phones with weak thermals, so
  * perception must ease off as the phone heats up or the battery drains — but it is a safety
  * device, so it never stops. This returns the minimum gap between processed frames; the

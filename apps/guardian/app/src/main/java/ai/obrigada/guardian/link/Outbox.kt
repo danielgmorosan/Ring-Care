@@ -56,7 +56,7 @@ class OutboxBuffer(private val maxSize: Int = 500) {
 }
 
 /**
- * Durable outbox for derived events (offline-first, CLAUDE.md). Events are queued to disk the
+ * Durable outbox for derived events (offline-first, CONTRIBUTING.md). Events are queued to disk the
  * moment they are detected and drained in order once the link is up, so a fall seen during a
  * network blip still reaches the family (QoS 1, at-least-once — the backend de-duplicates on
  * eventId). Persisted as labels only, never media (rule #1).

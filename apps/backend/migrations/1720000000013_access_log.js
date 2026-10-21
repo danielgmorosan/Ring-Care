@@ -1,5 +1,5 @@
 /**
- * Access log (CLAUDE.md rule #7: every access is logged).
+ * Access log (CONTRIBUTING.md rule #7: every access is logged).
  *
  * An append-only record of every change a caregiver makes to their family's data —
  * the audit trail families, hospitals, and regulators can read, and the source of the

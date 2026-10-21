@@ -6,7 +6,7 @@ import kotlinx.serialization.json.JsonObject
 /**
  * The event envelope — the ONLY shape that may leave a guardian device. Mirrors
  * packages/shared/src/events/event-envelope.ts. Events carry labels, timestamps,
- * keypoints, and confidences — never pixels, never raw audio (CLAUDE.md rule #1).
+ * keypoints, and confidences — never pixels, never raw audio (CONTRIBUTING.md rule #1).
  */
 @Serializable
 data class EventEnvelope(

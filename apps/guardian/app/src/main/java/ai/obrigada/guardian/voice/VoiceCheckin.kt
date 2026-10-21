@@ -19,7 +19,7 @@ import android.util.Log
  * returned to the caller, which emits it as a voice.checkin_result event.
  *
  * Everything happens on-device: the prompt is synthesized locally and the audio is
- * recognized locally; nothing but the resulting label leaves (CLAUDE.md rule #1). This
+ * recognized locally; nothing but the resulting label leaves (CONTRIBUTING.md rule #1). This
  * pipeline is deliberately separate from the "Hey Obrigada" assistant and does not depend
  * on it.
  */

@@ -11,7 +11,7 @@ build/
 .idea/
 *.hprof
 
-# Signing material and secrets — NEVER commit (CLAUDE.md: nothing secret ships in the APK)
+# Signing material and secrets — NEVER commit (CONTRIBUTING.md: nothing secret ships in the APK)
 *.jks
 *.keystore
 keystore.properties

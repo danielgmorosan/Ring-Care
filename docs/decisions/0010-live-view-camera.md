@@ -60,10 +60,10 @@ key.
 
 ## What this changes
 
-- **CLAUDE.md rule #1** wording, on sign-off: the live-channel exception widens from "during
+- **CONTRIBUTING.md rule #1** wording, on sign-off: the live-channel exception widens from "during
   an incident" to "family-initiated, any time," keeping "E2EE, servers relay but cannot
   decrypt, never persisted."
-- **CLAUDE.md tech stack / this record's status** moves to accepted once signed off.
+- **CONTRIBUTING.md tech stack / this record's status** moves to accepted once signed off.
 - **New backend module** `live` (behind `LIVEKIT_*` config, off by default like narration and
   calls): mint scoped, short-lived room tokens for an authenticated + authorized family
   member; instruct the target guardian to publish; write the audit entry on every open. No
@@ -89,7 +89,7 @@ key.
 ## Consequences / risks
 
 - **Old donated phones.** Live WebRTC is heavy (encode + upload) versus our usual labels-only
-  traffic, and CLAUDE.md assumes weak thermals and no NPU. Mitigations: stream only while a
+  traffic, and CONTRIBUTING.md assumes weak thermals and no NPU. Mitigations: stream only while a
   viewer is actively watching, cap resolution/frame rate, and let streaming yield to the
   detection pipeline — detection is the safety function and must never be starved by someone
   watching. Never let a live session degrade fall detection.

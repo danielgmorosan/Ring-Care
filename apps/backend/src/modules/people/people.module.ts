@@ -15,7 +15,7 @@ import { PgPeopleRepository } from './pg-people.repository';
  * People: the household roster of enrolled members and their roles (F2.2). The
  * "who belongs" list that stranger/uniform logic (F2.4) builds on. Caregiver-managed
  * configuration, family-scoped. The backend holds only titles and roles — face
- * embeddings and photos never leave the device (CLAUDE.md rule #4).
+ * embeddings and photos never leave the device (CONTRIBUTING.md rule #4).
  */
 @Module({
   imports: [FamiliesModule, DevicesModule],

@@ -61,7 +61,7 @@ import java.util.concurrent.Executors
 /**
  * The running guardian: a live camera preview with on-device pose analysis feeding fall
  * detection (F1.2), and a small connection-status pill. Frames are read in memory only —
- * the analyzer emits labelled events; no pixels ever leave (CLAUDE.md rule #1).
+ * the analyzer emits labelled events; no pixels ever leave (CONTRIBUTING.md rule #1).
  */
 @Composable
 fun RunningScreen(onReset: () -> Unit = {}) {

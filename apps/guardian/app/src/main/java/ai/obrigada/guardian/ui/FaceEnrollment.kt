@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 /**
  * Face enrollment for the household (F2.2). A caregiver names a person and holds the camera
  * on their face; the guardian captures the embedding and stores it encrypted on-device. The
- * face vector and any capture never leave the phone (CLAUDE.md rule #4) — this whole flow is
+ * face vector and any capture never leave the phone (CONTRIBUTING.md rule #4) — this whole flow is
  * on-device by design.
  */
 @Composable

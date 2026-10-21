@@ -8,7 +8,7 @@ import { PeopleService } from './people.service';
  * One roster entry the guardian needs to label a face during enrollment. Labels only:
  * the id (so the on-device face gallery keys to the same person the family app manages),
  * the household title to show, and the role. The face embedding and photo are computed
- * and stored on the device and never travel (CLAUDE.md rules #1/#4).
+ * and stored on the device and never travel (CONTRIBUTING.md rules #1/#4).
  */
 export interface RosterEntry {
   id: string;

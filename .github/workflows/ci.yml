@@ -7,7 +7,7 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
-# Least-privilege by default (CLAUDE.md: hard target from the first commit).
+# Least-privilege by default (CONTRIBUTING.md: hard target from the first commit).
 permissions:
   contents: read
 

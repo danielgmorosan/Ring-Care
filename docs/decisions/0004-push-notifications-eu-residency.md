@@ -11,7 +11,7 @@ person granted the app permission to do this precisely because a missed fall is 
 safety event, not a marketing ping. A call (Twilio, decision 0003) is a *fallback* for
 reaching people who do not have the app.
 
-The tech stack in CLAUDE.md names this directly: *"Push: FCM and APNs (iOS uses the
+The tech stack in CONTRIBUTING.md names this directly: *"Push: FCM and APNs (iOS uses the
 Critical Alerts entitlement)."*
 
 Two non-negotiable rules bear on it:

@@ -3,7 +3,7 @@
  *
  * Editable configuration, not the append-only safety trail. The backend holds ONLY
  * the roster (a household title and a behaviour role); face embeddings and enrollment
- * photos never reach the cloud — they live in the phone's keystore (CLAUDE.md rule #4).
+ * photos never reach the cloud — they live in the phone's keystore (CONTRIBUTING.md rule #4).
  *
  * Removal is a soft deactivate (active=false), never a delete, so historical
  * `person.known` events still resolve to a role for narration. This table is normal

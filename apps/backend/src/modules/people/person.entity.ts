@@ -3,7 +3,7 @@
  *
  * The backend holds ONLY the roster: a household title and a behaviour role. Face
  * embeddings and enrollment photos never reach the cloud — they live in the phone's
- * hardware-backed keystore, keyed by this person's id (CLAUDE.md rule #4). This table
+ * hardware-backed keystore, keyed by this person's id (CONTRIBUTING.md rule #4). This table
  * is the source of truth for "who belongs"; recognition runs on device against the
  * local gallery and emits `person.known` referencing a personId from here.
  *

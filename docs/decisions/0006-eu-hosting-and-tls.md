@@ -8,7 +8,7 @@ The backend has to run somewhere for real families to use it, and rule #6 requir
 that "somewhere" to be in the EU: no service, subprocessor, or region outside the EU
 without a recorded founder decision. This record proposes the first hosting setup.
 
-Constraints from CLAUDE.md: bootstrapped + EU grants, so infrastructure must stay
+Constraints from CONTRIBUTING.md: bootstrapped + EU grants, so infrastructure must stay
 cheap; prefer boring, operable choices over impressive ones; no new managed services
 without a decision record.
 

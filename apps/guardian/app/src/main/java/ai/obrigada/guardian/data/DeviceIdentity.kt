@@ -3,7 +3,7 @@ package ai.obrigada.guardian.data
 /**
  * The guardian's provisioned identity: who it is to the backend and how it connects.
  * Assembled from the provision response and persisted in the encrypted store. The
- * private key never leaves this device (CLAUDE.md rule #4 posture for device identity).
+ * private key never leaves this device (CONTRIBUTING.md rule #4 posture for device identity).
  */
 data class DeviceIdentity(
     val deviceId: String,

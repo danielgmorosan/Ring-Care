@@ -25,7 +25,7 @@ import java.util.UUID
  * The camera-side perception (F1.2). A CameraX analyzer that runs MediaPipe Pose on each
  * frame, extracts the skeleton, and feeds it to the deterministic [FallDetector]. On a
  * transition it emits a fall.suspected / fall.confirmed event to the [PerceptionBus] — the
- * frame itself is processed in memory and never leaves (CLAUDE.md rule #1).
+ * frame itself is processed in memory and never leaves (CONTRIBUTING.md rule #1).
  *
  * If the pose model asset is missing (app/src/main/assets/pose_landmarker_lite.task), the
  * analyzer logs once and becomes a no-op so the camera preview still runs. Drop the model

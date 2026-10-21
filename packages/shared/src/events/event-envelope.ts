@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * The event envelope is the ONLY shape that may leave a guardian device.
  *
- * Non-negotiable rule #1 (see CLAUDE.md): frames are processed in memory on the
+ * Non-negotiable rule #1 (see CONTRIBUTING.md): frames are processed in memory on the
  * device and discarded. Events that leave the device carry labels, timestamps,
  * keypoints, and confidences — never pixels, never raw audio. This schema is the
  * enforcement point in shared code: if a payload cannot be expressed here, it must
@@ -66,7 +66,7 @@ export const eventPayloadSchema = z
     (payload) => !Object.keys(payload).some((k) => forbiddenMediaKeys.includes(k.toLowerCase())),
     {
       message:
-        'Event payload may not contain raw media (image/frame/pixels/audio/photo/video/raw). See CLAUDE.md rule #1.',
+        'Event payload may not contain raw media (image/frame/pixels/audio/photo/video/raw). See CONTRIBUTING.md rule #1.',
     },
   );
 

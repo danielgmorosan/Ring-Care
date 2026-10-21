@@ -10,7 +10,7 @@ data class ZoneVertex(val x: Float, val y: Float)
  * A zone drawn on this guardian's camera (F2.3), as stored by the backend. `kind` is
  * "hazard" (alerts on entry) or "door" (drives the wandering logic). Points are normalized
  * so the polygon survives resolution changes. The device runs the geometry locally; the
- * frame the zone was drawn over never leaves it (CLAUDE.md rule #1).
+ * frame the zone was drawn over never leaves it (CONTRIBUTING.md rule #1).
  */
 @Serializable
 data class Zone(

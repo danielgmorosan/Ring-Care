@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  * built in the family app so face enrollment can offer their names, instead of asking the
  * caregiver to type each one a second time. Authenticated by the per-device token (Bearer),
  * the same credential as the heartbeat and zones-sync paths — no user session. Only labels
- * come down; no biometric ever travels (CLAUDE.md rules #1/#4).
+ * come down; no biometric ever travels (CONTRIBUTING.md rules #1/#4).
  */
 class RosterClient(
     private val deviceId: String,

@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asSharedFlow
  * Decouples the on-device perception (running in the camera pipeline) from the link
  * (owned by the service). The analyzer emits derived events here; GuardianService
  * collects them and publishes over the mutual-TLS MQTT link. Only structured events
- * flow through — never frames (CLAUDE.md rule #1).
+ * flow through — never frames (CONTRIBUTING.md rule #1).
  */
 object PerceptionBus {
     private val _events =

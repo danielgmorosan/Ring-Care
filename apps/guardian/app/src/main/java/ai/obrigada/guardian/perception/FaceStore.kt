@@ -16,7 +16,7 @@ private data class StoredFace(val id: String, val name: String, val embedding: F
 /**
  * Encrypted, on-device store of enrolled household faces (F2.2). Face vectors and the names
  * that go with them live only here, behind a hardware-backed master key (Android Keystore).
- * The cloud never sees a face vector or an enrollment image (CLAUDE.md rule #4) — enrollment
+ * The cloud never sees a face vector or an enrollment image (CONTRIBUTING.md rule #4) — enrollment
  * happens on the guardian and stays on the guardian.
  */
 class FaceStore(context: Context) {

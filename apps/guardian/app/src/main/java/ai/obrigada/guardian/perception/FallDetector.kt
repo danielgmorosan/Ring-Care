@@ -18,7 +18,7 @@ sealed interface FallSignal {
 /**
  * Deterministic, rules-based fall detection (F1.2). Pure and stateful: feed it pose
  * frames in order and it emits at most one signal per transition. This is the on-device
- * half of the deterministic safety core (CLAUDE.md rule #3) — it never calls anyone; it
+ * half of the deterministic safety core (CONTRIBUTING.md rule #3) — it never calls anyone; it
  * emits fall.suspected / fall.confirmed events, and the backend's Temporal state machine
  * decides escalation. A later on-device VLM is only a second opinion, never authority.
  *

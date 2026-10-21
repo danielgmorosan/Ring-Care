@@ -8,7 +8,7 @@ import type { Person } from './person.entity';
  * The per-family roster of enrolled people (F2.2): who belongs in the household and
  * what role they play. Always scoped to the caller's family. The backend holds only
  * the roster (title + role); face embeddings and photos stay on the device
- * (CLAUDE.md rule #4). Removal is a soft deactivate, never a delete.
+ * (CONTRIBUTING.md rule #4). Removal is a soft deactivate, never a delete.
  */
 @Injectable()
 export class PeopleService {
