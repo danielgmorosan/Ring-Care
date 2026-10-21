@@ -32,6 +32,8 @@ function families(checkinLanguage: Family['checkinLanguage'] = 'pt-PT'): Familie
       name: 'Silva family',
       timezone: 'Europe/Lisbon',
       checkinLanguage,
+      elderName: 'Maria',
+      elderRelation: 'mother',
       createdAt: '2026-07-01T00:00:00.000Z',
     }),
   } as unknown as FamiliesService;

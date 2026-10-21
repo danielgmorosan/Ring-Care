@@ -19,7 +19,7 @@ const ERASED_HOUSEHOLD = 'Erased household';
  *
  * - Redacted in place (rows referenced by the append-only trail): contacts, device
  *   names, Ring camera names, caregiver accounts (email → tombstone, password
- *   disabled), family name.
+ *   disabled), family name, and the elder's display name and relation (blanked).
  * - Deleted (standalone, unreferenced): medications, appointments, push tokens,
  *   expected visits.
  * - Untouched (append-only, retained under Art. 17(3)): event_stream, incidents,
@@ -76,9 +76,14 @@ export class ErasureService {
       await this.visits.delete(familyId, v.id);
     }
 
-    // Irreversibly erase the caregiver accounts, then the family name last.
+    // Irreversibly erase the caregiver accounts, then the family name and the elder's
+    // display name and relation last.
     await this.users.redactByFamily(familyId);
-    await this.families.update(familyId, { name: ERASED_HOUSEHOLD });
+    await this.families.update(familyId, {
+      name: ERASED_HOUSEHOLD,
+      elderName: null,
+      elderRelation: null,
+    });
 
     this.logger.log(`Erased identifying data for family ${familyId} (audit trail retained)`);
     return { erased: true };

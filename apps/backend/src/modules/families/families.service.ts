@@ -22,6 +22,8 @@ export class FamiliesService {
       name: dto.name,
       timezone: normalizeTimeZone(dto.timezone),
       checkinLanguage: dto.checkinLanguage ?? DEFAULT_CHECKIN_LANGUAGE,
+      elderName: dto.elderName ?? null,
+      elderRelation: dto.elderRelation ?? null,
       createdAt: new Date().toISOString(),
     };
     const saved = await this.families.create(family);
@@ -47,12 +49,17 @@ export class FamiliesService {
     return family;
   }
 
-  /** Update household settings (name and/or timezone). Timezone is normalized. */
+  /**
+   * Update household settings. Timezone is normalized. For the elder's name and relation,
+   * undefined leaves the value unchanged and null clears it.
+   */
   async update(id: string, dto: UpdateFamilyDto): Promise<Family> {
     const patch: FamilyPatch = {};
     if (dto.name !== undefined) patch.name = dto.name;
     if (dto.timezone !== undefined) patch.timezone = normalizeTimeZone(dto.timezone);
     if (dto.checkinLanguage !== undefined) patch.checkinLanguage = dto.checkinLanguage;
+    if (dto.elderName !== undefined) patch.elderName = dto.elderName;
+    if (dto.elderRelation !== undefined) patch.elderRelation = dto.elderRelation;
 
     const updated = await this.families.update(id, patch);
     if (!updated) {

@@ -18,7 +18,12 @@ const user = { id: 'u1', email: 'ana@example.com', familyId: 'fam-1' } as AuthUs
 describe('ExportService', () => {
   it('assembles a family bundle from every module, expanding incident detail', async () => {
     const families = {
-      findByIdOrFail: jest.fn().mockResolvedValue({ id: 'fam-1', name: 'Silva' }),
+      findByIdOrFail: jest.fn().mockResolvedValue({
+        id: 'fam-1',
+        name: 'Silva',
+        elderName: 'Maria',
+        elderRelation: 'mother',
+      }),
     };
     const devices = { findByFamily: jest.fn().mockResolvedValue([{ id: 'd1' }]) };
     const contacts = { list: jest.fn().mockResolvedValue([{ id: 'c1', role: 'daughter' }]) };
@@ -68,7 +73,13 @@ describe('ExportService', () => {
     const bundle = await service.exportFamily(user);
 
     expect(bundle.account).toEqual({ userId: 'u1', email: 'ana@example.com' });
-    expect(bundle.family).toEqual({ id: 'fam-1', name: 'Silva' });
+    // The elder's display name and relation are the family's data too (Art. 15/20).
+    expect(bundle.family).toEqual({
+      id: 'fam-1',
+      name: 'Silva',
+      elderName: 'Maria',
+      elderRelation: 'mother',
+    });
     expect(bundle.contacts).toHaveLength(1);
     expect(bundle.medications[0]!.name).toBe('Bisoprolol');
     expect(bundle.pushDevices[0]!.token).toBe('tok');
