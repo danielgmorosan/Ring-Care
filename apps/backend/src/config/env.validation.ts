@@ -87,6 +87,25 @@ export const envSchema = z.object({
     .url()
     .refine((v) => v.startsWith('https://'), 'PUBLIC_BASE_URL must be an https URL')
     .optional(),
+  // Which provider places family calls (decision 0014). 'connect' = Amazon Connect in an EU
+  // region (needs the CONNECT_* set below); 'twilio' = Twilio (needs the TWILIO_* set).
+  // Unset keeps the original selection: Twilio when configured, otherwise the mock.
+  // A chosen provider that is not fully configured falls back to Twilio, then the mock.
+  CALL_PROVIDER: z.enum(['connect', 'twilio']).optional(),
+  // Amazon Connect (decision 0014). Credentials come from the default AWS provider chain.
+  // The backend refuses to boot with CALL_PROVIDER=connect and a non-EU region (rule #6).
+  CONNECT_REGION: z.string().min(1).default('eu-central-1'),
+  CONNECT_INSTANCE_ID: z.string().min(1).optional(),
+  CONNECT_CONTACT_FLOW_ID: z.string().min(1).optional(),
+  // The number claimed in the Connect instance that family calls come from, E.164.
+  CONNECT_SOURCE_PHONE_NUMBER: z
+    .string()
+    .regex(/^\+[1-9]\d{1,14}$/, 'CONNECT_SOURCE_PHONE_NUMBER must be E.164, e.g. +4930...')
+    .optional(),
+  // Optional: an AWS End User Messaging SMS origination identity (phone number id/ARN,
+  // sender id or pool) in CONNECT_REGION. Connect itself sends no SMS. Unset: texts go
+  // through Twilio when it is configured, otherwise they are skipped and push carries it.
+  CONNECT_SMS_ORIGINATION: z.string().min(1).optional(),
   // Signs the call-confirmation callback URLs (HMAC-SHA256) so nobody can forge a press-1.
   // Optional: when unset, a key is derived from JWT_SECRET. From the vault in production.
   CALLBACK_SIGNING_SECRET: z.string().min(16).optional(),
@@ -385,6 +404,49 @@ export class AppConfig {
 
   get callbackSigningSecret(): string | undefined {
     return this.config.get('CALLBACK_SIGNING_SECRET', { infer: true });
+  }
+
+  // --- Amazon Connect calls (docs/decisions/0014) ---
+  /** What CALL_PROVIDER asks for, before any fallback. */
+  get callProviderRequested(): 'connect' | 'twilio' | undefined {
+    return this.config.get('CALL_PROVIDER', { infer: true });
+  }
+
+  get connectRegion(): string {
+    return this.config.get('CONNECT_REGION', { infer: true });
+  }
+
+  get connectInstanceId(): string | undefined {
+    return this.config.get('CONNECT_INSTANCE_ID', { infer: true });
+  }
+
+  get connectContactFlowId(): string | undefined {
+    return this.config.get('CONNECT_CONTACT_FLOW_ID', { infer: true });
+  }
+
+  get connectSourcePhoneNumber(): string | undefined {
+    return this.config.get('CONNECT_SOURCE_PHONE_NUMBER', { infer: true });
+  }
+
+  get connectSmsOrigination(): string | undefined {
+    return this.config.get('CONNECT_SMS_ORIGINATION', { infer: true });
+  }
+
+  /** True when the full Connect set (instance, flow, source number) is configured. */
+  get hasConnect(): boolean {
+    return Boolean(
+      this.connectInstanceId && this.connectContactFlowId && this.connectSourcePhoneNumber,
+    );
+  }
+
+  /**
+   * Which adapter places family calls. Connect only when asked for and fully configured;
+   * otherwise Twilio when configured, otherwise the mock that dials no one. Unset
+   * CALL_PROVIDER keeps the original behaviour (Twilio if configured, else mock).
+   */
+  get callProvider(): 'connect' | 'twilio' | 'mock' {
+    if (this.callProviderRequested === 'connect' && this.hasConnect) return 'connect';
+    return this.hasTwilio ? 'twilio' : 'mock';
   }
 
   /**
