@@ -15,6 +15,7 @@ import {
   sessionClient,
   sleep,
 } from './lib/common.mjs';
+import { callProviderOf } from './lib/call-provider.mjs';
 import { planCamera } from './lib/plan.mjs';
 import { localClock, nowNight } from './lib/time.mjs';
 
@@ -177,7 +178,8 @@ const scenes = {
       const detail = await follow(api, inc.id, tz, Number(flags.follow ?? 30) * 1000);
       if (detail.outcome === 'active') {
         log.info(
-          'Still running: with Twilio and PUBLIC_BASE_URL each call waits 45 s for press 1.',
+          'Still running: with Amazon Connect, or Twilio and PUBLIC_BASE_URL, each call ' +
+            'waits 45 s for press 1.',
         );
         log.info('Follow it with: pnpm demo:scene status');
       }
@@ -205,9 +207,16 @@ const scenes = {
       log.info(
         'Timeline: "Front door at night", "Seen by Ring at the front door", each call, the outcome chip.',
       );
+      const calls = callProviderOf(env);
       log.info(
-        'Calls: Sofia, then Miguel, then Rosa. Real phones ring only with Twilio configured.',
+        `Calls: Sofia, then Miguel, then Rosa, via ${calls.provider}.` +
+          (calls.provider === 'mock' ? ' No phone rings: configure Amazon Connect or Twilio.' : ''),
       );
+      if (calls.provider === 'connect') {
+        log.info(
+          'Press 1 on a call: the backend log says "confirmed incident ... (press 1, connect)".',
+        );
+      }
     } else {
       log.info('Alerts: the night door alert above. The Timeline has no incident (no engine).');
     }

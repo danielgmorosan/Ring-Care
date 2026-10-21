@@ -99,12 +99,18 @@ test('a fresh demo .env: random JWT, no MQTT without certs, demo values, placeho
     'BEDROCK_MODEL_ID',
     'TWILIO_AUTH_TOKEN',
     'PUBLIC_BASE_URL',
+    'CALL_PROVIDER',
+    'CONNECT_INSTANCE_ID',
+    'CONNECT_CONTACT_FLOW_ID',
+    'CONNECT_SOURCE_PHONE_NUMBER',
     'RING_FAMILY_ID',
   ]) {
     assert.equal(v[k], undefined, `${k} must stay commented`);
     assert.match(r.text, new RegExp(`^# ${k}=`, 'm'));
   }
   assert.match(r.text, /^# AI_PROVIDER=bedrock$/m);
+  assert.match(r.text, /^# CALL_PROVIDER=connect$/m);
+  assert.match(r.text, /^# CONNECT_REGION=eu-central-1$/m);
 });
 
 test('an existing .env keeps every value, including MQTT and its own JWT secret', () => {

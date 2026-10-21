@@ -78,7 +78,7 @@ export class CallConfirmationService {
     }
 
     try {
-      await this.escalation.confirmByCall(incidentId!, contactId!);
+      await this.escalation.confirmByCall(incidentId!, contactId!, 'twilio');
     } catch (error) {
       // The incident is unknown or its workflow already finished: nothing to stop.
       const message = error instanceof Error ? error.message : String(error);

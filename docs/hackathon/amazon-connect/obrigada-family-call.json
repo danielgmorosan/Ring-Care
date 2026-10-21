@@ -1,0 +1,273 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "set-voice",
+  "Metadata": {
+    "EntryPointPosition": {
+      "x": 40,
+      "y": 60
+    },
+    "ActionMetadata": {
+      "set-voice": {
+        "Position": {
+          "x": 220,
+          "y": 60
+        }
+      },
+      "play-message": {
+        "Position": {
+          "x": 480,
+          "y": 60
+        }
+      },
+      "ask-press-1": {
+        "Position": {
+          "x": 740,
+          "y": 60
+        }
+      },
+      "replay-message": {
+        "Position": {
+          "x": 740,
+          "y": 340
+        }
+      },
+      "ask-press-1-again": {
+        "Position": {
+          "x": 1000,
+          "y": 340
+        }
+      },
+      "set-confirmed": {
+        "Position": {
+          "x": 1000,
+          "y": 60
+        }
+      },
+      "say-thank-you": {
+        "Position": {
+          "x": 1260,
+          "y": 60
+        }
+      },
+      "say-not-recorded": {
+        "Position": {
+          "x": 1260,
+          "y": 220
+        }
+      },
+      "say-goodbye": {
+        "Position": {
+          "x": 1260,
+          "y": 400
+        }
+      },
+      "hang-up": {
+        "Position": {
+          "x": 1520,
+          "y": 220
+        }
+      }
+    }
+  },
+  "Actions": [
+    {
+      "Identifier": "set-voice",
+      "Type": "UpdateContactTextToSpeechVoice",
+      "Parameters": {
+        "TextToSpeechVoice": "Amy",
+        "TextToSpeechEngine": "Neural",
+        "TextToSpeechStyle": "None"
+      },
+      "Transitions": {
+        "NextAction": "play-message",
+        "Errors": [],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "play-message",
+      "Type": "MessageParticipant",
+      "Parameters": {
+        "Text": "$.Attributes.message"
+      },
+      "Transitions": {
+        "NextAction": "ask-press-1",
+        "Errors": [
+          {
+            "NextAction": "ask-press-1",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "ask-press-1",
+      "Type": "GetParticipantInput",
+      "Parameters": {
+        "Text": "Press 1 if you are handling this.",
+        "StoreInput": "False",
+        "InputTimeLimitSeconds": "8"
+      },
+      "Transitions": {
+        "NextAction": "replay-message",
+        "Errors": [
+          {
+            "NextAction": "replay-message",
+            "ErrorType": "InputTimeLimitExceeded"
+          },
+          {
+            "NextAction": "replay-message",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "replay-message",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": [
+          {
+            "NextAction": "set-confirmed",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "1"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Identifier": "replay-message",
+      "Type": "MessageParticipant",
+      "Parameters": {
+        "Text": "$.Attributes.message"
+      },
+      "Transitions": {
+        "NextAction": "ask-press-1-again",
+        "Errors": [
+          {
+            "NextAction": "ask-press-1-again",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "ask-press-1-again",
+      "Type": "GetParticipantInput",
+      "Parameters": {
+        "Text": "Press 1 if you are handling this.",
+        "StoreInput": "False",
+        "InputTimeLimitSeconds": "8"
+      },
+      "Transitions": {
+        "NextAction": "say-goodbye",
+        "Errors": [
+          {
+            "NextAction": "say-goodbye",
+            "ErrorType": "InputTimeLimitExceeded"
+          },
+          {
+            "NextAction": "say-goodbye",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "say-goodbye",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": [
+          {
+            "NextAction": "set-confirmed",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "1"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Identifier": "set-confirmed",
+      "Type": "UpdateContactAttributes",
+      "Parameters": {
+        "Attributes": {
+          "confirmed": "1"
+        },
+        "TargetContact": "Current"
+      },
+      "Transitions": {
+        "NextAction": "say-thank-you",
+        "Errors": [
+          {
+            "NextAction": "say-not-recorded",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "say-thank-you",
+      "Type": "MessageParticipant",
+      "Parameters": {
+        "Text": "Thank you. We have let the family know you are handling it."
+      },
+      "Transitions": {
+        "NextAction": "hang-up",
+        "Errors": [
+          {
+            "NextAction": "hang-up",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "say-not-recorded",
+      "Type": "MessageParticipant",
+      "Parameters": {
+        "Text": "Thank you. We could not record that, so we will keep trying the family. Goodbye."
+      },
+      "Transitions": {
+        "NextAction": "hang-up",
+        "Errors": [
+          {
+            "NextAction": "hang-up",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "say-goodbye",
+      "Type": "MessageParticipant",
+      "Parameters": {
+        "Text": "We did not hear a response. We will keep trying the family. Goodbye."
+      },
+      "Transitions": {
+        "NextAction": "hang-up",
+        "Errors": [
+          {
+            "NextAction": "hang-up",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "hang-up",
+      "Type": "DisconnectParticipant",
+      "Parameters": {},
+      "Transitions": {}
+    }
+  ]
+}

@@ -669,6 +669,20 @@ describe('escalation workflow: killing the process mid-flow and resuming', () =>
     );
   });
 
+  it('fall path, press 1 heard by Amazon Connect: resumes from every boundary (0014)', async () => {
+    await killAndResumeEverywhere(
+      () => fallInput(),
+      [],
+      [],
+      true,
+      { outcome: 'acknowledged', emergency: false },
+      {
+        notifications: () => new ConfirmingNotifications(),
+        signalsAfterCall: { c2: [[CONTACT_CONFIRMED_SIGNAL, 'c2', 'connect']] },
+      },
+    );
+  });
+
   it('fall path, press 1 from the second contact: resumes and never calls 112', async () => {
     await killAndResumeEverywhere(
       () => fallInput(),
@@ -731,6 +745,32 @@ describe('escalation workflow: press 1 to confirm on family calls (0003 follow-u
     expect(n.spoken).toEqual([DOOR_CALL, DOOR_CALL]);
     expect(n.sms).toEqual([]);
     expect(n.emergencies).toEqual([]);
+  });
+
+  it('a press 1 heard by Amazon Connect is recorded with its provider (0014)', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    const run = await runProcess(hero(), incidents, n, {
+      signalsAfterCall: { sofia: [[CONTACT_CONFIRMED_SIGNAL, 'sofia', 'connect']] },
+    });
+    expect(run.result).toMatchObject({ outcome: 'acknowledged', acknowledgedByContactId: 'sofia' });
+    const trail = await incidents.listSteps('inc-door');
+    expect(trail.at(-1)).toMatchObject({
+      kind: 'call_answered',
+      detail: { via: 'press_1', provider: 'connect' },
+    });
+    expect(n.calls).toEqual(['sofia']);
+  });
+
+  it('an unknown provider name never reaches the trail', async () => {
+    const incidents = new InMemoryIncidentRepository();
+    const n = new ConfirmingNotifications();
+    await runProcess(hero(), incidents, n, {
+      signalsAfterCall: { sofia: [[CONTACT_CONFIRMED_SIGNAL, 'sofia', '<script>']] },
+    });
+    const trail = await incidents.listSteps('inc-door');
+    expect(trail.at(-1)).toMatchObject({ kind: 'call_answered', detail: { via: 'press_1' } });
+    expect(trail.at(-1)!.detail).not.toHaveProperty('provider');
   });
 
   it('waits the ack window for each contact, then moves on and texts everyone when nobody confirms', async () => {

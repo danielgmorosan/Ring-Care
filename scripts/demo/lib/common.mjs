@@ -81,7 +81,7 @@ export function backendEnv() {
   const fromFile = text ? envValues(text) : {};
   const out = { ...fromFile };
   const backendKey =
-    /^(DATABASE_URL|REDIS_URL|TEMPORAL_|TWILIO_|PUBLIC_BASE_URL|AI_PROVIDER|BEDROCK_|ANTHROPIC_|RING_|BEE_|VISIT_|MQTT_|DEVICE_|PORT$)/;
+    /^(DATABASE_URL|REDIS_URL|TEMPORAL_|TWILIO_|CALL_PROVIDER$|CONNECT_|PUBLIC_BASE_URL|AI_PROVIDER|BEDROCK_|ANTHROPIC_|RING_|BEE_|VISIT_|MQTT_|DEVICE_|PORT$)/;
   for (const [key, value] of Object.entries(process.env)) {
     if (value && backendKey.test(key)) out[key] = value;
   }

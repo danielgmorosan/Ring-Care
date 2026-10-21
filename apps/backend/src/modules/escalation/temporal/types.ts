@@ -218,6 +218,10 @@ export const RESOLVE_SIGNAL = 'incidentResolved';
 /** A called contact pressed 1 on the call: "I am handling this" (0003 follow-up). */
 export const CONTACT_CONFIRMED_SIGNAL = 'contactConfirmed';
 
+/** The call providers that can report a press 1 (0003 Twilio, 0014 Amazon Connect). */
+export const CALL_PROVIDERS = ['twilio', 'connect'] as const;
+export type CallProviderName = (typeof CALL_PROVIDERS)[number];
+
 /** How long the workflow waits for a pending voice check-in before proceeding. */
 export const CHECKIN_WAIT_SECONDS = 20;
 /**

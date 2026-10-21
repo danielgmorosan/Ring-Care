@@ -12,7 +12,7 @@ What the `pnpm demo:*` commands do:
 | `pnpm demo:up` | Checks Node 22, Docker Desktop and ports 3000, 5433, 6379, 7233. Starts Postgres, Redis and Temporal, waits for them, migrates. Does not start the backend. |
 | `pnpm demo:seed` | Signs up or logs in Sofia, links Ring and Bee to her family in `.env`, adds the contacts, Anna's visit, two medications and the front-door Ring camera. Safe to run again. |
 | `pnpm demo:scene <name>` | One take: `night-exit`, `carer-arrival`, `carer-no-show`, `bee-note`, `ask`, `reset`, `status`. Says what the app should show and follows the incident. |
-| `pnpm demo:check` | One screen: backend, Postgres, Temporal, Twilio and tunnel, AI provider, Ring, Bee, the seeded family. |
+| `pnpm demo:check` | One screen: backend, Postgres, Temporal, the call provider (Amazon Connect or Twilio and tunnel), AI provider, Ring, Bee, the seeded family. |
 
 ## 0. Install once
 
@@ -20,8 +20,8 @@ What the `pnpm demo:*` commands do:
 - **pnpm 10**: `corepack enable` (from an admin PowerShell), or `npm install -g pnpm@10`.
 - **Docker Desktop**, started, showing "Engine running".
 - **Git**: `winget install Git.Git`.
-- **cloudflared** for the Twilio callbacks: `winget install --id Cloudflare.cloudflared`
-  (or ngrok).
+- **cloudflared** for the Twilio callbacks (not needed with Amazon Connect):
+  `winget install --id Cloudflare.cloudflared` (or ngrok).
 
 Check: `node -v` says v22, `pnpm -v` says 10.
 
@@ -37,10 +37,18 @@ pnpm demo:env
 `demo:env` prints every line it added. The webhook secrets it writes are random and local
 to this PC. `apps/backend/.env` is gitignored; the command checks that and stops if not.
 
-## 2. Twilio and the tunnel (for real calls)
+## 2. Real calls: Amazon Connect, or Twilio and the tunnel
 
-Skip this section for a dry run: without Twilio, the mock logs each call and text and no
-phone rings.
+Skip this section for a dry run: without a call provider, the mock logs each call and text
+and no phone rings.
+
+**Amazon Connect (no tunnel).** Follow [amazon-connect.md](./amazon-connect.md): create the
+instance in Frankfurt, claim a number, open the Portugal/Romania allowlist case (do this
+first, it can take a while), import the flow, then set `CALL_PROVIDER=connect` and the
+`CONNECT_*` lines in `apps\backend\.env`. Set `$env:AWS_PROFILE` in the backend's terminal.
+You can skip the rest of this section, unless you want Twilio as the fallback.
+
+**Twilio and the tunnel.**
 
 Terminal **T1**, keep it open for the whole session:
 
@@ -117,8 +125,8 @@ leaves the rest alone. Phones may also come from `$env:DEMO_PHONE_SOFIA`,
 `--base`. The login token is saved in `.demo/session.json` (gitignored) for the next
 commands.
 
-`demo:check` ends with "All set for the live run" when Temporal, Twilio and the tunnel are
-all reachable.
+`demo:check` ends with "All set for the live run" when Temporal and the call provider
+(Amazon Connect, or Twilio and the tunnel) are ready.
 
 ## 5. The family app in a browser
 

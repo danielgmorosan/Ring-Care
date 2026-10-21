@@ -41,6 +41,19 @@ import { selectNarrator } from './narration/select-narrator';
 import { CallConfirmationService } from './notifications/call-confirmation.service';
 import { TwilioCallbackController } from './notifications/twilio-callback.controller';
 import { CompositeNotificationAdapter } from './notifications/composite-notification.adapter';
+import { ConnectConfirmationPoller } from './notifications/connect-confirmation.poller';
+import { ConnectNotificationAdapter } from './notifications/connect-notification.adapter';
+import {
+  CONNECT_CLIENT,
+  SMS_VOICE_CLIENT,
+  type ConnectSender,
+  type SmsSender,
+} from './notifications/connect.client';
+import {
+  createConnectClient,
+  createSmsClient,
+  selectComms,
+} from './notifications/connect.providers';
 import { FcmPushAdapter } from './notifications/fcm-push.adapter';
 import { MockNotificationAdapter } from './notifications/mock-notification.adapter';
 import { MockPushAdapter } from './notifications/mock-push.adapter';
@@ -121,19 +134,55 @@ import { VisitNoShowSweepService } from './ring-care/visit-no-show-sweep.service
       useFactory: (config: AppConfig, mock: MockPushAdapter, fcm: FcmPushAdapter) =>
         config.hasPush ? fcm : mock,
     },
+    // Amazon Connect calls (decision 0014): the client, the press-1 poller and the adapter.
+    // The client factory refuses a non-EU CONNECT_REGION at boot (rule #6).
+    { provide: CONNECT_CLIENT, inject: [AppConfig], useFactory: createConnectClient },
+    { provide: SMS_VOICE_CLIENT, inject: [AppConfig], useFactory: createSmsClient },
+    ConnectConfirmationPoller,
     {
-      // The workflow sees one NotificationPort; the composite routes calls/SMS to
-      // Twilio-or-mock (0003) and critical push to FCM-or-mock (0004), each enabled
-      // independently by its own credentials. All-mock by default: the ladder runs
-      // end-to-end while contacting no one for real.
+      provide: ConnectNotificationAdapter,
+      inject: [
+        CONNECT_CLIENT,
+        SMS_VOICE_CLIENT,
+        AppConfig,
+        ConnectConfirmationPoller,
+        TwilioNotificationAdapter,
+      ],
+      useFactory: (
+        client: ConnectSender | null,
+        sms: SmsSender | null,
+        config: AppConfig,
+        poller: ConnectConfirmationPoller,
+        twilio: TwilioNotificationAdapter,
+      ) =>
+        new ConnectNotificationAdapter(
+          client,
+          sms,
+          config,
+          poller,
+          config.hasTwilio ? twilio : null,
+        ),
+    },
+    {
+      // The workflow sees one NotificationPort; the composite routes calls/SMS to the call
+      // provider (Connect 0014, Twilio 0003, or the mock) and critical push to FCM-or-mock
+      // (0004), each enabled independently by its own credentials. All-mock by default: the
+      // ladder runs end-to-end while contacting no one for real.
       provide: NOTIFICATION_PORT,
-      inject: [AppConfig, MockNotificationAdapter, TwilioNotificationAdapter, PUSH_PORT],
+      inject: [
+        AppConfig,
+        MockNotificationAdapter,
+        TwilioNotificationAdapter,
+        ConnectNotificationAdapter,
+        PUSH_PORT,
+      ],
       useFactory: (
         config: AppConfig,
         mock: MockNotificationAdapter,
         twilio: TwilioNotificationAdapter,
+        connect: ConnectNotificationAdapter,
         push: PushPort,
-      ) => new CompositeNotificationAdapter(config.hasTwilio ? twilio : mock, push),
+      ) => new CompositeNotificationAdapter(selectComms(config, { mock, twilio, connect }), push),
     },
     {
       // Follows config.aiProvider: Bedrock in an EU region (0013), the Claude API

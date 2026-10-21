@@ -54,11 +54,19 @@ Everything after that commit was built during the hackathon window. Compare with
 - The backend refuses to boot with a non-EU region or a non-EU inference profile.
   Text in, text out; no image, audio or document blocks are ever built.
 
+**Amazon Connect calls from Frankfurt** (`apps/backend/src/modules/escalation/notifications`,
+decision [0014](docs/decisions/0014-amazon-connect-calls.md))
+- `CALL_PROVIDER=connect` places family calls with `StartOutboundVoiceContact` into an
+  importable flow that says the incident and asks "Press 1 if you are handling this."
+- Press 1 comes back by polling the contact attribute: no Lambda, no public URL, no
+  tunnel. Twilio stays as the fallback. Setup:
+  [docs/hackathon/amazon-connect.md](docs/hackathon/amazon-connect.md).
+
 **Family app** (`apps/family`): Ring cameras, activity and live view; night door and visit
 incidents on the timeline; a Bee care proposals inbox.
 
 Ring video never reaches our backend. The safety core stays deterministic and AI only
-advises. All three integrations are off unless configured.
+advises. All of these integrations are off unless configured.
 
 ## Architecture
 
@@ -76,6 +84,7 @@ flowchart LR
     RP[Ring Partner API]
     BA[Bee API + bee stream]
     BR[Amazon Bedrock<br/>eu-central-1]
+    AC[Amazon Connect<br/>eu-central-1]
   end
   subgraph Backend[Obrigada backend, NestJS, EU]
     RG[ring module]
@@ -85,13 +94,14 @@ flowchart LR
     AI[ai module<br/>LLM_PORT]
     DB[(Postgres + TimescaleDB<br/>append-only trails)]
   end
-  TW[Twilio calls + SMS]
+  TW[Twilio calls + SMS<br/>fallback]
 
   G -- MQTT mTLS, labels only --> ES
   R --> RP -- signed webhook, metadata only --> RG
   RG -- internal bus --> ES
   RG -- internal bus --> VI
-  ES --> TW
+  ES -- calls, press 1 by polling --> AC
+  ES -.-> TW
   ES --> F
   B --> BA -- webhook --> BE
   BE -- approved items as todos --> BA
@@ -121,8 +131,8 @@ events. Bedrock writes words for people. It never decides whether anyone is call
 | `packages/shared` | Shared TypeScript types: event schemas, MQTT topic contracts |
 | `packages/design-system` | Shared design tokens |
 | `docs/obrigada-build-plan.md` | Feature-by-feature roadmap |
-| `docs/decisions` | Architecture decision records; 0011 to 0013 cover Ring, Bee, Bedrock |
-| `docs/hackathon` | API contract, Bedrock and Bee setup, demo runbook, submission drafts |
+| `docs/decisions` | Architecture decision records; 0011 to 0014 cover Ring, Bee, Bedrock, Connect |
+| `docs/hackathon` | API contract, Bedrock, Connect and Bee setup, demo runbook, submission drafts |
 | `infra`, `deploy` | EMQX config, production compose and Caddy |
 
 ## Quick start (backend on your machine)
@@ -230,6 +240,19 @@ Setup and the `bee stream` command: [docs/hackathon/bee.md](docs/hackathon/bee.m
 Model access, the least-privilege IAM policy and a one-request check:
 [docs/hackathon/aws-bedrock.md](docs/hackathon/aws-bedrock.md).
 
+### Amazon Connect (real calls)
+
+| Variable | Purpose |
+| --- | --- |
+| `CALL_PROVIDER` | `connect` or `twilio`. Unset means Twilio if configured, otherwise the mock (the behaviour before Connect). |
+| `CONNECT_REGION` | Default `eu-central-1`. Must be an `eu-*` region or the backend will not boot. |
+| `CONNECT_INSTANCE_ID`, `CONNECT_CONTACT_FLOW_ID`, `CONNECT_SOURCE_PHONE_NUMBER` | The instance, the imported `obrigada-family-call` flow, and the claimed number (E.164). |
+| `CONNECT_SMS_ORIGINATION` | Optional. An End User Messaging SMS origination identity; otherwise texts go through Twilio, or are skipped and push carries the alert. |
+| AWS credentials | The default AWS provider chain, as for Bedrock. |
+
+Instance, number, the Portugal and Romania allowlist, the flow import, IAM and a test run:
+[docs/hackathon/amazon-connect.md](docs/hackathon/amazon-connect.md).
+
 ### Twilio (real calls and SMS)
 
 | Variable | Purpose |
@@ -250,8 +273,8 @@ runs end to end.
   append-only, enforced in the database.
 - The escalation ladder is a rules-based Temporal workflow. A Ring event can never dial
   emergency services. LLM output can create a proposal or a sentence, never a decision.
-- EU only. Ring, Bee and Bedrock are new subprocessors, recorded as proposed decisions
-  0011 to 0013 that need founder sign-off before production use.
+- EU only. Ring, Bee, Bedrock and Connect are new subprocessors, recorded as proposed
+  decisions 0011 to 0014 that need founder sign-off before production use.
 
 ## License
 

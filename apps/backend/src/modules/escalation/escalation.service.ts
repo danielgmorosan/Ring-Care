@@ -6,7 +6,7 @@ import {
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import type { Client } from '@temporalio/client';
+import { WorkflowNotFoundError, type Client } from '@temporalio/client';
 import { v4 as uuidv4 } from 'uuid';
 import { AppConfig } from '../../config/env.validation';
 import { FamiliesService } from '../families/families.service';
@@ -16,6 +16,7 @@ import { CONTACT_REPOSITORY, type ContactRepository } from './contact.repository
 import { INCIDENT_REPOSITORY, type IncidentRepository } from './incident.repository';
 import { TEMPORAL_CLIENT } from './temporal/temporal.tokens';
 import type {
+  CallProviderName,
   EscalationInput,
   EscalationMessages,
   EscalationResult,
@@ -183,12 +184,37 @@ export class EscalationService {
    * Twilio callback) has already verified the signed link, which binds this contact to a
    * call this incident placed. The workflow records it on the append-only trail.
    */
-  async confirmByCall(incidentId: string, contactId: string): Promise<void> {
+  async confirmByCall(
+    incidentId: string,
+    contactId: string,
+    provider?: CallProviderName,
+  ): Promise<void> {
     const incident = await this.incidents.findById(incidentId);
     if (!incident) throw new NotFoundException(`Incident ${incidentId} not found`);
     const handle = this.requireClient().workflow.getHandle(this.workflowId(incidentId));
-    await handle.signal(contactConfirmedSignal, contactId);
-    this.logger.log(`Contact ${contactId} confirmed incident ${incidentId} by phone (press 1)`);
+    if (provider) await handle.signal(contactConfirmedSignal, contactId, provider);
+    else await handle.signal(contactConfirmedSignal, contactId);
+    this.logger.log(
+      `Contact ${contactId} confirmed incident ${incidentId} by phone (press 1` +
+        `${provider ? `, ${provider}` : ''})`,
+    );
+  }
+
+  /**
+   * Whether the incident's escalation workflow is still running. Used by the Amazon Connect
+   * confirmation poller (0014) to stop polling once the ladder has ended. Answers true when
+   * it cannot tell (no Temporal, a lookup error): the poller's own deadline still bounds it.
+   */
+  async isEscalationRunning(incidentId: string): Promise<boolean> {
+    if (!this.client) return true;
+    try {
+      const handle = this.client.workflow.getHandle(this.workflowId(incidentId));
+      const description = await handle.describe();
+      return description.status.name === 'RUNNING';
+    } catch (error) {
+      // A workflow Temporal has never heard of has nothing left to confirm.
+      return !(error instanceof WorkflowNotFoundError);
+    }
   }
 
   /**
