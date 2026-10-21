@@ -1,6 +1,7 @@
 import { condition, defineSignal, proxyActivities, setHandler } from '@temporalio/workflow';
 import {
   ACK_RESOLVE_WINDOW_SECONDS,
+  CALL_PROVIDERS,
   ACK_SIGNAL,
   CAREGIVER_ACK_SIGNAL,
   CHECKIN_SIGNAL,
@@ -11,6 +12,7 @@ import {
   escalationRulesFor,
   localMinutesOfDay,
   shouldSkipForQuietHours,
+  type CallProviderName,
   type EscalationActivities,
   type EscalationInput,
   type EscalationResult,
@@ -39,8 +41,14 @@ export const checkinSignal = defineSignal<[VoiceCheckinResult]>(CHECKIN_SIGNAL);
 export const ackSignal = defineSignal<[string]>(ACK_SIGNAL);
 export const caregiverAckSignal = defineSignal<[string]>(CAREGIVER_ACK_SIGNAL);
 export const resolveSignal = defineSignal(RESOLVE_SIGNAL);
-/** A called contact pressed 1: they answered and are handling it (0003 follow-up). */
-export const contactConfirmedSignal = defineSignal<[string]>(CONTACT_CONFIRMED_SIGNAL);
+/**
+ * A called contact pressed 1: they answered and are handling it (0003 follow-up). The
+ * optional second argument names the call provider that heard the key (0014), recorded on
+ * the trail. Signals sent before it existed carry only the contact id and replay unchanged.
+ */
+export const contactConfirmedSignal = defineSignal<[string, CallProviderName?]>(
+  CONTACT_CONFIRMED_SIGNAL,
+);
 
 export async function escalationWorkflow(input: EscalationInput): Promise<EscalationResult> {
   let seq = 0;
@@ -52,6 +60,7 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   // A called contact pressed 1 on the call ("I am handling this"). Only contacts the ladder
   // has already dialed can confirm; the callback that sends this is HMAC-bound to that call.
   let confirmedBy: string | null = null;
+  let confirmedVia: CallProviderName | null = null;
   const called = new Set<string>();
 
   setHandler(checkinSignal, (result) => {
@@ -66,8 +75,12 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   setHandler(resolveSignal, () => {
     resolved = true;
   });
-  setHandler(contactConfirmedSignal, (contactId) => {
-    if (!confirmedBy && called.has(contactId)) confirmedBy = contactId;
+  setHandler(contactConfirmedSignal, (contactId, provider) => {
+    if (confirmedBy || !called.has(contactId)) return;
+    confirmedBy = contactId;
+    // Only a known provider name reaches the audit trail; anything else is left out.
+    confirmedVia =
+      provider && (CALL_PROVIDERS as readonly string[]).includes(provider) ? provider : null;
   });
 
   const step = (
@@ -164,7 +177,10 @@ export async function escalationWorkflow(input: EscalationInput): Promise<Escala
   const recordConfirmation = async (): Promise<EscalationResult | null> => {
     if (!confirmedBy || acknowledgedBy) return null;
     acknowledgedBy = confirmedBy;
-    await step('call_answered', confirmedBy, { via: 'press_1' });
+    await step('call_answered', confirmedBy, {
+      via: 'press_1',
+      ...(confirmedVia ? { provider: confirmedVia } : {}),
+    });
     return { outcome: 'acknowledged', acknowledgedByContactId: confirmedBy, steps: seq };
   };
   const confirmedDuringLadder = await recordConfirmation();

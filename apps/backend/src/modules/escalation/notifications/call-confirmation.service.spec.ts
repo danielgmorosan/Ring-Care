@@ -50,7 +50,7 @@ describe('CallConfirmationService', () => {
   it('press 1 on a genuine Twilio request signals the workflow and thanks the caller', async () => {
     const { service, confirmByCall, link, request } = setup();
     const twiml = await service.handle(request(link(), body('1')), NOW);
-    expect(confirmByCall).toHaveBeenCalledWith('inc-1', 'miguel');
+    expect(confirmByCall).toHaveBeenCalledWith('inc-1', 'miguel', 'twilio');
     expect(twiml).toBe(
       '<Response><Say voice="alice">Thank you. We have let the family know you are handling it.</Say></Response>',
     );
