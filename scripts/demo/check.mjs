@@ -133,7 +133,11 @@ run(async () => {
   const [family, contacts, visits, meds] = await Promise.all(
     ['/me/family', '/me/contacts', '/me/visits', '/me/medications'].map((r) => api.get(r)),
   );
-  log.info(`timezone ${family.body.timezone}, check-in language ${family.body.checkinLanguage}`);
+  log.info(
+    `timezone ${family.body.timezone}, check-in language ${family.body.checkinLanguage}, ` +
+      `looking after ${family.body.elderName ?? '(no name set)'}` +
+      (family.body.elderRelation ? ` (${family.body.elderRelation})` : ''),
+  );
   const names = contacts.body.map(
     (c) =>
       `${c.name}${c.phone ? (isFictional(c.phone) ? ' (fictional phone)' : '') : ' (no phone)'}`,

@@ -103,6 +103,16 @@ describe('QaService', () => {
     ]);
   });
 
+  it("never sends the elder's name or relation to the port (roles only)", async () => {
+    await families.update(familyId, { elderName: 'Maria', elderRelation: 'mother' });
+
+    await qa.ask(familyId, 'How is everything?');
+
+    const serialized = JSON.stringify(spy.asked[0]!);
+    expect(serialized).not.toContain('Maria');
+    expect(serialized).not.toMatch(/elderName|elderRelation|mother/);
+  });
+
   it('rejects an unknown family', async () => {
     await expect(qa.ask('00000000-0000-4000-8000-000000000099', 'q')).rejects.toBeInstanceOf(
       NotFoundException,

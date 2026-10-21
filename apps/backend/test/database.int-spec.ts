@@ -100,6 +100,36 @@ describeIfDb('Data layer (integration)', () => {
     expect(badRow.rows[0].timezone).toBe('UTC');
   });
 
+  it("persists, then clears, the elder's display name and relation", async () => {
+    const signup = await request(app.getHttpServer())
+      .post('/auth/signup')
+      .send({ email: 'elder@example.com', password: 'password123', familyName: 'Elder family' })
+      .expect(201);
+    const token = signup.body.token as string;
+    const familyId = signup.body.family.id as string;
+
+    await request(app.getHttpServer())
+      .patch('/me/family')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ elderName: 'Maria', elderRelation: 'mother' })
+      .expect(200);
+    const set = await pool.query('SELECT elder_name, elder_relation FROM families WHERE id = $1', [
+      familyId,
+    ]);
+    expect(set.rows[0]).toEqual({ elder_name: 'Maria', elder_relation: 'mother' });
+
+    await request(app.getHttpServer())
+      .patch('/me/family')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ elderName: null, elderRelation: null })
+      .expect(200);
+    const cleared = await pool.query(
+      'SELECT elder_name, elder_relation FROM families WHERE id = $1',
+      [familyId],
+    );
+    expect(cleared.rows[0]).toEqual({ elder_name: null, elder_relation: null });
+  });
+
   it('reads and updates household settings (timezone), and logs the change', async () => {
     const signup = await request(app.getHttpServer())
       .post('/auth/signup')

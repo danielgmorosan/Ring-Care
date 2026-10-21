@@ -77,7 +77,11 @@ describe('ErasureService', () => {
     expect(t.appointments.delete).toHaveBeenCalledWith('fam-1', 'a1');
     expect(t.pushTokens.unregister).toHaveBeenCalledWith('fam-1', 'tok');
     expect(t.users.redactByFamily).toHaveBeenCalledWith('fam-1');
-    expect(t.families.update).toHaveBeenCalledWith('fam-1', { name: 'Erased household' });
+    expect(t.families.update).toHaveBeenCalledWith('fam-1', {
+      name: 'Erased household',
+      elderName: null,
+      elderRelation: null,
+    });
     // Hackathon tables: editable rows erased; append-only rows are never touched.
     expect(t.visits.delete).toHaveBeenCalledWith('fam-1', 'v1');
     expect(t.ring.redactCameraNamesForFamily).toHaveBeenCalledWith('fam-1');

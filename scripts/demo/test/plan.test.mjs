@@ -5,6 +5,7 @@ import {
   needsRestart,
   planCamera,
   planContacts,
+  planFamily,
   planMedications,
   planVisit,
 } from '../lib/plan.mjs';
@@ -145,4 +146,25 @@ test('household time: the last 03:04 in Lisbon, summer and winter, from any mach
   const n = nowNight('Europe/Lisbon', Date.parse('2026-10-21T10:00:17.250Z'));
   assert.equal(new Date(n).toISOString(), '2026-10-21T02:04:17.250Z');
   assert.equal(localClock(n, 'Europe/Lisbon'), '03:04');
+});
+
+test('planFamily sets the elder name, relation and timezone only when they differ', () => {
+  const desired = { timezone: 'Europe/Lisbon', elderName: 'Maria', elderRelation: 'mother' };
+  assert.deepEqual(planFamily({ timezone: 'UTC', elderName: null, elderRelation: null }, desired), {
+    timezone: 'Europe/Lisbon',
+    elderName: 'Maria',
+    elderRelation: 'mother',
+  });
+  // An older backend without the fields: still sets them.
+  assert.deepEqual(planFamily({ timezone: 'Europe/Lisbon' }, desired), {
+    elderName: 'Maria',
+    elderRelation: 'mother',
+  });
+  // Already right: nothing to do.
+  assert.deepEqual(
+    planFamily({ timezone: 'Europe/Lisbon', elderName: 'Maria', elderRelation: 'mother' }, desired),
+    {},
+  );
+  // Undefined fields are left alone.
+  assert.deepEqual(planFamily({ timezone: 'UTC', elderName: 'Ana' }, {}), {});
 });

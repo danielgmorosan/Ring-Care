@@ -16,7 +16,7 @@ import {
   useWipeDevice,
   useZones,
 } from '../api/hooks';
-import type { CheckinLanguage, FleetGuardian } from '../api/types';
+import type { CheckinLanguage, ElderRelation, FleetGuardian } from '../api/types';
 import { useAuth } from '../auth-state';
 import {
   Body,
@@ -29,11 +29,19 @@ import {
   Field,
   Icon,
   PageHeader,
+  PillGroup,
   Screen,
   SectionHeader,
   Segmented,
   TextAction,
 } from '../components/ui';
+import {
+  cleanElderName,
+  elderHomeTitle,
+  elderReference,
+  ELDER_NAME_MAX_LENGTH,
+  ELDER_RELATIONS,
+} from '../elder';
 import { relativeTime } from '../incident-format';
 import { LiveScreen } from './LiveScreen';
 import { ringModeInfo, RingScreen } from './RingScreen';
@@ -56,6 +64,7 @@ function todayLabel(now: Date = new Date()): string {
 export function HomeScreen() {
   const { session, logout } = useAuth();
   const fleet = useFleet();
+  const family = useFamily();
   const summary = useDailySummary();
   const activity = useActivity();
   const ask = useAsk();
@@ -104,7 +113,7 @@ export function HomeScreen() {
               <Icon name="home" size={26} color={color.textPrimary} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={st.heroTitle}>Mom&apos;s home</Text>
+              <Text style={st.heroTitle}>{family.data ? elderHomeTitle(family.data) : 'Home'}</Text>
               <Caption>
                 {list.length > 0
                   ? `Watched by ${list.length} guardian${list.length > 1 ? 's' : ''}`
@@ -432,11 +441,56 @@ function HomeSettingsCard() {
   const phone = deviceTimezone();
   const matches = current === phone;
   const language = family.data?.checkinLanguage;
+  const savedName = family.data?.elderName ?? '';
+  const savedRelation = family.data?.elderRelation ?? null;
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [relationDraft, setRelationDraft] = useState<ElderRelation | null | undefined>(undefined);
+  const name = nameDraft ?? savedName;
+  const relation = relationDraft === undefined ? savedRelation : relationDraft;
+  const aboutChanged = (cleanElderName(name) ?? '') !== savedName || relation !== savedRelation;
+  const who = elderReference(family.data);
+
+  async function saveAbout() {
+    await update.mutateAsync({ elderName: cleanElderName(name), elderRelation: relation });
+    setNameDraft(null);
+    setRelationDraft(undefined);
+  }
 
   return (
     <View style={{ gap: space[3] }}>
       <SectionHeader icon="settings" label="Home settings" />
       <Card style={{ gap: space[4] }}>
+        <View style={{ gap: space[3] }}>
+          <View style={st.settingRow}>
+            <Icon name="user" size={18} color={color.textSecondary} />
+            <Body strong>Who we look after</Body>
+          </View>
+          <Caption>We only use it in this app. Our AI summaries never see it.</Caption>
+          <Field
+            label="Their name"
+            placeholder="Maria"
+            value={name}
+            onChangeText={setNameDraft}
+            autoCapitalize="words"
+            maxLength={ELDER_NAME_MAX_LENGTH}
+          />
+          <PillGroup
+            label="They are your"
+            options={ELDER_RELATIONS}
+            value={relation}
+            onChange={setRelationDraft}
+          />
+          {aboutChanged ? (
+            <Button
+              label="Save"
+              variant="secondary"
+              onPress={() => void saveAbout()}
+              loading={update.isPending}
+            />
+          ) : null}
+        </View>
+
+        <Divider />
         <View style={{ gap: space[1] }}>
           <View style={st.settingRow}>
             <Icon name="globe" size={18} color={color.textSecondary} />
@@ -461,8 +515,8 @@ function HomeSettingsCard() {
             <Body strong>Voice check-in language</Body>
           </View>
           <Caption>
-            When the guardian asks if all is well, it speaks this language. Set it to the one the
-            elder understands.
+            When the guardian asks if all is well, it speaks this language. Set it to the one {who}{' '}
+            understands.
           </Caption>
           <Segmented
             options={CHECKIN_LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}

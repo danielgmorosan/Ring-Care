@@ -410,6 +410,8 @@
   "name": "Ferreira",
   "timezone": "Europe/Lisbon",
   "checkinLanguage": "en",
+  "elderName": "Maria",
+  "elderRelation": "mother",
   "createdAt": "2026-10-20T12:47:15.338Z"
  },
  "GET /me/alerts": [

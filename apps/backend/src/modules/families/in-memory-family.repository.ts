@@ -31,6 +31,8 @@ export class InMemoryFamilyRepository implements FamilyRepository {
       ...(patch.name !== undefined ? { name: patch.name } : {}),
       ...(patch.timezone !== undefined ? { timezone: patch.timezone } : {}),
       ...(patch.checkinLanguage !== undefined ? { checkinLanguage: patch.checkinLanguage } : {}),
+      ...(patch.elderName !== undefined ? { elderName: patch.elderName } : {}),
+      ...(patch.elderRelation !== undefined ? { elderRelation: patch.elderRelation } : {}),
     };
     this.families.set(id, updated);
     return updated;

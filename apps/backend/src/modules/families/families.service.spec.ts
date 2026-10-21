@@ -76,4 +76,28 @@ describe('FamiliesService', () => {
       NotFoundException,
     );
   });
+
+  it('starts with no elder name or relation', async () => {
+    const family = await service.create({ name: 'Silva family' });
+    expect(family.elderName).toBeNull();
+    expect(family.elderRelation).toBeNull();
+  });
+
+  it('sets, keeps, and clears the elder name and relation', async () => {
+    const family = await service.create({ name: 'Silva family' });
+
+    const named = await service.update(family.id, { elderName: 'Maria', elderRelation: 'mother' });
+    expect(named.elderName).toBe('Maria');
+    expect(named.elderRelation).toBe('mother');
+
+    // Not in the patch: unchanged.
+    const renamed = await service.update(family.id, { name: 'Costa family' });
+    expect(renamed.elderName).toBe('Maria');
+    expect(renamed.elderRelation).toBe('mother');
+
+    // Null clears.
+    const cleared = await service.update(family.id, { elderName: null, elderRelation: null });
+    expect(cleared.elderName).toBeNull();
+    expect(cleared.elderRelation).toBeNull();
+  });
 });

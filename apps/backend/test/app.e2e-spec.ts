@@ -173,6 +173,51 @@ describe('Obrigada backend (e2e)', () => {
       expect(after.body).toHaveLength(0);
     });
 
+    it("sets, reads, and clears the elder's name and relation", async () => {
+      const before = await request(http).get('/me/family').set(auth()).expect(200);
+      expect(before.body.elderName).toBeNull();
+      expect(before.body.elderRelation).toBeNull();
+
+      const set = await request(http)
+        .patch('/me/family')
+        .set(auth())
+        .send({ elderName: '  Maria  ', elderRelation: 'mother' })
+        .expect(200);
+      expect(set.body.elderName).toBe('Maria');
+      expect(set.body.elderRelation).toBe('mother');
+
+      const read = await request(http).get('/me/family').set(auth()).expect(200);
+      expect(read.body).toMatchObject({ elderName: 'Maria', elderRelation: 'mother' });
+
+      // Other settings leave it alone.
+      const tz = await request(http)
+        .patch('/me/family')
+        .set(auth())
+        .send({ timezone: 'Europe/Lisbon' })
+        .expect(200);
+      expect(tz.body.elderName).toBe('Maria');
+
+      const cleared = await request(http)
+        .patch('/me/family')
+        .set(auth())
+        .send({ elderName: null, elderRelation: null })
+        .expect(200);
+      expect(cleared.body.elderName).toBeNull();
+      expect(cleared.body.elderRelation).toBeNull();
+    });
+
+    it('rejects an invalid elder name or relation', async () => {
+      for (const body of [
+        { elderName: 'a'.repeat(61) },
+        { elderName: 'Ma\nria' },
+        { elderName: 'Ma\u202Eria' },
+        { elderName: 7 },
+        { elderRelation: 'aunt' },
+      ]) {
+        await request(http).patch('/me/family').set(auth()).send(body).expect(400);
+      }
+    });
+
     it('rejects a malformed contact', async () => {
       await request(http)
         .post('/me/contacts')

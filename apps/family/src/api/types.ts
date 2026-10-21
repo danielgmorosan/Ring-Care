@@ -6,11 +6,27 @@ import { z } from 'zod';
 export const checkinLanguageSchema = z.enum(['en', 'pt-PT']);
 export type CheckinLanguage = z.infer<typeof checkinLanguageSchema>;
 
+/** How the caregiver relates to the person Obrigada looks after. */
+export const elderRelationSchema = z.enum([
+  'mother',
+  'father',
+  'grandmother',
+  'grandfather',
+  'other',
+]);
+export type ElderRelation = z.infer<typeof elderRelationSchema>;
+
 export const familySchema = z.object({
   id: z.string(),
   name: z.string(),
   timezone: z.string(),
   checkinLanguage: checkinLanguageSchema,
+  /**
+   * The elder's display name, e.g. "Maria". Null when unset. `catch` keeps an older
+   * backend (field absent) or an unknown relation from failing the whole family read.
+   */
+  elderName: z.string().nullable().catch(null),
+  elderRelation: elderRelationSchema.nullable().catch(null),
   createdAt: z.string(),
 });
 export type Family = z.infer<typeof familySchema>;
@@ -232,6 +248,10 @@ export interface UpdateFamilyBody {
   name?: string;
   timezone?: string;
   checkinLanguage?: CheckinLanguage;
+  /** Null clears it. */
+  elderName?: string | null;
+  /** Null clears it. */
+  elderRelation?: ElderRelation | null;
 }
 export interface CreateMedicationBody {
   name: string;

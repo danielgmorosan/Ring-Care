@@ -4,7 +4,8 @@
 //   pnpm demo:seed --sofia +351912345678 --miguel +351913456789 --rosa +351914567890
 //
 // Flags (or environment): --base (DEMO_BASE, default http://localhost:3000), --email
-// (DEMO_EMAIL), --password (DEMO_PASSWORD), --family-name, --timezone, --sofia / --miguel /
+// (DEMO_EMAIL), --password (DEMO_PASSWORD), --family-name, --timezone, --elder-name (default
+// Maria), --elder-relation (default mother), --sofia / --miguel /
 // --rosa (DEMO_PHONE_SOFIA, DEMO_PHONE_MIGUEL, DEMO_PHONE_ROSA).
 import {
   DemoError,
@@ -29,7 +30,9 @@ import {
   demoContacts,
   needsRestart,
   planCamera,
+  ELDER_RELATIONS,
   planContacts,
+  planFamily,
   planMedications,
   planVisit,
 } from './lib/plan.mjs';
@@ -37,6 +40,7 @@ import { lastLocal, localClock } from './lib/time.mjs';
 
 const HELP = `Usage: pnpm demo:seed [--sofia +351...] [--miguel +351...] [--rosa +351...]
   [--email sofia@example.com] [--password demo-pass-123] [--base http://localhost:3000]
+  [--elder-name Maria] [--elder-relation mother|father|grandmother|grandfather|other]
 Phones may also come from DEMO_PHONE_SOFIA, DEMO_PHONE_MIGUEL, DEMO_PHONE_ROSA.`;
 
 function options(flags) {
@@ -46,6 +50,8 @@ function options(flags) {
     password: String(flags.password ?? env.DEMO_PASSWORD ?? 'demo-pass-123'),
     familyName: String(flags['family-name'] ?? 'Ferreira'),
     timezone: String(flags.timezone ?? 'Europe/Lisbon'),
+    elderName: String(flags['elder-name'] ?? 'Maria').trim(),
+    elderRelation: String(flags['elder-relation'] ?? 'mother').trim(),
     phones: {
       sofia: flags.sofia ?? flags['phone-sofia'] ?? env.DEMO_PHONE_SOFIA,
       miguel: flags.miguel ?? flags['phone-miguel'] ?? env.DEMO_PHONE_MIGUEL,
@@ -144,6 +150,12 @@ run(async () => {
     return;
   }
   const opts = options(flags);
+  if (!opts.elderName || opts.elderName === 'true' || opts.elderName.length > 60) {
+    throw new DemoError('--elder-name needs a name of 1 to 60 characters, e.g. --elder-name Maria');
+  }
+  if (!ELDER_RELATIONS.includes(opts.elderRelation)) {
+    throw new DemoError(`--elder-relation must be one of: ${ELDER_RELATIONS.join(', ')}`);
+  }
   console.log('Obrigada demo: seed the Ferreira household');
   await ensureEnv({ quiet: true });
   const env = backendEnv();
@@ -168,12 +180,23 @@ run(async () => {
   api = client(base, auth.token);
 
   const family = expectOk(await api.get('/me/family'), 'GET /me/family');
-  if (family.timezone !== opts.timezone) {
-    expectOk(await api.patch('/me/family', { timezone: opts.timezone }), 'Set timezone');
-    log.ok(`Household timezone set to ${opts.timezone} (was ${family.timezone})`);
-  } else {
-    log.ok(`Household timezone is ${opts.timezone}`);
+  const familyPatch = planFamily(family, {
+    timezone: opts.timezone,
+    elderName: opts.elderName,
+    elderRelation: opts.elderRelation,
+  });
+  if (Object.keys(familyPatch).length) {
+    expectOk(await api.patch('/me/family', familyPatch), 'Update household settings');
   }
+  log.ok(
+    familyPatch.timezone
+      ? `Household timezone set to ${opts.timezone} (was ${family.timezone})`
+      : `Household timezone is ${opts.timezone}`,
+  );
+  log.ok(
+    `Looking after ${opts.elderName} (${opts.elderRelation})` +
+      (familyPatch.elderName || familyPatch.elderRelation ? ', set now' : ''),
+  );
 
   log.step('2. Link Ring and Bee to this family in apps/backend/.env');
   const envUpdate = setEnvValues(readEnvText(), {

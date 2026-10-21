@@ -70,7 +70,7 @@ async function run() {
     await page.waitForTimeout(600);
     await shot('01-home');
 
-    await page.getByPlaceholder('How is everything?').fill('How was Mom today?');
+    await page.getByPlaceholder('How is everything?').fill('How was Maria today?');
     await page.getByText('Ask', { exact: true }).click();
     await page.getByText('Nothing else needed your attention.').waitFor();
     await page.getByText('Nothing else needed your attention.').scrollIntoViewIfNeeded();

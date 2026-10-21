@@ -1,4 +1,5 @@
 import { CheckinLanguage } from './checkin-language';
+import type { ElderRelation } from './elder';
 import { Family } from './family.entity';
 
 /**
@@ -10,7 +11,7 @@ export interface FamilyRepository {
   create(family: Family): Promise<Family>;
   findById(id: string): Promise<Family | null>;
   findAll(): Promise<Family[]>;
-  /** Applies a partial update (name, timezone, and/or check-in language). Null if unknown. */
+  /** Applies a partial update of the mutable fields. Null if the family is unknown. */
   update(id: string, patch: FamilyPatch): Promise<Family | null>;
 }
 
@@ -19,6 +20,10 @@ export interface FamilyPatch {
   name?: string;
   timezone?: string;
   checkinLanguage?: CheckinLanguage;
+  /** Undefined leaves it unchanged; null clears it. */
+  elderName?: string | null;
+  /** Undefined leaves it unchanged; null clears it. */
+  elderRelation?: ElderRelation | null;
 }
 
 /** DI token for the FamilyRepository port. */
