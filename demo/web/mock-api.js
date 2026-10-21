@@ -292,7 +292,8 @@
 
   function answerFor(question) {
     var q = String(question || '').toLowerCase();
-    if (/\b(mom|mum|mother|she|her)\b/.test(q) || /\btoday\b/.test(q) || /how (was|is)/.test(q)) {
+    var elder = String((S.family && S.family.elderName) || '').toLowerCase();
+    if ((elder && q.indexOf(elder) >= 0) || /\b(mom|mum|mother|she|her)\b/.test(q) || /\btoday\b/.test(q) || /how (was|is)/.test(q)) {
       var lines = [];
       var night = S.details[F.__nightIncidentId];
       if (night) {
@@ -331,7 +332,7 @@
     }
     return (
       'In this demo I can only answer from the recorded day: visits, alerts, calls and the care plan. ' +
-      'Try asking "How was Mom today?"'
+      'Try asking "How was ' + ((S.family && S.family.elderName) || 'Mom') + ' today?"'
     );
   }
 
@@ -515,7 +516,14 @@
 
     // Household settings.
     if (method === 'PATCH' && path === '/me/family') {
-      Object.assign(S.family, pick(body, ['name', 'timezone', 'checkinLanguage']));
+      Object.assign(
+        S.family,
+        pick(body, ['name', 'timezone', 'checkinLanguage', 'elderName', 'elderRelation']),
+      );
+      // Like the backend: a blank name clears it.
+      if (typeof S.family.elderName === 'string') {
+        S.family.elderName = S.family.elderName.trim() || null;
+      }
       if (body && body.name) S.session.family.name = body.name;
       log('Updated household settings');
       save();
