@@ -8,6 +8,7 @@ import type {
   QuestionRequest,
 } from './narration.port';
 import { DAILY_SYSTEM_PROMPT, INCIDENT_SYSTEM_PROMPT, QA_SYSTEM_PROMPT } from './narration.prompts';
+import { forModel } from './incident-meanings';
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
@@ -28,11 +29,11 @@ export class ClaudeNarrationAdapter implements NarrationPort {
   }
 
   summarizeDay(request: DailySummaryRequest): Promise<Narration> {
-    return this.callClaude(DAILY_SYSTEM_PROMPT, request);
+    return this.callClaude(DAILY_SYSTEM_PROMPT, forModel(request));
   }
 
   answer(request: QuestionRequest): Promise<Narration> {
-    return this.callClaude(QA_SYSTEM_PROMPT, request);
+    return this.callClaude(QA_SYSTEM_PROMPT, forModel(request));
   }
 
   /** One Claude Messages call. The payload is already minimized by the caller. */

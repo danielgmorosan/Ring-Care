@@ -8,6 +8,7 @@ import type {
   QuestionRequest,
 } from './narration.port';
 import { DAILY_SYSTEM_PROMPT, INCIDENT_SYSTEM_PROMPT, QA_SYSTEM_PROMPT } from './narration.prompts';
+import { forModel } from './incident-meanings';
 
 /** Same budget as the Claude narration adapter: a few short sentences. */
 const NARRATION_MAX_TOKENS = 300;
@@ -28,11 +29,11 @@ export class BedrockNarrationAdapter implements NarrationPort {
   }
 
   summarizeDay(request: DailySummaryRequest): Promise<Narration> {
-    return this.run(DAILY_SYSTEM_PROMPT, request);
+    return this.run(DAILY_SYSTEM_PROMPT, forModel(request));
   }
 
   answer(request: QuestionRequest): Promise<Narration> {
-    return this.run(QA_SYSTEM_PROMPT, request);
+    return this.run(QA_SYSTEM_PROMPT, forModel(request));
   }
 
   private async run(system: string, payload: unknown): Promise<Narration> {

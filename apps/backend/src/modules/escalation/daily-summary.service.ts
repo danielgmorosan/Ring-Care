@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DevicesService } from '../devices/devices.service';
 import { FamiliesService } from '../families/families.service';
-import { dayInZone } from '../families/timezone';
+import { clockTimeInZone, dayInZone } from '../families/timezone';
+import { outcomeMeaning, reasonMeaning } from './narration/incident-meanings';
 import { VisitArrivalsService } from '../visits/visit-arrivals.service';
 import { IncidentsQueryService } from './incidents-query.service';
 import { NarrationService } from './narration/narration.service';
@@ -57,6 +58,9 @@ export class DailySummaryService {
         reason: i.reason,
         outcome: i.outcome,
         at: i.openedAt,
+        localTime: clockTimeInZone(i.openedAt, timezone),
+        meaning: reasonMeaning(i.reason),
+        outcomeMeaning: outcomeMeaning(i.outcome),
       })),
       guardiansTotal,
       guardiansOnline,

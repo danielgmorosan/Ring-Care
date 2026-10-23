@@ -5,6 +5,9 @@ import { IncidentsQueryService } from '../escalation/incidents-query.service';
 import type { FamilyContext } from '../escalation/narration/narration.port';
 import { NarrationService } from '../escalation/narration/narration.service';
 import { FamiliesService } from '../families/families.service';
+import { outcomeMeaning, reasonMeaning } from '../escalation/narration/incident-meanings';
+import { clockTimeInZone } from '../families/timezone';
+
 import { FleetHealthService } from '../fleet/fleet-health.service';
 
 export interface AskResult {
@@ -40,7 +43,14 @@ export class QaService {
 
     const context: FamilyContext = {
       timezone: family.timezone,
-      incidents: incidents.map((i) => ({ reason: i.reason, outcome: i.outcome, at: i.openedAt })),
+      incidents: incidents.map((i) => ({
+        reason: i.reason,
+        outcome: i.outcome,
+        at: i.openedAt,
+        localTime: clockTimeInZone(i.openedAt, family.timezone),
+        meaning: reasonMeaning(i.reason),
+        outcomeMeaning: outcomeMeaning(i.outcome),
+      })),
       guardians: { total: guardians.length, online: guardians.filter((g) => g.online).length },
       medications: medications.map((m) => ({ name: m.name, times: m.times })),
       appointments: appointments.map((a) => ({ title: a.title, at: a.at })),

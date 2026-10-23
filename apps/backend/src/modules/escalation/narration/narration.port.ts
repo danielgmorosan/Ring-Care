@@ -46,6 +46,12 @@ export interface DaySummaryIncident {
   reason: string;
   outcome: string;
   at: string;
+  /** Household-local clock time of `at` ("3:04"), so the model never converts time zones. */
+  localTime?: string;
+  /** Plain-language meaning of `reason` (see incident-meanings.ts). */
+  meaning?: string;
+  /** Plain-language meaning of `outcome`. */
+  outcomeMeaning?: string;
 }
 
 /**
